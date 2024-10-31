@@ -18,9 +18,9 @@ async def check(searched_val, city):
         # GROUP BY sd.query, sd.quantity
         # ORDER BY sd.quantity DESC, sd.query;"""
         # # query = f"SELECT rp.query, r.quantity FROM request_product as rp JOIN request AS r ON r.query = rp.query WHERE rp.city = {city} AND arrayExists(x -> x IN {searched_val}, rp.products) ORDER BY r.quantity DESC;"
-        # query = f"SELECT city, count(*) FROM request_product GROUP BY city;"
-        # res = await client.query(query)
-        # return res.result_rows
+        query = f"SELECT city, count(*) FROM request_product GROUP BY city;"
+        res = await client.query(query)
+        return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
         # query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, indexOf(sd.products, {searched_val}) AS product_index)) AS date_info
@@ -47,13 +47,13 @@ async def check(searched_val, city):
         #     for row in query_result.result_rows
         # ]
         # return result
-        query = f"""SELECT rp.query, r.quantity
-                FROM request_product AS rp
-                JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
-                WHERE rp.city = {city} AND arrayExists(x -> x IN {searched_val}, rp.products)
-                ORDER BY r.quantity DESC;"""
-        query_result = await client.query(query)
-        return dict(query_result.result_rows)
+        # query = f"""SELECT rp.query, r.quantity
+        #         FROM request_product AS rp
+        #         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
+        #         WHERE rp.city = {city} AND arrayExists(x -> x IN {searched_val}, rp.products)
+        #         ORDER BY r.quantity DESC;"""
+        # query_result = await client.query(query)
+        # return dict(query_result.result_rows)
 
 
 logger.info(asyncio.run(check([212296429], -1257786)))
