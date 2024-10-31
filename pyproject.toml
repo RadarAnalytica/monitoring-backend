@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "wb-search"
+version = "0.1.0"
+description = ""
+authors = ["zwickvitaly <zwickvitaly@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+sqlalchemy = "^2.0.36"
+asyncpg = "^0.29.0"
+psycopg2-binary = "^2.9.9"
+loguru = "^0.7.2"
+aiohttp = "^3.10.10"
+fastapi = {extras = ["all"], version = "^0.115.2"}
+python-dotenv = "^1.0.1"
+setuptools = "^75.1.0"
+alembic = "^1.13.3"
+pytz = "^2024.2"
+aiofiles = "^24.1.0"
+celery = {extras = ["redis"], version = "^5.4.0"}
+clickhouse-connect = "^0.8.5"
+black = "^24.10.0"
+billiard = "^4.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
