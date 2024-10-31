@@ -33,13 +33,12 @@ async def setup_database():
             city Int64 CODEC(LZ4),
             query String CODEC(LZ4),
             date Date CODEC(LZ4),
-            products Array(UInt32) CODEC(LZ4)
+            products Array(UInt32) CODEC(LZ4),
+            INDEX idx_bloom (products) TYPE bloom_filter(0.01) GRANULARITY 64
         ) ENGINE = MergeTree()
         PARTITION BY city
         ORDER BY date DESC
-        SETTINGS index_granularity = 8192
-        INDEX idx_bloom (values) TYPE bloom_filter(0.01) GRANULARITY 64
-        ;''')
+        SETTINGS index_granularity = 8192;''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")

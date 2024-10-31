@@ -25,12 +25,12 @@ async def save_to_db(queue, table, fields):
     while True:
         items = []
         item = None
-        while len(items) < 10000:
+        while len(items) < 1000:
             item = await queue.get()
             if item is None:
                 break
             else:
-                items.extend(item)
+                items.append(item)
             queue.task_done()
         if items:
             try:
@@ -91,15 +91,13 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                 full_res.extend(res.get("products", []))
             if not full_res:
                 full_res = []
-            request_products = [
-                (city,
+            request_product = [
+                city,
                 r,
-                p.get("id"),
-                p.get("name"),
-                date)
-                for p in full_res
+                sorted(p.get("id") for p in full_res),
+                date
             ]
-            await request_product_queue.put(request_products)
+            await request_product_queue.put(request_product)
             return
         except Exception as e:
             logger.critical(f"{e}")
@@ -112,7 +110,7 @@ async def get_city_result(city, date):
     request_product_queue = asyncio.Queue()
     workers_queue = asyncio.Queue()
     request_product_save_task = [
-        asyncio.create_task(save_to_db(request_product_queue, "request_product", ["city", "query", "product_id", "product_name", "date"])) for _ in range(5)
+        asyncio.create_task(save_to_db(request_product_queue, "request_product", ["city", "query", "products", "date"])) for _ in range(5)
     ]
     async with ClientSession() as http_session:
         requests_tasks = [
