@@ -150,7 +150,7 @@ async def get_results():
         p.close()
         p.join()
     end_time = datetime.now()
-    delta = (start_time - end_time).seconds
+    delta = (end_time - start_time).seconds
     logger.info(
         f"Старт парса: {start_time.strftime('%H:%M %d.%m.%Y')}\n"
         f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
