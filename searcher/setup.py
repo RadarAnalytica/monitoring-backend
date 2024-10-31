@@ -32,13 +32,14 @@ async def setup_database():
         CREATE TABLE IF NOT EXISTS request_product (
             city Int64 CODEC(LZ4),
             query String CODEC(LZ4),
-            product_id Uint32 CODEC(LZ4),
-            product_name String CODEC(LZ4),
-            date Date CODEC(LZ4)
+            date Date CODEC(LZ4),
+            products Array(UInt32) CODEC(LZ4)
         ) ENGINE = MergeTree()
         PARTITION BY city
-        ORDER BY date
-    ''')
+        ORDER BY date DESC
+        SETTINGS index_granularity = 8192
+        INDEX idx_bloom (values) TYPE bloom_filter(0.01) GRANULARITY 64
+        ;''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
