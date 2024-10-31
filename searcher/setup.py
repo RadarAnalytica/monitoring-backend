@@ -31,9 +31,10 @@ async def setup_database():
     client.command('''
         CREATE TABLE IF NOT EXISTS request_product (
             city Int64 CODEC(LZ4),
-            query String,
-            date Date CODEC(LZ4),
-            products Array(UInt32) CODEC(LZ4)
+            query String CODEC(LZ4),
+            product_id Uint32 CODEC(LZ4),
+            product_name String CODEC(LZ4),
+            date Date CODEC(LZ4)
         ) ENGINE = MergeTree()
         PARTITION BY city
         ORDER BY date
