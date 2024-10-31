@@ -154,7 +154,7 @@ async def get_results():
     logger.info(
         f"Старт парса: {start_time.strftime('%H:%M %d.%m.%Y')}\n"
         f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
-        f"Выполнено за: {delta // 60 // 60} часов, {delta // 60} минут"
+        f"Выполнено за: {delta // 60 // 60} часов, {delta // 60 % 60} минут"
     )
 
 
