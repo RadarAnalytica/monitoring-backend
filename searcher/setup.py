@@ -39,8 +39,9 @@ async def setup_database():
             city Int64 CODEC(LZ4),
             date Date CODEC(LZ4),
             query String CODEC(LZ4),
-            product UInt32 PRIMARY KEY CODEC(LZ4),
-            place UInt16 Codec(LZ4)
+            product UInt32 CODEC(LZ4),
+            place UInt16 Codec(LZ4),
+            PRIMARY KEY (product)
         ) ENGINE = MergeTree()
         PARTITION BY city
         ORDER BY product, date;''')
