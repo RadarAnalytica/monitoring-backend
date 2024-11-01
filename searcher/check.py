@@ -6,12 +6,12 @@ from settings import logger
 async def check(searched_val, city):
     async with get_async_connection() as client:
         # client: AsyncClient = client
-        query = f"""SELECT query
-        FROM request_product
-        WHERE (city = {city}) 
-        AND has(products, {searched_val});"""
+        # query = f"""SELECT query
+        # FROM request_product
+        # WHERE (city = {city})
+        # AND has(products, {searched_val});"""
         # query = f"SELECT rp.query, r.quantity FROM request_product as rp JOIN request AS r ON r.query = rp.query WHERE rp.city = {city} AND arrayExists(x -> x IN {searched_val}, rp.products) ORDER BY r.quantity DESC;"
-        # query = f"SELECT city, count(*) FROM request_product GROUP BY city;"
+        query = f"SELECT city, count(*) FROM request_product GROUP BY city;"
         res = await client.query(query)
         return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
