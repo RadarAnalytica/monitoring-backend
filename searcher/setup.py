@@ -34,8 +34,7 @@ async def setup_database():
         ORDER BY name;
         ''')
 
-    client.command('''
-        CREATE TABLE IF NOT EXISTS request_product (
+    client.command('''CREATE TABLE IF NOT EXISTS request_product (
             city Int64 CODEC(LZ4),
             date Date CODEC(LZ4),
             query String CODEC(LZ4),
