@@ -28,7 +28,7 @@ async def setup_database():
     client.command('''
         CREATE TABLE IF NOT EXISTS product (
             name String CODEC(LZ4),
-            id UInt32 PRIMARY KEY CODEC(LZ4),
+            id UInt32 CODEC(LZ4),
             updated DateTime DEFAULT now() CODEC(LZ4)
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY name;
