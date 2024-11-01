@@ -10,6 +10,7 @@ csv_router = APIRouter()
 
 @csv_router.post("/upload_csv")
 async def upload_csv(background_tasks: BackgroundTasks, file: UploadFile = File(media_type="text/csv")):
+    logger.info("Got CSV load request")
     try:
         contents = [row.decode() for row in file.file.readlines()]
         requests_data, error_rows = await prepare_csv_contents(contents)
