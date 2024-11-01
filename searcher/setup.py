@@ -7,7 +7,6 @@ from settings import CLICKHOUSE_CONFING, logger
 async def setup_database():
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
 
-    # Создание таблицы City
     client.command('''
         CREATE TABLE IF NOT EXISTS city (
             name String,
@@ -17,7 +16,6 @@ async def setup_database():
         ORDER BY dest;
     ''')
 
-    # Создание таблицы Request
     client.command('''
         CREATE TABLE IF NOT EXISTS request (
             query String,
@@ -27,18 +25,25 @@ async def setup_database():
         ORDER BY query;
     ''')
 
-    # Создание таблицы RequestProducts
+    client.command('''
+        CREATE TABLE IF NOT EXISTS product (
+            name String CODEC(LZ4),
+            id UInt32 PRIMARY KEY CODEC(LZ4),
+            updated DateTime DEFAULT now() CODEC(LZ4)
+        ) ENGINE = ReplacingMergeTree(updated)
+        ORDER BY name;
+        ''')
+
     client.command('''
         CREATE TABLE IF NOT EXISTS request_product (
             city Int64 CODEC(LZ4),
             date Date CODEC(LZ4),
             query String CODEC(LZ4),
-            product UInt32 CODEC(LZ4),
-            name String Codec(LZ4),
+            product UInt32 PRIMARY KEY CODEC(LZ4),
             place UInt16 Codec(LZ4)
         ) ENGINE = MergeTree()
         PARTITION BY city
-        ORDER BY date;''')
+        ORDER BY product, date;''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
