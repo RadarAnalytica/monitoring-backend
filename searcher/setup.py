@@ -40,11 +40,11 @@ async def setup_database():
             date Date CODEC(LZ4),
             query String CODEC(LZ4),
             product UInt32 CODEC(LZ4),
-            place UInt16 Codec(LZ4),
-            PRIMARY KEY (product)
+            place UInt16 Codec(LZ4)
         ) ENGINE = MergeTree()
         PARTITION BY city
-        ORDER BY product, date;''')
+        ORDER BY product, date 
+        PRIMARY KEY (product);''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
