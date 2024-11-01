@@ -13,11 +13,11 @@ def process_city(city, date):
     logger.info(f"Вход в search: {city}")
     asyncio.run(get_city_result(city, date))
     end_time = datetime.now()
-    delta = (start_time - end_time).seconds
+    delta = (end_time - start_time).seconds
     logger.info(
         f"Старт парса: {start_time.strftime('%H:%M %d.%m.%Y')}\n"
         f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
-        f"Выполнено за: {delta // 60 // 60} часов, {delta // 60} минут"
+        f"Выполнено за: {delta // 60 // 60} часов, {delta // 60 % 60} минут"
     )
 
 

@@ -1,9 +1,7 @@
 import asyncio
-from datetime import datetime
-from multiprocessing import Pool
 from aiohttp import ClientSession
 
-from parser.get_init_data import get_requests_data, get_cities_data
+from parser.get_init_data import get_requests_data
 from parser.get_single_query_data import get_query_data
 from settings import logger
 from parser.save_to_db_worker import save_to_db
@@ -12,7 +10,6 @@ from parser.save_to_db_worker import save_to_db
 async def get_r_data_q(
     queue: asyncio.Queue, city, date, http_session, request_product_queue=None
 ):
-    logger.info("Очередь запросов поехала")
     while True:
         r = await queue.get()
         if r is None:
@@ -47,7 +44,6 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
 async def get_r_data(r, city, date, http_session, request_product_queue=None):
     while True:
         try:
-            logger.info("Запрос пошёл!")
             full_res = []
             tasks = [
                 asyncio.create_task(
