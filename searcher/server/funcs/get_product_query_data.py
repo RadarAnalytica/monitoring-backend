@@ -3,11 +3,11 @@ from clickhouse_db.get_async_connection import get_async_connection
 
 async def get_product_db_data(product_id, interval, city):
     async with get_async_connection() as client:
-        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, indexOf(sd.products, {product_id}) AS product_index)) AS date_info
+        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place)) AS date_info
         FROM (SELECT rp.query, rp.date, r.quantity, rp.products
         FROM request_product AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
-        WHERE has(rp.products, {product_id})
+        WHERE product = {product_id}
         AND (rp.city = {city})
         AND (rp.date >= toStartOfDay(now() - INTERVAL {interval} DAY))
         ORDER BY rp.date, r.quantity DESC
