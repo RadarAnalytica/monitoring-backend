@@ -65,7 +65,7 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                 full_res = []
             request_products = []
             for i, p in enumerate(full_res, 1):
-                request_products.append((city, date, r, p.get("id"), p.get("name"), i))
+                request_products.append((city, date, r, p.get("id"), i))
             await request_product_queue.put(request_products)
             return
         except Exception as e:
@@ -84,7 +84,7 @@ async def get_city_result(city, date):
             save_to_db(
                 request_product_queue,
                 "request_product",
-                ["city", "date", "query", "product", "name", "place"],
+                ["city", "date", "query", "product", "place"],
             )
         )
         for _ in range(5)
