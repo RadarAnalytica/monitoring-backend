@@ -7,13 +7,11 @@ from settings import CLICKHOUSE_CONFING, logger
 async def setup_database():
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
 
-    # Создание таблицы City
     client.command('DROP TABLE IF EXISTS city')
 
-    # Создание таблицы City
     client.command('DROP TABLE IF EXISTS request')
+    client.command('DROP TABLE IF EXISTS product')
 
-    # Создание таблицы City
     client.command('DROP TABLE IF EXISTS request_product')
 
     logger.info("Tables deleted successfully.")

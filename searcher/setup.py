@@ -20,7 +20,7 @@ async def setup_database():
         CREATE TABLE IF NOT EXISTS request (
             query String,
             quantity UInt32,
-            updated DateTime DEFAULT now()
+            updated DateTime DEFAULT now() CODEC(RLE)
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY query;
     ''')
