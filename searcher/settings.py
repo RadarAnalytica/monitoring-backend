@@ -43,6 +43,6 @@ CLICKHOUSE_CONFING = {
     "host": os.getenv("CLICKHOUSE_DB_NAME", "localhost"),
     "username": os.getenv("CLICKHOUSE_USERNAME", "default"),
 }
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE")
 
 ALGORITHM = "HS256"
