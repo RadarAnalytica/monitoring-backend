@@ -40,7 +40,7 @@ async def check(searched_val, city):
         query = f"""SELECT DISTINCT product
                 FROM request_product
                 WHERE city = {city}
-                ORDER BY product LIMIT 1000;"""
+                LIMIT 1000;"""
         query_result = await client.query(query)
         return [row[0] for row in query_result.result_rows]
 
