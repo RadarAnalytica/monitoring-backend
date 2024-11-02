@@ -1,3 +1,3 @@
 from fastapi.security import APIKeyHeader
 
-oauth2_scheme = APIKeyHeader(tokenUrl="token")
+oauth2_scheme = APIKeyHeader(name="token")
