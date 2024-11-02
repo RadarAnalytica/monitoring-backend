@@ -11,8 +11,8 @@ async def prepare_csv_contents(contents: list[str]):
     for row in contents:
         try:
             if '"' in row:
-                row = row.replace('"', "", 1)
-                row_values = row.strip().split('",', 1)
+                row = row.replace('"', "", 1).replace("\n", "").replace("\\\\", "\\")
+                row_values = row.strip().rsplit('",', 1)
                 row_values[1] = int(row_values[1])
             elif row.strip().isdigit():
                 continue
