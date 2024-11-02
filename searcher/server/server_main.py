@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-
 from server.routers.load_csv import csv_router
 from server.routers.cities import city_router
 from server.routers.queries import query_router

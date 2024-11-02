@@ -13,4 +13,3 @@ class Request(Base):
     query: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=True)
     updated_at: Mapped[date] = mapped_column(Date, server_default=func.now())
-

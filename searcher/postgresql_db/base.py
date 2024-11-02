@@ -5,7 +5,6 @@ from sqlalchemy.pool import NullPool
 from settings import POSTGRES_CONFIG, logger
 
 
-
 DB_URL = (
     f"{POSTGRES_CONFIG['driver']}://"
     f"{POSTGRES_CONFIG['username']}:"

@@ -10,7 +10,7 @@ celery_app = Celery(
         "actions.requests_parse",
     ],
 )
-celery_app.conf.timezone = 'Europe/Moscow'
+celery_app.conf.timezone = "Europe/Moscow"
 
 celery_app.conf.broker_url = os.environ.get(
     "CELERY_BROKER_URL", f"redis://{REDIS_HOST}:6379"

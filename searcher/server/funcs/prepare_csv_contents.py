@@ -5,7 +5,7 @@ from settings import TIMEZONE, logger
 
 async def prepare_csv_contents(contents: list[str]):
     now_date = datetime.now(TIMEZONE)
-    contents[0] = contents[0].replace('\ufeff', '')
+    contents[0] = contents[0].replace("\ufeff", "")
     requests_data = []
     error_rows = []
     for row in contents:

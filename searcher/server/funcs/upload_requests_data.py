@@ -2,13 +2,14 @@ from asyncio import TaskGroup
 from datetime import datetime
 
 from clickhouse_db.get_async_connection import get_async_connection
-from settings import logger, TIMEZONE
-
+from settings import logger
 
 
 async def upload_requests_worker(requests_slice):
     async with get_async_connection() as client:
-        await client.insert('request', requests_slice, column_names=["query", "quantity", "updated"])
+        await client.insert(
+            "request", requests_slice, column_names=["query", "quantity", "updated"]
+        )
         logger.info("Start of part DB renewal")
 
 

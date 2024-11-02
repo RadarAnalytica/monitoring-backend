@@ -1,5 +1,3 @@
-from dns.e164 import query
-
 from clickhouse_db.get_async_connection import get_async_connection
 
 

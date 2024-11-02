@@ -14,12 +14,16 @@ async def get_cities_data():
         cities = [rr[0] for rr in q.result_rows]
     return cities
 
+
 async def get_requests_data():
     async with get_async_connection() as client:
-        query = "SELECT * FROM request WHERE updated = (SELECT max(updated) FROM request);"
+        query = (
+            "SELECT * FROM request WHERE updated = (SELECT max(updated) FROM request);"
+        )
         q = await client.query(query)
         requests = [rr[0] for rr in q.result_rows]
     return requests
+
 
 async def save_to_db(queue, table, fields):
     while True:
@@ -44,16 +48,23 @@ async def save_to_db(queue, table, fields):
             break
 
 
-
-
-async def get_r_data_q(queue: asyncio.Queue, city, date, http_session, request_product_queue=None):
+async def get_r_data_q(
+    queue: asyncio.Queue, city, date, http_session, request_product_queue=None
+):
     while True:
         r = await queue.get()
         if r is None:
             await queue.put(r)
             break
-        await get_r_data(r=r, city=city, date=date, http_session=http_session, request_product_queue=request_product_queue)
+        await get_r_data(
+            r=r,
+            city=city,
+            date=date,
+            http_session=http_session,
+            request_product_queue=request_product_queue,
+        )
         queue.task_done()
+
 
 async def try_except_query_data(query_string, dest, limit, page, http_session, rqa=5):
     try:
@@ -64,11 +75,12 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
             limit=limit,
             page=page,
             rqa=rqa,
-            timeout=10
+            timeout=10,
         )
     except ValueError:
         x = {"products": []}
     return x
+
 
 async def get_r_data(r, city, date, http_session, request_product_queue=None):
     while True:
@@ -84,24 +96,21 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                         rqa=4,
                         http_session=http_session,
                     )
-                ) for i in range(1,4)
+                )
+                for i in range(1, 4)
             ]
             result = await asyncio.gather(*tasks)
             for res in result:
                 full_res.extend(res.get("products", []))
             if not full_res:
                 full_res = []
-            request_product = [
-                city,
-                r,
-                sorted(p.get("id") for p in full_res),
-                date
-            ]
+            request_product = [city, r, sorted(p.get("id") for p in full_res), date]
             await request_product_queue.put(request_product)
             return
         except Exception as e:
             logger.critical(f"{e}")
             break
+
 
 async def get_city_result(city, date):
     logger.info(f"Город {city} старт")
@@ -110,7 +119,14 @@ async def get_city_result(city, date):
     request_product_queue = asyncio.Queue()
     workers_queue = asyncio.Queue()
     request_product_save_task = [
-        asyncio.create_task(save_to_db(request_product_queue, "request_product", ["city", "query", "products", "date"])) for _ in range(5)
+        asyncio.create_task(
+            save_to_db(
+                request_product_queue,
+                "request_product",
+                ["city", "query", "products", "date"],
+            )
+        )
+        for _ in range(5)
     ]
     async with ClientSession() as http_session:
         requests_tasks = [
@@ -120,9 +136,10 @@ async def get_city_result(city, date):
                     city=city,
                     date=date,
                     http_session=http_session,
-                    request_product_queue=request_product_queue
+                    request_product_queue=request_product_queue,
                 )
-            ) for _ in range(10)
+            )
+            for _ in range(10)
         ]
         while requests:
             await workers_queue.put(requests.pop())
@@ -131,11 +148,13 @@ async def get_city_result(city, date):
         await request_product_queue.put(None)
         await asyncio.gather(*request_product_save_task)
 
+
 def run_pool_threads(func, *args, **kwargs):
     try:
         asyncio.run(func(*args, **kwargs))
     except Exception as e:
         logger.critical(f"Сбор данных не начался! Причина: {e}")
+
 
 async def get_results():
     start_time = datetime.now()
