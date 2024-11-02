@@ -20,7 +20,7 @@ async def setup_database():
         CREATE TABLE IF NOT EXISTS request (
             query String,
             quantity UInt32,
-            updated DateTime DEFAULT now() CODEC(RLE)
+            updated DateTime DEFAULT now() CODEC(DoubleDelta)
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY query;
     ''')
@@ -29,7 +29,7 @@ async def setup_database():
         CREATE TABLE IF NOT EXISTS product (
             name String CODEC(LZ4),
             id UInt32 CODEC(LZ4),
-            updated DateTime DEFAULT now() CODEC(LZ4)
+            updated DateTime DEFAULT now() CODEC(DoubleDelta)
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY name;
         ''')
