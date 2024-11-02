@@ -39,7 +39,7 @@ async def check(searched_val, city):
         # return result
         query = f"""SELECT product
                 FROM request_product
-                WHERE rp.city = {city}
+                WHERE city = {city}
                 ORDER BY product LIMIT 300;"""
         query_result = await client.query(query)
         return dict(query_result.result_rows)
