@@ -42,7 +42,7 @@ async def check(searched_val, city):
                 WHERE city = {city}
                 ORDER BY product LIMIT 300;"""
         query_result = await client.query(query)
-        return dict(query_result.result_rows)
+        return [row[0] for row in query_result.result_rows]
 
 
 logger.info(asyncio.run(check(212296429, -1257786)))
