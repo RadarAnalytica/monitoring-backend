@@ -16,17 +16,14 @@ async def check(searched_val, city):
         # return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
-        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, indexOf(sd.products, sd.place)) AS date_info
-        FROM (SELECT rp.query, rp.date, r.quantity, rp.products
+        query = f"""SELECT rp.query, r.quantity, groupArray((rp.date, rp.place) AS date_info
         FROM request_product AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
         WHERE product = {searched_val}
         AND (rp.city = {city})
         AND (rp.date >= toStartOfDay(now() - INTERVAL 7 DAY))
-        ORDER BY rp.date, r.quantity DESC
-        ) AS sd
-        GROUP BY sd.query, sd.quantity
-        ORDER BY sd.quantity DESC, sd.query;"""
+        GROUP BY rp.query, r.quantity
+        ORDER BY r.quantity DESC, rp.query;"""
         query_result = await client.query(query)
         result = [
             {
