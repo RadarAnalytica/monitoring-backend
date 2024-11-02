@@ -37,7 +37,7 @@ async def check(searched_val, city):
         #     for row in query_result.result_rows
         # ]
         # return result
-        query = f"""SELECT product
+        query = f"""SELECT DISTINCT product
                 FROM request_product
                 WHERE city = {city}
                 ORDER BY product LIMIT 300;"""
