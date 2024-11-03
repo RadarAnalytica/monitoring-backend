@@ -38,6 +38,7 @@ async def setup_database():
             city Int64 CODEC(LZ4HC),
             date Date CODEC(LZ4HC),
             query String CODEC(LZ4HC),
+            log FixedString(1) CODEC(LZ4HC),
             product UInt32 CODEC(LZ4HC),
             place UInt16 Codec(LZ4HC)
         ) ENGINE = MergeTree()
