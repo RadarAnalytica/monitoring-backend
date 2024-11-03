@@ -57,7 +57,7 @@ async def setup_database():
         PARTITION BY city
         ORDER BY date;"""
     )
-    client.command("""INSERT INTO request_product_2 SELECT * FROM request_product;""")
+    # client.command("""INSERT INTO request_product_2 SELECT * FROM request_product;""")
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
