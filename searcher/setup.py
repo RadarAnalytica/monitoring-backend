@@ -52,7 +52,7 @@ async def setup_database():
             query String CODEC(LZ4),
             date Date CODEC(Delta, LZ4),
             products Array(UInt32) CODEC(LZ4),
-            INDEX idx_products_2 products bloom_filter(0.1) GRANULARITY 1
+            INDEX idx_products_2 (products) TYPE bloom_filter(0.1) GRANULARITY 1
         ) ENGINE = MergeTree()
         PARTITION BY city
         ORDER BY date;"""
