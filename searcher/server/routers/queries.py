@@ -24,7 +24,7 @@ async def get_product_queries(
     result = await get_product_query_payload(
         product_id=product_id, interval=interval, city=city
     )
-    logger.info(f"Время выполнения v1{(datetime.now() - start).seconds}s")
+    logger.info(f"Время выполнения v1 {(datetime.now() - start).seconds}s")
     return result
 
 @query_router.get("/product_queries_v2")
@@ -40,7 +40,7 @@ async def get_product_queries_v2(
     result = await get_product_query_payload_v2(
         product_id=product_id, interval=interval, city=city
     )
-    logger.info(f"Время выполнения v1{(datetime.now() - start).seconds}s")
+    logger.info(f"Время выполнения v2 {(datetime.now() - start).seconds}s")
     return result
 
 
