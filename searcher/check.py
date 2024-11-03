@@ -22,9 +22,7 @@ async def check(searched_val, city):
         query = f"""SELECT rp.query
         FROM (SELECT * FROM request_product WHERE (city = {city})
         AND (date >= toStartOfDay(now() - INTERVAL 7 DAY))) AS rp
-        WHERE rp.product = {searched_val}
-        GROUP BY rp.query
-        ORDER rp.query;"""
+        WHERE rp.product = {searched_val};"""
         query_result = await client.query(query)
         # result = [
         #     {
