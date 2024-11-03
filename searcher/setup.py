@@ -50,7 +50,7 @@ async def setup_database():
                 query String CODEC(LZ4HC),
                 product UInt32 CODEC(LZ4HC),
                 place UInt16 Codec(LZ4HC),
-                INDEX idx_products_2 (city, query, product) TYPE bloom_filter(0.1) GRANULARITY 1
+                INDEX idx_products_2 (city, date, query, product) TYPE bloom_filter(0.1) GRANULARITY 1
             ) ENGINE = MergeTree()
             PARTITION BY city
             ORDER BY (date, query, product);''')
