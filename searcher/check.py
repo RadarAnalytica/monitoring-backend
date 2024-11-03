@@ -19,10 +19,8 @@ async def check(searched_val, city):
         # return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
-        query = f"""SELECT rp.query
-        FROM (SELECT * FROM request_product WHERE (city = {city})
-        AND (date >= toStartOfDay(now() - INTERVAL 7 DAY))) AS rp
-        WHERE rp.product = {searched_val};"""
+        query = f"""SELECT count(product)
+        FROM (SELECT DISTINCT product FROM request_product WHERE (city = {city});"""
         query_result = await client.query(query)
         # result = [
         #     {
