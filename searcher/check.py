@@ -21,8 +21,8 @@ async def check(searched_val, city):
         # logger.info(res.result_rows)
         query = f"""SELECT query
         FROM request_product_2 
-        WHERE (city = {city}))
-        AND product = {searched_val};"""
+        WHERE (city = {city})
+        AND (product = {searched_val});"""
         query_result = await client.query(query)
         # result = [
         #     {
