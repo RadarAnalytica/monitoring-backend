@@ -6,7 +6,7 @@ from settings import CLICKHOUSE_CONFING, logger
 
 async def setup_database():
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
-
+    logger.info("Setup start")
     client.command('''
         CREATE TABLE IF NOT EXISTS city (
             name String,
