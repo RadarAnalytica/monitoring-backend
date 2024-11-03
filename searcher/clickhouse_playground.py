@@ -104,7 +104,7 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                 full_res.extend(res.get("products", []))
             if not full_res:
                 full_res = []
-            request_product = [city, r, sorted(p.get("id") for p in full_res), date]
+            request_product = [city, r, [p.get("id") for p in full_res], date]
             await request_product_queue.put(request_product)
             return
         except Exception as e:
