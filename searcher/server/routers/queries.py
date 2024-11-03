@@ -25,7 +25,7 @@ async def get_product_queries(
     return result
 
 @query_router.get("/product_queries_v2")
-async def get_product_queries(
+async def get_product_queries_v2(
     product_id: int = Query(),
     city: int = Query(),
     interval: int = Query(),
