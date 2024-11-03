@@ -1,11 +1,14 @@
 import asyncio
+
+from clickhouse_connect.driver import AsyncClient
+
 from clickhouse_db.get_async_connection import get_async_connection
 from settings import logger
 
 
 async def check(searched_val, city):
     async with get_async_connection() as client:
-        # client: AsyncClient = client
+        client: AsyncClient = client
         # query = f"""SELECT query
         # FROM request_product
         # WHERE (city = {city})
@@ -16,7 +19,7 @@ async def check(searched_val, city):
         # return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
-        query = f"""EXPLAIN SELECT rp.query, r.quantity 
+        query = f"""SELECT rp.query, r.quantity 
         FROM (SELECT * FROM request_product WHERE (city = {city})
         AND (date >= toStartOfDay(now() - INTERVAL 7 DAY))) AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
