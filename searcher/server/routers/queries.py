@@ -1,7 +1,8 @@
+from clickhouse_connect.driverc.dataconv import datetime
 from fastapi import APIRouter
 from fastapi.params import Body, Query, Depends
 from starlette.responses import JSONResponse
-
+from settings import logger
 from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
 from server.funcs.get_keywords_data import get_keywords_payload
@@ -19,9 +20,11 @@ async def get_product_queries(
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
+    start = datetime.now()
     result = await get_product_query_payload(
         product_id=product_id, interval=interval, city=city
     )
+    logger.info(f"Время выполнения v1{(datetime.now() - start).seconds}s")
     return result
 
 @query_router.get("/product_queries_v2")
@@ -33,9 +36,11 @@ async def get_product_queries_v2(
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
+    start = datetime.now()
     result = await get_product_query_payload_v2(
         product_id=product_id, interval=interval, city=city
     )
+    logger.info(f"Время выполнения v1{(datetime.now() - start).seconds}s")
     return result
 
 

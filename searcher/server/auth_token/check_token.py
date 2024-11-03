@@ -24,3 +24,7 @@ def gen_token():
     }
     token = jwt.encode(payload=to_encode, algorithm=ALGORITHM, key=SECRET_KEY)
     return token
+
+
+if __name__ == "__main__":
+    print(gen_token())
