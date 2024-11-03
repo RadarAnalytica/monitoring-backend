@@ -19,8 +19,10 @@ async def check(searched_val, city):
         # return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
-        query = f"""SELECT count(product)
-        FROM (SELECT DISTINCT product FROM request_product_2 WHERE (city = {city}));"""
+        query = f"""SELECT query
+        FROM request_product_2 
+        WHERE (city = {city}))
+        AND product = {searched_val};"""
         query_result = await client.query(query)
         # result = [
         #     {
