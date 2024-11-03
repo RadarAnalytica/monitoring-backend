@@ -17,8 +17,8 @@ async def check(searched_val, city):
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
         query = f"""SELECT rp.query, r.quantity, groupArray((rp.date, rp.place)) AS date_info
-        FROM (SELECT * FROM request_product WHERE (rp.city = {city})
-        AND (rp.date >= toStartOfDay(now() - INTERVAL 7 DAY))) AS rp
+        FROM (SELECT * FROM request_product WHERE (city = {city})
+        AND (date >= toStartOfDay(now() - INTERVAL 7 DAY))) AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
         WHERE product = {searched_val}
         GROUP BY rp.query, r.quantity
