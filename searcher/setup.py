@@ -44,6 +44,8 @@ async def setup_database():
         PARTITION BY city
         ORDER BY (date, query);''')
 
+    client.command('''DROP TABLE IF EXISTS request_product_2;''')
+
     client.command('''CREATE TABLE IF NOT EXISTS request_product_2 (
                 city Int64 CODEC(LZ4HC),
                 date Date CODEC(LZ4HC),
