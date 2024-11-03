@@ -45,6 +45,18 @@ async def setup_database():
         PARTITION BY city
         ORDER BY (date, query);''')
 
+    client.command('''CREATE TABLE IF NOT EXISTS request_product_2 (
+                city Int64 CODEC(LZ4HC),
+                date Date CODEC(LZ4HC),
+                query String CODEC(LZ4HC),
+                log FixedString(1) CODEC(LZ4HC),
+                product UInt32 CODEC(LZ4HC),
+                place UInt16 Codec(LZ4HC),
+                
+            ) ENGINE = MergeTree()
+            PARTITION BY city
+            ORDER BY (date, query, product);''')
+
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
