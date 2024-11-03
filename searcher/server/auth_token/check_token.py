@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 
 import jwt
 
-from settings import SECRET_KEY, ALGORITHM
+from settings import SECRET_KEY, ALGORITHM, TIMEZONE
 
 
 def check_jwt_token(token: str):
     try:
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if decoded.get("date") and decoded.get("date") == datetime.now().strftime(
+        if decoded.get("date") and decoded.get("date") == datetime.now(TIMEZONE).strftime(
             "%Y-%m-%d"
         ):
             return True
