@@ -58,12 +58,18 @@ async def setup_database():
         PARTITION BY city
         ORDER BY (date, query);"""
     )
-    logger.info("START TO ALTER DB TO UNNESTED")
-    client.command("""INSERT INTO request_product_2 (city, query, date, product, place) 
-    SELECT city, query, date, product, indexOf(products, product) AS place 
-    FROM request_product 
-    ARRAY JOIN products AS product 
-    WHERE indexOf(products, product) > 0;""")
+    count = client.query("SELECT count(*) FROM request_product;")
+    logger.info(f"{count} строк")
+    # client.command("""INSERT INTO request_product_2 (city, query, date, product, place)
+    # SELECT city, query, date, product, indexOf(products, product) AS place
+    # FROM request_product
+    # ARRAY JOIN products AS product
+    # WHERE indexOf(products, product) > 0;""")
+    # client.command("""INSERT INTO request_product_2 (city, query, date, product, place)
+    #     SELECT city, query, date, product, indexOf(products, product) AS place
+    #     FROM request_product
+    #     ARRAY JOIN products AS product
+    #     WHERE indexOf(products, product) > 0;""")
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
