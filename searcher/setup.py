@@ -53,7 +53,7 @@ async def setup_database():
                     INDEX idx_products (products) TYPE inverted
                 ) ENGINE = MergeTree()
                 PARTITION BY city
-                ORDER BY (date, query, product);''')
+                ORDER BY (date);''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
