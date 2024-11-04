@@ -54,8 +54,7 @@ async def setup_database():
                     INDEX idx_products (products) TYPE inverted GRANULARITY 1
                 ) ENGINE = MergeTree()
                 PARTITION BY city
-                ORDER BY (date)
-                SETTINGS allow_experimental_inverted_index = 1;''')
+                ORDER BY (date)''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
