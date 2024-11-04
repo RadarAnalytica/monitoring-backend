@@ -45,6 +45,8 @@ async def setup_database():
             PARTITION BY city
             ORDER BY (date, query, product);''')
 
+
+    client.command('''SET allow_experimental_inverted_index = true;''')
     client.command('''CREATE TABLE IF NOT EXISTS request_products (
                     city Int64 CODEC(LZ4HC),
                     date Date CODEC(LZ4HC),
