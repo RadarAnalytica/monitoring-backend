@@ -50,7 +50,7 @@ async def setup_database():
                     date Date CODEC(LZ4HC),
                     query String CODEC(LZ4HC),
                     products Array(UInt32) CODEC(LZ4HC),
-                    INDEX idx_products (products) TYPE inverted
+                    INDEX idx_products (products) TYPE inverted GRANULARITY 1
                 ) ENGINE = MergeTree()
                 PARTITION BY city
                 ORDER BY (date);''')
