@@ -59,14 +59,16 @@ async def setup_database():
         ORDER BY (date, query);"""
     )
     count = 7430728
-    max_rows = 100
+    max_rows = 2000
     steps = count // max_rows
     extra_step = 1 if count % max_rows else 0
     logger.info("START TO ALTER DB TO UNNESTED")
-    for i in range(3):
-        x = client.query(f"""SELECT city, query, date, products
+    for i in range(steps + extra_step):
+        x = client.query(f"""SELECT rp.city, rp.query, indexOf(rp.products, product)
+            FROM (SELECT city, query, date, products
             FROM request_product 
-            LIMIT {max_rows} OFFSET {i * max_rows};""")
+            LIMIT {max_rows} OFFSET {i * max_rows}) as rp 
+            ARRAY JOIN rp.products AS product;""")
         logger.info("Tables created successfully.")
         logger.info(x.result_rows)
     tables = client.query("SHOW TABLES")
