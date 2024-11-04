@@ -65,19 +65,14 @@ async def setup_database():
     FROM request_product
     ARRAY JOIN products AS product
     WHERE indexOf(products, product) > 0;""")
-    client.command(f"""INSERT INTO request_product_2 (city, query, date, product, place)
-        SELECT city, query, date, product, indexOf(products, product) AS place
-        FROM request_product
-        ARRAY JOIN products AS product
-        WHERE indexOf(products, product) > 0
-        LIMIT {count // 2} OFFSET 0;""")
-    client.command(f"""INSERT INTO request_product_2 (city, query, date, product, place)
-            SELECT city, query, date, product, indexOf(products, product) AS place
+    for i in range(11):
+        client.command(f"""INSERT INTO request_product_2 (city, query, date, product, place)
+            (SELECT city, query, date, product, indexOf(products, product) AS place
             FROM request_product
             ARRAY JOIN products AS product
             WHERE indexOf(products, product) > 0
-            LIMIT {count // 2} OFFSET {(count // 2) + 1};""")
-    logger.info("Tables created successfully.")
+            LIMIT {count // 10} OFFSET {(i * (count // 10)) + 1});""")
+        logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
     client.close()
