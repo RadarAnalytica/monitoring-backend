@@ -46,7 +46,6 @@ async def setup_database():
             ORDER BY (date, query, product);''')
 
 
-    client.command('''SET allow_experimental_inverted_index = true;''')
     client.command('''CREATE TABLE IF NOT EXISTS request_products (
                     city Int64 CODEC(LZ4HC),
                     date Date CODEC(LZ4HC),
@@ -55,7 +54,8 @@ async def setup_database():
                     INDEX idx_products (products) TYPE inverted GRANULARITY 1
                 ) ENGINE = MergeTree()
                 PARTITION BY city
-                ORDER BY (date);''')
+                ORDER BY (date)
+                SETTINGS allow_experimental_inverted_index = 1;''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
