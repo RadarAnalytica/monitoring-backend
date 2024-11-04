@@ -33,14 +33,17 @@ async def get_product_query_payload(product_id, interval, city):
 
 async def get_product_db_data_v2(product_id, interval, city):
     async with get_async_connection() as client:
-        query = f"""SELECT rp.query, r.quantity, arrayOf((rp.date, rp.place)) as date_info
-        FROM request_product_2 AS rp
+        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place)) AS date_info
+        FROM (SELECT rp.query, r.quantity, rp.date, rp.place 
+        FROM request_product AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
-        WHERE rp.product = {product_id}
+        WHERE product = {product_id}
         AND (rp.city = {city})
         AND (rp.date >= toStartOfDay(now() - INTERVAL {interval} DAY))
-        GROUP BY rp.date, r.quantity
-        ORDER BY rp.date, r.quantity DESC;"""
+        ORDER BY rp.date, r.quantity DESC
+        ) AS sd
+        GROUP BY sd.query, sd.quantity
+        ORDER BY sd.quantity DESC, sd.query;"""
         query_result = await client.query(query)
         return query_result.result_rows
 
