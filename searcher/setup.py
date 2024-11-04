@@ -41,7 +41,7 @@ async def setup_database():
                 date Date CODEC(LZ4HC),
                 query String CODEC(LZ4HC),
                 product UInt32 CODEC(LZ4HC),
-                place UInt16 Codec(LZ4HC),
+                place UInt16 Codec(LZ4HC)
             ) ENGINE = MergeTree()
             PARTITION BY city
             PRIMARY KEY (product, query) 
