@@ -45,20 +45,25 @@ async def setup_database():
         ORDER BY date;"""
     )
     client.command("DROP TABLE IF EXISTS request_product_2;")
-    # client.command(
-    #     """
-    #     CREATE TABLE IF NOT EXISTS request_product_2 (
-    #         city Int64 CODEC(LZ4),
-    #         query String CODEC(LZ4),
-    #         date Date CODEC(Delta, LZ4),
-    #         products Array(UInt32) CODEC(LZ4),
-    #         INDEX idx_products_2 (products) TYPE bloom_filter(0.1) GRANULARITY 1
-    #     ) ENGINE = MergeTree()
-    #     PARTITION BY city
-    #     ORDER BY date;"""
-    # )
-    # client.command("""INSERT INTO request_product_2 SELECT * FROM request_product;""")
-
+    client.command(
+        """
+        CREATE TABLE IF NOT EXISTS request_product_2 (
+            city Int64 CODEC(LZ4HC),
+            query String CODEC(LZ4HC),
+            date Date CODEC(LZ4HC),
+            product UInt32 CODEC(LZ4),
+            place UInt16,
+            INDEX idx_product (query, product) TYPE bloom_filter(0.01) GRANULARITY 1
+        ) ENGINE = MergeTree()
+        PARTITION BY city
+        ORDER BY (date, query);"""
+    )
+    logger.info("START TO ALTER DB TO UNNESTED")
+    client.command("""INSERT INTO request_product_2 (city, query, date, product, place) 
+    SELECT city, query, date, product, indexOf(products, product) AS place 
+    FROM request_product 
+    ARRAY JOIN products AS product 
+    WHERE indexOf(products, product) > 0;""")
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
