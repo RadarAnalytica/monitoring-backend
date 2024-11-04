@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 
 import clickhouse_connect
 from settings import CLICKHOUSE_CONFING, logger
@@ -47,6 +48,7 @@ async def setup_database():
     client.command("DROP TABLE IF EXISTS request_product_2;")
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
+    logger.info(datetime.now())
     logger.info(tables.result_rows)
     client.close()
 
