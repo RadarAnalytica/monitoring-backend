@@ -63,8 +63,8 @@ async def setup_database():
     steps = count // max_rows
     extra_step = 1 if count % max_rows else 0
     logger.info("START TO ALTER DB TO UNNESTED")
-    for i in range(steps + extra_step):
-        x = client.query(f"""SELECT rp.city, rp.query, indexOf(rp.products, product)
+    for i in range(1):
+        x = client.query(f"""SELECT rp.city AS city, rp.date AS date, rp.query AS query, product, indexOf(rp.products, product) as place
             FROM (SELECT city, query, date, products
             FROM request_product 
             LIMIT {max_rows} OFFSET {i * max_rows}) as rp 
