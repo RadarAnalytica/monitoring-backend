@@ -74,7 +74,7 @@ async def setup_database():
             FROM request_product
             ARRAY JOIN products AS product
             WHERE indexOf(products, product) > 0
-            LIMIT 2400 OFFSET {i * max_rows});""")
+            LIMIT {max_rows} OFFSET {i * max_rows});""")
         logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
