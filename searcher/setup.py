@@ -45,7 +45,7 @@ async def setup_database():
             ) ENGINE = MergeTree()
             PARTITION BY city
             PRIMARY KEY (product, query) 
-            ORDER BY (date, query, product);''')
+            ORDER BY (product, query, date);''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
