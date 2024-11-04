@@ -59,7 +59,7 @@ async def setup_database():
         ORDER BY (date, query);"""
     )
     count = client.query("SELECT count(*) FROM request_product;")
-    logger.info(f"{count} строк")
+    logger.info(f"{count.result_rows} строк")
     # client.command("""INSERT INTO request_product_2 (city, query, date, product, place)
     # SELECT city, query, date, product, indexOf(products, product) AS place
     # FROM request_product
