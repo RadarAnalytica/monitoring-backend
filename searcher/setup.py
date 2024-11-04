@@ -59,7 +59,7 @@ async def setup_database():
         ORDER BY (date, query);"""
     )
     count = 7430728
-    max_rows = 2000
+    max_rows = 1000
     steps = count // max_rows
     extra_step = 1 if count % max_rows else 0
     logger.info("START TO ALTER DB TO UNNESTED")
