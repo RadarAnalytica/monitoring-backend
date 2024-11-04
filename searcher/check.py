@@ -31,18 +31,18 @@ async def check(searched_val, city):
         GROUP BY sd.query, sd.quantity
         ORDER BY sd.quantity DESC, sd.query;"""
         query_result = await client.query(query)
-        # result = [
-        #     {
-        #         "query": row[0],
-        #         "quantity": row[1],
-        #         "dates": {
-        #             str(j_row[0]): j_row[1]
-        #             for j_row in row[2]
-        #         }
-        #     }
-        #     for row in query_result.result_rows
-        # ]
-        return query_result.result_rows
+        result = [
+            {
+                "query": row[0],
+                "quantity": row[1],
+                "dates": {
+                    str(j_row[0]): j_row[1]
+                    for j_row in row[2]
+                }
+            }
+            for row in query_result.result_rows
+        ]
+        return result
         # query = f"""SELECT product
         #         FROM request_product
         #         WHERE city = {city}
