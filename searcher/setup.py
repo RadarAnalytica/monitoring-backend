@@ -45,31 +45,6 @@ async def setup_database():
         ORDER BY date;"""
     )
     client.command("DROP TABLE IF EXISTS request_product_2;")
-    client.command(
-        """
-        CREATE TABLE IF NOT EXISTS request_product_2 (
-            city Int64 CODEC(LZ4HC),
-            query String CODEC(LZ4HC),
-            date Date CODEC(LZ4HC),
-            product UInt32 CODEC(LZ4),
-            place UInt16,
-            INDEX idx_product (query, product) TYPE bloom_filter(0.01) GRANULARITY 1
-        ) ENGINE = MergeTree()
-        PARTITION BY city
-        ORDER BY (date, query);"""
-    )
-    count = 7430728
-    max_rows = 1000
-    steps = count // max_rows
-    extra_step = 1 if count % max_rows else 0
-    logger.info("START TO ALTER DB TO UNNESTED")
-    for i in range(steps + extra_step):
-        client.command(f"""INSERT INTO request_product_2 (city, date, query, product, place) 
-        SELECT rp.city AS city, rp.date AS date, rp.query AS query, product, indexOf(rp.products, product) as place
-            FROM (SELECT city, query, date, products
-            FROM request_product 
-            LIMIT {max_rows} OFFSET {i * max_rows}) as rp 
-            ARRAY JOIN rp.products AS product;""")
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)

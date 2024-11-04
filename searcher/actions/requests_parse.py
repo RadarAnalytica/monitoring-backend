@@ -9,7 +9,7 @@ from settings import logger
 
 @celery_app.task(name="process_city")
 def process_city(city, date):
-    start_time = datetime.now()
+    start_time = datetime.now(tz=pytz.utc)
     logger.info(f"Вход в search: {city}")
     asyncio.run(get_city_result(city, date))
     end_time = datetime.now()
