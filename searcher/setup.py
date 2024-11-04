@@ -44,19 +44,19 @@ async def setup_database():
         PARTITION BY city
         ORDER BY date;"""
     )
-
-    client.command(
-        """
-        CREATE TABLE IF NOT EXISTS request_product_2 (
-            city Int64 CODEC(LZ4),
-            query String CODEC(LZ4),
-            date Date CODEC(Delta, LZ4),
-            products Array(UInt32) CODEC(LZ4),
-            INDEX idx_products_2 (products) TYPE bloom_filter(0.1) GRANULARITY 1
-        ) ENGINE = MergeTree()
-        PARTITION BY city
-        ORDER BY date;"""
-    )
+    client.command("DROP TABLE IF EXISTS request_product_2;")
+    # client.command(
+    #     """
+    #     CREATE TABLE IF NOT EXISTS request_product_2 (
+    #         city Int64 CODEC(LZ4),
+    #         query String CODEC(LZ4),
+    #         date Date CODEC(Delta, LZ4),
+    #         products Array(UInt32) CODEC(LZ4),
+    #         INDEX idx_products_2 (products) TYPE bloom_filter(0.1) GRANULARITY 1
+    #     ) ENGINE = MergeTree()
+    #     PARTITION BY city
+    #     ORDER BY date;"""
+    # )
     # client.command("""INSERT INTO request_product_2 SELECT * FROM request_product;""")
 
     logger.info("Tables created successfully.")
