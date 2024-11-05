@@ -44,8 +44,8 @@ async def setup_database():
             PARTITION BY city
             PRIMARY KEY (product, query) 
             ORDER BY (product, query, date);''')
-    # client.command('''DROP TABLE IF EXISTS request_product;''')
-    client.command('''RENAME TABLE request_product_2 TO request_product;''')
+    client.command('''DROP TABLE IF EXISTS request_product_2);''')
+    # client.command('''RENAME TABLE request_product_2 TO request_product;''')
     #
     # client.command('''CREATE TABLE IF NOT EXISTS request_product_2 (
     #                 city Int64 CODEC(LZ4HC),
