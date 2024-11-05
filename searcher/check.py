@@ -19,6 +19,7 @@ async def check(searched_val, city):
         # return res.result_rows
         # # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
+        start = datetime.now()
         query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place)) AS date_info
         FROM (SELECT rp.query, r.quantity, rp.date, rp.place
         FROM request_product AS rp
@@ -42,6 +43,7 @@ async def check(searched_val, city):
             }
             for row in query_result.result_rows
         ]
+        logger.info(f"Result rdy in {(datetime.now() - start).total_seconds()}")
         return result
         # query = f"""SELECT product
         #         FROM request_product
