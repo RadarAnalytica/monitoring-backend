@@ -44,18 +44,18 @@ async def setup_database():
             PARTITION BY city
             PRIMARY KEY (product, query) 
             ORDER BY (product, query, date);''')
-    client.command('''DROP TABLE IF EXISTS request_product;''')
+    # client.command('''DROP TABLE IF EXISTS request_product;''')
     client.command('''RENAME TABLE request_product_2 TO request_product;''')
-
-    client.command('''CREATE TABLE IF NOT EXISTS request_product_2 (
-                    city Int64 CODEC(LZ4HC),
-                    date Date CODEC(LZ4HC),
-                    query String CODEC(LZ4HC),
-                    product UInt32 CODEC(LZ4HC),
-                    place UInt16 Codec(LZ4HC)
-                ) ENGINE = MergeTree()
-                PRIMARY KEY (city, product, date) 
-                ORDER BY (city, product, date, query);''')
+    #
+    # client.command('''CREATE TABLE IF NOT EXISTS request_product_2 (
+    #                 city Int64 CODEC(LZ4HC),
+    #                 date Date CODEC(LZ4HC),
+    #                 query String CODEC(LZ4HC),
+    #                 product UInt32 CODEC(LZ4HC),
+    #                 place UInt16 Codec(LZ4HC)
+    #             ) ENGINE = MergeTree()
+    #             PRIMARY KEY (city, product, date)
+    #             ORDER BY (city, product, date, query);''')
 
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
