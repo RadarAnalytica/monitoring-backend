@@ -55,8 +55,6 @@ async def setup_database():
                 PRIMARY KEY (city, product, date) 
                 ORDER BY (city, product, date, query);''')
 
-    client.command('''INSERT INTO request_product_2 (city, date, query, product, place) SELECT city, date, query, product, place FROM request_product;''')
-
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
