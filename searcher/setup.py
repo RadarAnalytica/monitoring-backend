@@ -44,7 +44,17 @@ async def setup_database():
                 PRIMARY KEY (city, product, date) 
                 ORDER BY (city, product, date, query);''')
 
-    client.command("""OPTIMIZE TABLE request_product;""")
+
+    client.command('''CREATE TABLE IF NOT EXISTS request_product_2 (
+                        city Int64 CODEC(LZ4HC),
+                        date Date CODEC(ZSTD(5)),
+                        query String CODEC(ZSTD(5)),
+                        product UInt32 CODEC(LZ4HC),
+                        place UInt16 Codec(LZ4HC)
+                    ) ENGINE = MergeTree()
+                    PRIMARY KEY (city, product, date) 
+                    ORDER BY (city, product, date, query);''')
+    client.command("""INSERT INTO request_product_2 (city, date, query, product, place) SELECT city, date, query, product, place FROM request_product WHERE date = '2024-11-05';""")
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
