@@ -35,17 +35,15 @@ async def setup_database():
         ''')
 
     client.command('''CREATE TABLE IF NOT EXISTS request_product (
-                city Int64 CODEC(LZ4HC),
-                date Date CODEC(LZ4HC),
-                query String CODEC(LZ4HC),
-                product UInt32 CODEC(LZ4HC),
-                place UInt16 Codec(LZ4HC)
-            ) ENGINE = MergeTree()
-            PARTITION BY city
-            PRIMARY KEY (product, query) 
-            ORDER BY (product, query, date);''')
-    client.command('''DROP TABLE IF EXISTS request_product_2;''')
-    logger.info(client.query('''SELECT primary_key FROM system.tables;''').result_rows)
+                    city Int64 CODEC(LZ4HC),
+                    date Date CODEC(LZ4HC),
+                    query String CODEC(LZ4HC),
+                    product UInt32 CODEC(LZ4HC),
+                    place UInt16 Codec(LZ4HC)
+                ) ENGINE = MergeTree()
+                PRIMARY KEY (city, product, date) 
+                ORDER BY (city, product, date, query);''')
+
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
