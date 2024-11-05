@@ -46,7 +46,7 @@ async def check(searched_val, city):
         query = f"""SELECT product
                 FROM request_product
                 WHERE city = {city} 
-                AND DATE = {datetime.now().date().strftime("%Y-%m-%d")} 
+                AND DATE = '{datetime.now().date().strftime("%Y-%m-%d")}'
                 LIMIT 1000;"""
         query_result = await client.query(query)
         return [row[0] for row in query_result.result_rows]
