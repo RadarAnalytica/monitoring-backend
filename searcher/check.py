@@ -51,4 +51,4 @@ async def check(searched_val, city):
         # return [row[0] for row in query_result.result_rows]
 
 
-logger.info(asyncio.run(check(212296429, -1257786)))
+logger.info(asyncio.run(check(209928876, -1257786)))
