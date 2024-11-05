@@ -7,9 +7,9 @@ async def get_product_db_data(product_id, interval, city):
         FROM (SELECT rp.query, rp.date, r.quantity, rp.products
         FROM request_product AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
-        WHERE has(rp.products, {product_id})
-        AND (rp.city = {city})
+        WHERE (rp.city = {city})
         AND (rp.date >= toStartOfDay(now() - INTERVAL {interval} DAY))
+        AND has(rp.products, {product_id}) 
         ORDER BY rp.date, r.quantity DESC
         ) AS sd
         GROUP BY sd.query, sd.quantity
