@@ -21,7 +21,7 @@ async def check(searched_val, city):
         # logger.info(res.result_rows)
         query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place)) AS date_info
         FROM (SELECT rp.query, r.quantity, rp.date, rp.place 
-        FROM request_product_2 AS rp
+        FROM request_product AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
         WHERE (rp.city = {city})
         AND rp.product = {searched_val}

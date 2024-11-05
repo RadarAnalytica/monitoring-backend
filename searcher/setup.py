@@ -45,6 +45,7 @@ async def setup_database():
             PRIMARY KEY (product, query) 
             ORDER BY (product, query, date);''')
     client.command('''DROP TABLE IF EXISTS request_product_2;''')
+    logger.info(client.query('''DESCRIBE TABLE request_product;''').result_rows)
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
