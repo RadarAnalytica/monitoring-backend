@@ -23,8 +23,8 @@ async def check(searched_val, city):
         FROM (SELECT rp.query, r.quantity, rp.date, rp.place 
         FROM request_product_2 AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
-        WHERE product = {searched_val}
-        AND (rp.city = {city})
+        WHERE (rp.city = {city})
+        AND rp.product = {searched_val}
         AND (rp.date >= toStartOfDay(now() - INTERVAL 7 DAY))
         ORDER BY rp.date, r.quantity DESC
         ) AS sd
