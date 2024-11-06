@@ -54,7 +54,7 @@ async def setup_database():
                     ) ENGINE = MergeTree()
                     PRIMARY KEY (city, product, date) 
                     ORDER BY (city, product, date, query);''')
-    client.command("""ALTER TABLE request_product DELETE WHERE date = '2024-11-05';""")
+    client.command("""INSERT INTO request_product_2 (city, date, query, product, place) SELECT city, date, query, product, place FROM request_product WHERE date = '2024-11-04';""")
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
