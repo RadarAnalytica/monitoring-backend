@@ -66,4 +66,4 @@ async def get_dates_data():
     return q.result_rows
 
 
-logger.info(asyncio.run(check(230923798, -1257786)))
+logger.info(asyncio.run(check(610589, -1257786)))
