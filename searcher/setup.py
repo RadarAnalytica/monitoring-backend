@@ -20,7 +20,7 @@ async def setup_database():
     client.command('''
             CREATE TABLE IF NOT EXISTS dates (
                 id UInt16,
-                date Date,
+                date Date
             ) ENGINE = MergeTree()
             ORDER BY date;
         ''')
@@ -39,7 +39,7 @@ async def setup_database():
         CREATE TABLE IF NOT EXISTS product (
             name String CODEC(LZ4),
             id UInt32 CODEC(LZ4),
-            updated DateTime DEFAULT now() CODEC(DoubleDelta)
+            updated DateTime DEFAULT now()
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY name;
         ''')
