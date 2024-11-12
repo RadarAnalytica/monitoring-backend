@@ -64,5 +64,15 @@ async def get_dates_data():
         q = await client.query(query)
     return q.result_rows
 
+async def get_requests_data():
+    async with get_async_connection() as client:
+        query = f"""SELECT id, query
+                FROM request
+                WHERE (updated = (SELECT max(updated) FROM request)) 
+                ORDER BY quantity DESC LIMIT 1000;"""
+        q = await client.query(query)
+    return q.result_rows
+
 
 logger.info(asyncio.run(check(610589, -1257786)))
+logger.info(get_requests_data())

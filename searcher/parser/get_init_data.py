@@ -7,7 +7,7 @@ async def get_cities_data():
     async with get_async_connection() as client:
         query = f"""SELECT id, dest
         FROM city
-        WHERE (updated = (SELECT max(updated) FROM city)) ORDER BY id;"""
+        WHERE (updated = (SELECT max(updated) FROM city)) ORDER BY йгук;"""
         q = await client.query(query)
     return q.result_rows
 
@@ -17,7 +17,7 @@ async def get_requests_data():
         query = f"""SELECT id, query
                 FROM request
                 WHERE (updated = (SELECT max(updated) FROM request)) 
-                ORDER BY id  LIMIT 1000000;"""
+                ORDER BY quantity LIMIT 1000000;"""
         q = await client.query(query)
     return q.result_rows
 
