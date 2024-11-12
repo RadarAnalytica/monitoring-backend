@@ -76,7 +76,7 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
 
 async def get_city_result(city, date):
     logger.info(f"Город {city} старт")
-    requests = [r for r in await get_requests_data() if not r.isdigit()]
+    requests = [r for r in await get_requests_data() if not r[1].isdigit() or "javascript" not in r[1]]
     logger.info("Запросы есть")
     request_product_queue = asyncio.Queue()
     workers_queue = asyncio.Queue()
