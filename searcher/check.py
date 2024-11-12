@@ -26,10 +26,7 @@ async def check(searched_val, city):
         # logger.info(res.result_rows)
         start = datetime.now()
         query = f"""SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place
-        FROM request_product AS rp
-        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
-        JOIN dates as d ON d.id = rp.date 
-        JOIN city as c ON c.id = rp.city 
+        FROM request_product AS rp 
         WHERE (rp.product = {searched_val})
         ORDER BY rp.date, r.quantity DESC;"""
         query_result = await client.query(query)
