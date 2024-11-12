@@ -52,11 +52,11 @@ async def check(searched_val, city):
         # ]
         # logger.info(f"Result rdy in {(datetime.now() - start).total_seconds()}")
         # return result
-        query = f"""SELECT product
+        query = f"""SELECT *
                 FROM request_product
                 LIMIT 1000;"""
         query_result = await client.query(query)
-        return [row[0] for row in query_result.result_rows]
+        return query_result.result_rows
 
 
 async def get_dates_data():
