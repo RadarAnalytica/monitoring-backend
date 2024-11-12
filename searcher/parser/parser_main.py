@@ -66,7 +66,11 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
             request_products = []
             for i, p in enumerate(full_res, 1):
                 # product, city, date, query, place, advert, natural_place
-                request_products.append((p.get("id"), city[0], date[0], r[0], i, p.get("log", {}).get("tp", "z"), p.get("log", {}).get("position", -1)))
+                log = p.get("log", {})
+                natural_place = log.get("position", 0)
+                if natural_place > 65535:
+                    natural_place = 65535
+                request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place))
             await request_product_queue.put(request_products)
             return
         except Exception as e:

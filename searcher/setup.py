@@ -50,7 +50,7 @@ async def setup_database():
                         query UInt32 CODEC(LZ4HC),
                         place UInt16 Codec(LZ4HC),
                         advert FixedString(1) Codec(LZ4HC),
-                        natural_place Int16 Codec (LZ4HC)
+                        natural_place UInt16 Codec (LZ4HC)
                     ) ENGINE = MergeTree()
                     PRIMARY KEY (product, city, date) 
                     ORDER BY (product, city, date, query);''')
