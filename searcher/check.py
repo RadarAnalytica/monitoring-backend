@@ -74,5 +74,5 @@ async def get_requests_data():
     return q.result_rows
 
 
-# logger.info(asyncio.run(check(610589, -1257786)))
-logger.info(asyncio.run(get_requests_data()))
+logger.info(asyncio.run(check(610589, -1257786)))
+# logger.info(asyncio.run(get_requests_data()))
