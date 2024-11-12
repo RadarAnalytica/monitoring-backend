@@ -25,10 +25,10 @@ def process_city(city, date):
 def fire_requests():
     today = datetime.now(tz=pytz.timezone("Europe/Moscow")).date()
     last_date = asyncio.run(get_dates_data())
-    if not last_date[1]:
+    if not last_date:
         today = (1, today)
     else:
-        if last_date[1] == today:
+        if last_date[0][1] == today:
             today = last_date
         else:
             today = (last_date[0] + 1, today)
