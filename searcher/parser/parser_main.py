@@ -50,13 +50,13 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                     try_except_query_data(
                         query_string=r,
                         dest=city,
-                        limit=300,
+                        limit=250,
                         page=i,
                         rqa=3,
                         http_session=http_session,
                     )
                 )
-                for i in range(1, 4)
+                for i in range(1, 3)
             ]
             result = await asyncio.gather(*tasks)
             for res in result:
@@ -84,7 +84,7 @@ async def get_city_result(city, requests, date):
                 ["city", "query", "products", "date"],
             )
         )
-        for _ in range(2)
+        for _ in range(1)
     ]
     logger.info("Задачи на запись созданы")
     async with ClientSession() as http_session:
@@ -98,7 +98,7 @@ async def get_city_result(city, requests, date):
                     request_product_queue=request_product_queue,
                 )
             )
-            for _ in range(20)
+            for _ in range(10)
         ]
         while requests:
             try:
