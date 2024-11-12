@@ -28,7 +28,7 @@ async def check(searched_val, city):
         query = f"""SELECT * 
         FROM request_product AS rp 
         WHERE (rp.product = {searched_val})
-        ORDER BY rp.date, r.quantity DESC;"""
+        ORDER BY rp.date;"""
         query_result = await client.query(query)
         # result = [
         #     {
