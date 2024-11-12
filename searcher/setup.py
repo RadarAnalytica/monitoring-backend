@@ -39,8 +39,7 @@ async def setup_database():
             city Int64 CODEC(LZ4),
             query String CODEC(LZ4),
             date Date CODEC(Delta, LZ4),
-            products Array(UInt32) CODEC(LZ4),
-            INDEX idx_products (products) TYPE set(900) GRANULARITY 90
+            products Array(UInt32) CODEC(LZ4) 
         ) ENGINE = MergeTree()
         PARTITION BY city
         ORDER BY date;"""
