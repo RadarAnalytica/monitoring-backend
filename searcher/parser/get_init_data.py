@@ -5,7 +5,7 @@ from clickhouse_db.get_async_connection import get_async_connection
 
 async def get_cities_data():
     async with get_async_connection() as client:
-        query = "SELECT id, dest FROM city FINAL;"
+        query = "SELECT id, dest FROM city WHERE updated = (SELECT max(city) FROM request);"
         q = await client.query(query)
         cities = [(city[0], city[1]) for city in q.result_rows]
     return cities
