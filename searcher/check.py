@@ -44,7 +44,7 @@ async def check(searched_val, city):
                 "query": row[0],
                 "quantity": row[1],
                 "dates": {
-                    str(j_row[0]): {"place": j_row[1], "ad": j_row[2]}
+                    str(j_row[0]): {"place": j_row[1], "ad": j_row[2].decode() if j_row[2] != b"z" else None}
                     for j_row in row[2]
                 }
             }
