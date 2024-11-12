@@ -9,6 +9,7 @@ async def setup_database():
     logger.info("Setup start")
     client.command('''
         CREATE TABLE IF NOT EXISTS city (
+            id UInt8,
             name String,
             dest Int64,
             updated DateTime DEFAULT now()
@@ -17,10 +18,19 @@ async def setup_database():
     ''')
 
     client.command('''
+            CREATE TABLE IF NOT EXISTS dates (
+                id UInt16,
+                date Date,
+            ) ENGINE = MergeTree()
+            ORDER BY date;
+        ''')
+
+    client.command('''
         CREATE TABLE IF NOT EXISTS request (
+            id UInt32,
             query String,
             quantity UInt32,
-            updated DateTime DEFAULT now() CODEC(DoubleDelta)
+            updated DateTime DEFAULT now()
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY query;
     ''')
@@ -34,14 +44,16 @@ async def setup_database():
         ORDER BY name;
         ''')
     client.command('''CREATE TABLE IF NOT EXISTS request_product (
-                        city Int64 CODEC(LZ4HC),
-                        date Date CODEC(ZSTD(5)),
-                        query String CODEC(ZSTD(5)),
                         product UInt32 CODEC(LZ4HC),
-                        place UInt16 Codec(LZ4HC)
+                        city UInt8 CODEC(LZ4HC),
+                        date UInt16 CODEC(LZ4HC),
+                        query UInt32 CODEC(LZ4HC),
+                        place UInt16 Codec(LZ4HC),
+                        advert FixedString(1) Codec(LZ4HC),
+                        natural_place Int16 Codec (LZ4HC)
                     ) ENGINE = MergeTree()
-                    PRIMARY KEY (city, product, date) 
-                    ORDER BY (city, product, date, query);''')
+                    PRIMARY KEY (product, city, date) 
+                    ORDER BY (product, city, date, query);''')
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)

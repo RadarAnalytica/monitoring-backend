@@ -48,8 +48,8 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
             tasks = [
                 asyncio.create_task(
                     try_except_query_data(
-                        query_string=r,
-                        dest=city,
+                        query_string=r[1],
+                        dest=city[1],
                         limit=300,
                         page=i,
                         rqa=3,
@@ -65,7 +65,8 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                 full_res = []
             request_products = []
             for i, p in enumerate(full_res, 1):
-                request_products.append((city, date, r, p.get("id"), i))
+                # product, city, date, query, place, advert, natural_place
+                request_products.append((p.get("id"), city[0], date[0], r[0], i, p.get("log", {}).get("tp", "z"), p.get("log", {}).get("position", -1)))
             await request_product_queue.put(request_products)
             return
         except Exception as e:
@@ -84,7 +85,7 @@ async def get_city_result(city, date):
             save_to_db(
                 request_product_queue,
                 "request_product",
-                ["city", "date", "query", "product", "place"],
+                ["product", "city", "date", "query", "place", "advert", "natural_place"],
             )
         )
         for _ in range(5)
