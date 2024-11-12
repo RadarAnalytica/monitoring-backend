@@ -25,26 +25,33 @@ async def check(searched_val, city):
         # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
         start = datetime.now()
-        query = f"""SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place
+        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place)) AS date_info
+        FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place
         FROM request_product AS rp
-        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query 
+        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
         JOIN dates as d ON d.id = rp.date 
+        JOIN city as c ON c.id = rp.city 
         WHERE (rp.product = {searched_val})
-        ORDER BY rp.date, r.quantity DESC;"""
+        AND (c.dest = {city})
+        AND (d.date >= toStartOfDay(now() - INTERVAL 7 DAY))
+        ORDER BY rp.date, r.quantity DESC
+        ) AS sd
+        GROUP BY sd.query, sd.quantity
+        ORDER BY sd.quantity DESC, sd.query;"""
         query_result = await client.query(query)
-        # result = [
-        #     {
-        #         "query": row[0],
-        #         "quantity": row[1],
-        #         "dates": {
-        #             str(j_row[0]): j_row[1]
-        #             for j_row in row[2]
-        #         }
-        #     }
-        #     for row in query_result.result_rows
-        # ]
+        result = [
+            {
+                "query": row[0],
+                "quantity": row[1],
+                "dates": {
+                    str(j_row[0]): j_row[1]
+                    for j_row in row[2]
+                }
+            }
+            for row in query_result.result_rows
+        ]
         logger.info(f"Result rdy in {(datetime.now() - start).total_seconds()}")
-        return query_result.result_rows
+        return result
         # query = f"""SELECT *
         #         FROM request_product
         #         LIMIT 1000;"""
@@ -59,4 +66,4 @@ async def get_dates_data():
     return q.result_rows
 
 
-logger.info(asyncio.run(check(610589, -1257786)))
+logger.info(asyncio.run(check(230923798, -1257786)))
