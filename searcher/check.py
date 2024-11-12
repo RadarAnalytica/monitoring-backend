@@ -25,8 +25,8 @@ async def check(searched_val, city):
         # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
         start = datetime.now()
-        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place, sd.advert)) AS date_info
-        FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place, rp.advert as advert 
+        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place, sd.advert, sd.natural_place)) AS date_info
+        FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place, rp.advert as advert, rp.natural_place as natural_place 
         FROM request_product AS rp
         JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
         JOIN dates as d ON d.id = rp.date 
@@ -44,7 +44,7 @@ async def check(searched_val, city):
                 "query": row[0],
                 "quantity": row[1],
                 "dates": {
-                    str(j_row[0]): {"place": j_row[1], "ad": j_row[2].decode() if j_row[2] != b"z" else None}
+                    str(j_row[0]): {"place": j_row[1], "ad": j_row[2].decode() if j_row[2] != b"z" else None, "nat": j_row[3] or None}
                     for j_row in row[2]
                 }
             }
