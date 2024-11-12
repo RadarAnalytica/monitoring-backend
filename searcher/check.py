@@ -59,4 +59,11 @@ async def check(searched_val, city):
         # return [row[0] for row in query_result.result_rows]
 
 
-logger.info(asyncio.run(check(230923798, -1257786)))
+async def get_dates_data():
+    async with get_async_connection() as client:
+        query = "SELECT id, date FROM dates WHERE id = (SELECT max(id) FROM dates);"
+        q = await client.query(query)
+    return q.result_rows
+
+
+logger.info(asyncio.run(get_dates_data()))
