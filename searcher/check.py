@@ -13,12 +13,12 @@ async def check(searched_val, city):
         FROM city
         WHERE (updated = (SELECT max(updated) FROM city));"""
         res1 = await client.query(query)
-        logger.info(res1)
+        logger.info(res1.result_rows)
         query = f"""SELECT id, query
                 FROM request
                 WHERE (updated = (SELECT max(updated) FROM request)) LIMIT 100;"""
         res2 = await client.query(query)
-        logger.info(res2)
+        logger.info(res2.result_rows)
         # return res1.result_rows
         # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
