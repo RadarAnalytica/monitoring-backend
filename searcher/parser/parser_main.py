@@ -71,9 +71,8 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
             break
 
 
-async def get_city_result(city, date):
+async def get_city_result(city, requests, date):
     logger.info(f"Город {city} старт")
-    requests = [r for r in await get_requests_data() if not r.isdigit()]
     logger.info("Запросы есть")
     request_product_queue = asyncio.Queue()
     workers_queue = asyncio.Queue()
@@ -85,7 +84,7 @@ async def get_city_result(city, date):
                 ["city", "query", "products", "date"],
             )
         )
-        for _ in range(5)
+        for _ in range(2)
     ]
     logger.info("Задачи на запись созданы")
     async with ClientSession() as http_session:
@@ -99,7 +98,7 @@ async def get_city_result(city, date):
                     request_product_queue=request_product_queue,
                 )
             )
-            for _ in range(45)
+            for _ in range(20)
         ]
         while requests:
             try:
