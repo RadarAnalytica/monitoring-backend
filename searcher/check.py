@@ -25,9 +25,10 @@ async def check(searched_val, city):
         # json_result = [{"date": str(row[0]), "products": row[1]} for row in res.result_rows]
         # logger.info(res.result_rows)
         start = datetime.now()
-        query = f"""SELECT r.query as query, r.quantity as quantity, rp.place as place
+        query = f"""SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place
         FROM request_product AS rp
-        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
+        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query 
+        JOIN dates as d ON d.id = rp.date 
         WHERE (rp.product = {searched_val})
         ORDER BY rp.date, r.quantity DESC;"""
         query_result = await client.query(query)
