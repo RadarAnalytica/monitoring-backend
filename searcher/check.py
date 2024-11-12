@@ -11,12 +11,14 @@ async def check(searched_val, city):
         # client: AsyncClient = client
         query = f"""SELECT id, dest
         FROM city
-        WHERE (updated = (SELECT max(updated) FROM city));"""
+        WHERE (updated = (SELECT max(updated) FROM city)) ORDER BY id;"""
         res1 = await client.query(query)
         logger.info(res1.result_rows)
         query = f"""SELECT id, query
                 FROM request
-                WHERE (updated = (SELECT max(updated) FROM request)) LIMIT 100;"""
+                WHERE (updated = (SELECT max(updated) FROM request)) 
+                ORDER BY id 
+                LIMIT 100;"""
         res2 = await client.query(query)
         logger.info(res2.result_rows)
         # return res1.result_rows
