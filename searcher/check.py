@@ -33,19 +33,19 @@ async def check(searched_val, city):
         WHERE (rp.product = {searched_val})
         ORDER BY rp.date, r.quantity DESC;"""
         query_result = await client.query(query)
-        result = [
-            {
-                "query": row[0],
-                "quantity": row[1],
-                "dates": {
-                    str(j_row[0]): j_row[1]
-                    for j_row in row[2]
-                }
-            }
-            for row in query_result.result_rows
-        ]
+        # result = [
+        #     {
+        #         "query": row[0],
+        #         "quantity": row[1],
+        #         "dates": {
+        #             str(j_row[0]): j_row[1]
+        #             for j_row in row[2]
+        #         }
+        #     }
+        #     for row in query_result.result_rows
+        # ]
         logger.info(f"Result rdy in {(datetime.now() - start).total_seconds()}")
-        return result
+        return query_result.result_rows
         # query = f"""SELECT *
         #         FROM request_product
         #         LIMIT 1000;"""
@@ -60,4 +60,4 @@ async def get_dates_data():
     return q.result_rows
 
 
-logger.info(asyncio.run(check(230923798, -1257786)))
+logger.info(asyncio.run(check(610589, -1257786)))
