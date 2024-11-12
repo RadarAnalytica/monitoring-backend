@@ -27,6 +27,7 @@ def fire_requests():
     last_date = asyncio.run(get_dates_data())
     if not last_date:
         today = (1, today)
+        asyncio.run(write_new_date(today))
     else:
         if last_date[0][1] == today:
             today = last_date

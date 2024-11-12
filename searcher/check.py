@@ -58,5 +58,9 @@ async def get_dates_data():
         q = await client.query(query)
     return q.result_rows
 
+async def write_new_date():
+    date_data = (1, datetime.now().date())
+    async with get_async_connection() as client:
+        await client.insert("dates", [date_data], column_names=["id", "date"])
 
 logger.info(asyncio.run(get_dates_data()))
