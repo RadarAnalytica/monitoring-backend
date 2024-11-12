@@ -1,4 +1,4 @@
-FROM python:3.12-bookworm
+FROM python:3.12-alpine
 
 ENV PYTHONUNBUFFERED 1
 
@@ -11,4 +11,4 @@ RUN poetry config virtualenvs.create false \
 
 COPY ./searcher /app
 
-ENTRYPOINT python setup.py && uvicorn main:app --workers 2 --host 0.0.0.0 --port 9013
+ENTRYPOINT python setup.py && uvicorn main:app --host 0.0.0.0 --port 9013
