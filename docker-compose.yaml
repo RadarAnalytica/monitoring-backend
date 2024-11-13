@@ -35,7 +35,7 @@ services:
   celery:
     build: .
     container_name: wb_searcher_celery
-    entrypoint: celery -A celery_main.celery_app worker --autoscale=10,1
+    entrypoint: celery -A celery_main.celery_app worker --autoscale=10,1 --loglevel=info
     env_file:
       - .env
     volumes:
