@@ -6,7 +6,7 @@ async def get_keywords_db_data(products, city=-1257786):
         query = f"""SELECT rp.query, r.quantity
         FROM request_product AS rp
         JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query
-        WHERE rp.city = {city} AND arrayExists(x -> x IN {products}, rp.products)
+        WHERE rp.product IN {tuple(products)} AND city = {city}
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query)
         return query_result.result_rows

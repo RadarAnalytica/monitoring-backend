@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter
 from fastapi.params import Body, Depends
 from fastapi.responses import JSONResponse
@@ -19,9 +21,10 @@ async def add_cities(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     try:
-        cities_data = [(key, val) for key, val in cities.items()]
+        now = datetime.now()
+        cities_data = [(i, keyval[0], keyval[1], now) for i, keyval in enumerate(cities.items(), 1)]
         async with get_async_connection() as client:
-            await client.insert("city", cities_data, column_names=["name", "dest"])
+            await client.insert("city", cities_data, column_names=["id", "name", "dest", "updated"])
     except Exception as e:
         logger.error(f"{e}")
         return {"message": "Error with cities"}

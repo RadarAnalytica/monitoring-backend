@@ -42,74 +42,83 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
 
 
 async def get_r_data(r, city, date, http_session, request_product_queue=None):
-    try:
-        full_res = []
-        tasks = [
-            asyncio.create_task(
-                try_except_query_data(
-                    query_string=r,
-                    dest=city,
-                    limit=250,
-                    page=i,
-                    rqa=3,
-                    http_session=http_session,
-                )
-            )
-            for i in range(1, 3)
-        ]
-        result = await asyncio.gather(*tasks)
-        for res in result:
-            full_res.extend(res.get("products", []))
-        if not full_res:
+    while True:
+        try:
             full_res = []
-        request_product = [city, r, [p.get("id") for p in full_res], date]
-        await request_product_queue.put(request_product)
-    except Exception as e:
-        logger.critical(f"{e}")
+            tasks = [
+                asyncio.create_task(
+                    try_except_query_data(
+                        query_string=r[1],
+                        dest=city[1],
+                        limit=300,
+                        page=i,
+                        rqa=3,
+                        http_session=http_session,
+                    )
+                )
+                for i in range(1, 4)
+            ]
+            result = await asyncio.gather(*tasks)
+            for res in result:
+                full_res.extend(res.get("products", []))
+            if not full_res:
+                full_res = []
+            request_products = []
+            for i, p in enumerate(full_res, 1):
+                # product, city, date, query, place, advert, natural_place
+                log = p.get("log", {})
+                natural_place = log.get("position", 0)
+                if natural_place > 65535:
+                    natural_place = 65535
+                request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place))
+            await request_product_queue.put(request_products)
+            return
+        except Exception as e:
+            logger.critical(f"{e}")
+            break
 
 
-async def get_city_result(city, requests, date):
+async def get_city_result(city, date):
     logger.info(f"Город {city} старт")
+    requests = [r for r in await get_requests_data() if not r[1].isdigit() or "javascript" not in r[1]]
     logger.info("Запросы есть")
-    request_product_queue = asyncio.Queue(25)
-    workers_queue = asyncio.Queue(4)
+    request_product_queue = asyncio.Queue()
+    workers_queue = asyncio.Queue()
     request_product_save_task = [
         asyncio.create_task(
             save_to_db(
                 request_product_queue,
                 "request_product",
-                ["city", "query", "products", "date"],
+                ["product", "city", "date", "query", "place", "advert", "natural_place"],
             )
         )
-        for _ in range(2)
+        for _ in range(5)
     ]
     logger.info("Задачи на запись созданы")
-    batch_size = 10
     async with ClientSession() as http_session:
-        prev = 0
-        for batch_i in range(batch_size, len(requests) + 1, batch_size):
-            requests_tasks = [
-                asyncio.create_task(
-                    get_r_data(
-                        r=r,
-                        city=city,
-                        date=date,
-                        http_session=http_session,
-                        request_product_queue=request_product_queue,
-                    )
+        requests_tasks = [
+            asyncio.create_task(
+                get_r_data_q(
+                    queue=workers_queue,
+                    city=city,
+                    date=date,
+                    http_session=http_session,
+                    request_product_queue=request_product_queue,
                 )
-                for r in requests[prev:batch_i]
-            ]
-            await asyncio.gather(*requests_tasks)
-            prev = batch_i
-        # while requests:
-        #     try:
-        #         await workers_queue.put(requests.pop())
-        #     except Exception as e:
-        #         logger.error(f"{e}")
-        #         pass
-        # await workers_queue.put(None)
-        # await asyncio.gather(*requests_tasks)
+            )
+            for _ in range(45)
+        ]
+        while requests:
+            try:
+                await workers_queue.put(requests.pop())
+                await workers_queue.put(requests.pop())
+                await workers_queue.put(requests.pop())
+                await workers_queue.put(requests.pop())
+            except Exception as e:
+                logger.error(f"{e}")
+                pass
+        await workers_queue.put(None)
+        await asyncio.gather(*requests_tasks)
         await request_product_queue.put(None)
         await asyncio.gather(*request_product_save_task)
 
