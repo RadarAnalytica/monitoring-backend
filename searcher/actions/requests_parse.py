@@ -26,7 +26,8 @@ def fire_requests():
     today = datetime.now(tz=pytz.utc).date()
     cities = asyncio.run(get_cities_data())
     requests = [r for r in asyncio.run(get_requests_data()) if not r.isdigit()]
-    requests_batches = [requests[:500000], requests[500000:]]
+    requests_batches = (tuple(requests[:500000]), tuple(requests[500000:]))
+    requests.clear()
     for city in cities:
         for i, batch in enumerate(requests_batches):
             process_city.delay(city, batch, i, today)
