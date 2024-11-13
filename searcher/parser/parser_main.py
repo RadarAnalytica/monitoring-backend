@@ -74,8 +74,8 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
 async def get_city_result(city, requests, date):
     logger.info(f"Город {city} старт")
     logger.info("Запросы есть")
-    request_product_queue = asyncio.Queue()
-    workers_queue = asyncio.Queue()
+    request_product_queue = asyncio.Queue(25)
+    workers_queue = asyncio.Queue(4)
     request_product_save_task = [
         asyncio.create_task(
             save_to_db(
@@ -84,7 +84,7 @@ async def get_city_result(city, requests, date):
                 ["city", "query", "products", "date"],
             )
         )
-        for _ in range(1)
+        for _ in range(2)
     ]
     logger.info("Задачи на запись созданы")
     async with ClientSession() as http_session:
@@ -98,13 +98,10 @@ async def get_city_result(city, requests, date):
                     request_product_queue=request_product_queue,
                 )
             )
-            for _ in range(10)
+            for _ in range(20)
         ]
         while requests:
             try:
-                await workers_queue.put(requests.pop())
-                await workers_queue.put(requests.pop())
-                await workers_queue.put(requests.pop())
                 await workers_queue.put(requests.pop())
             except Exception as e:
                 logger.error(f"{e}")
