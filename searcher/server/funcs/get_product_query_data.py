@@ -22,7 +22,7 @@ async def get_product_db_data(product_id, city, interval):
                 "quantity": row[1],
                 "dates": {
                     str(j_row[0]): {"place": j_row[1], "ad": j_row[2].decode() if j_row[2] != b"z" else None,
-                                    "nat": j_row[3] or None, "cpm": j_row[4] or 0}
+                                    "nat": j_row[3] or None, "cpm": j_row[4] or 0 if j_row[2] != b"z" else None}
                     for j_row in row[2]
                 }
             }
