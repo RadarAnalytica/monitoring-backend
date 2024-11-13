@@ -33,7 +33,7 @@ def fire_requests():
         if last_date[0][1] == today:
             today_date = last_date
         else:
-            today_date = (last_date[0] + 1, today)
+            today_date = (last_date[0][0] + 1, today)
             asyncio.run(write_new_date(today_date))
     cities = asyncio.run(get_cities_data())
     requests = asyncio.run(get_requests_data())
