@@ -10,7 +10,7 @@ async def get_product_db_data():
 
 
 async def get_product_query_payload(product_id, interval, city):
-    query_result = await get_product_db_data(product_id, interval, city)
+    query_result = await get_product_db_data()
     payload = [
         {
             "query": row[0],
