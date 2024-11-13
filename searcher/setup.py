@@ -54,6 +54,7 @@ async def setup_database():
                     ) ENGINE = MergeTree()
                     PRIMARY KEY (product, city, date) 
                     ORDER BY (product, city, date, query);''')
+    client.command('''ALTER TABLE request_product ADD COLUMN IF NOT EXISTS cpm UInt16 DEFAULT 0 CODEC(LZ4HC);''')
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)

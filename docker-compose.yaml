@@ -14,10 +14,10 @@ services:
       retries: 5
 
 
-  searcher:
+  backend:
     build:
       dockerfile: Dockerfile
-    container_name: wb_searcher
+    container_name: backend
     env_file:
       - .env
     volumes:
@@ -34,7 +34,7 @@ services:
 
   celery:
     build: .
-    container_name: wb_searcher_celery
+    container_name: celery_worker
     entrypoint: celery -A celery_main.celery_app worker --autoscale=10,1 --loglevel=info
     env_file:
       - .env
@@ -45,7 +45,7 @@ services:
 
   celery-beat:
     build: .
-    container_name: wb_searcher_celery_beat
+    container_name: celery_beat
     entrypoint: celery -A celery_main.celery_app beat --loglevel=info
     env_file:
       - .env
