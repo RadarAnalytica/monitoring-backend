@@ -58,6 +58,10 @@ async def setup_database():
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
+    request_product_cols = client.query('''SELECT name, type 
+   FROM system.columns 
+   WHERE database = 'default' AND table = 'request_product';''')
+    logger.info(request_product_cols.result_rows)
     client.close()
 
 asyncio.run(setup_database())
