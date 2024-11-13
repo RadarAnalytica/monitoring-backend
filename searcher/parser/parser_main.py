@@ -42,33 +42,30 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
 
 
 async def get_r_data(r, city, date, http_session, request_product_queue=None):
-    while True:
-        try:
-            full_res = []
-            tasks = [
-                asyncio.create_task(
-                    try_except_query_data(
-                        query_string=r,
-                        dest=city,
-                        limit=250,
-                        page=i,
-                        rqa=3,
-                        http_session=http_session,
-                    )
+    try:
+        full_res = []
+        tasks = [
+            asyncio.create_task(
+                try_except_query_data(
+                    query_string=r,
+                    dest=city,
+                    limit=250,
+                    page=i,
+                    rqa=3,
+                    http_session=http_session,
                 )
-                for i in range(1, 3)
-            ]
-            result = await asyncio.gather(*tasks)
-            for res in result:
-                full_res.extend(res.get("products", []))
-            if not full_res:
-                full_res = []
-            request_product = [city, r, [p.get("id") for p in full_res], date]
-            await request_product_queue.put(request_product)
-            return
-        except Exception as e:
-            logger.critical(f"{e}")
-            break
+            )
+            for i in range(1, 3)
+        ]
+        result = await asyncio.gather(*tasks)
+        for res in result:
+            full_res.extend(res.get("products", []))
+        if not full_res:
+            full_res = []
+        request_product = [city, r, [p.get("id") for p in full_res], date]
+        await request_product_queue.put(request_product)
+    except Exception as e:
+        logger.critical(f"{e}")
 
 
 async def get_city_result(city, requests, date):
@@ -87,27 +84,32 @@ async def get_city_result(city, requests, date):
         for _ in range(2)
     ]
     logger.info("Задачи на запись созданы")
+    batch_size = 10
     async with ClientSession() as http_session:
-        requests_tasks = [
-            asyncio.create_task(
-                get_r_data_q(
-                    queue=workers_queue,
-                    city=city,
-                    date=date,
-                    http_session=http_session,
-                    request_product_queue=request_product_queue,
+        prev = 0
+        for batch_i in range(batch_size, len(requests) + 1, batch_size):
+            requests_tasks = [
+                asyncio.create_task(
+                    get_r_data(
+                        r=r,
+                        city=city,
+                        date=date,
+                        http_session=http_session,
+                        request_product_queue=request_product_queue,
+                    )
                 )
-            )
-            for _ in range(20)
-        ]
-        while requests:
-            try:
-                await workers_queue.put(requests.pop())
-            except Exception as e:
-                logger.error(f"{e}")
-                pass
-        await workers_queue.put(None)
-        await asyncio.gather(*requests_tasks)
+                for r in requests[prev:batch_i]
+            ]
+            await asyncio.gather(*requests_tasks)
+            prev = batch_i
+        # while requests:
+        #     try:
+        #         await workers_queue.put(requests.pop())
+        #     except Exception as e:
+        #         logger.error(f"{e}")
+        #         pass
+        # await workers_queue.put(None)
+        # await asyncio.gather(*requests_tasks)
         await request_product_queue.put(None)
         await asyncio.gather(*request_product_save_task)
 
