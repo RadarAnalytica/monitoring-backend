@@ -82,7 +82,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
 
 async def get_city_result(city, date, requests, request_batch_no):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
-    requests = tuple([r for r in await requests if not r[1].isdigit() or "javascript" not in r[1]])
+    requests = tuple([r for r in requests if not r[1].isdigit() or "javascript" not in r[1]])
     logger.info("Запросы есть")
     db_queue = asyncio.Queue(3)
     request_product_save_task = [
