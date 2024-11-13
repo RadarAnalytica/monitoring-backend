@@ -20,7 +20,6 @@ pytz = "^2024.2"
 aiofiles = "^24.1.0"
 celery = {extras = ["redis"], version = "^5.4.0"}
 clickhouse-connect = "^0.8.5"
-billiard = "^4.2.1"
 pyjwt = "^2.9.0"
 lz4 = "4.3.3"
 

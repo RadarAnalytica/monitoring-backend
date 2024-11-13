@@ -30,12 +30,12 @@ services:
 
   redis:
     container_name: ${REDIS_CONTAINER_NAME}
-    image: redis:alpine
+    image: redis:7-alpine
 
   celery:
     build: .
     container_name: wb_searcher_celery
-    entrypoint: celery -A celery_main.celery_app worker --autoscale=8,1 --loglevel=info
+    entrypoint: celery -A celery_main.celery_app worker --autoscale=8,1 --loglevel=debug
     env_file:
       - .env
     volumes:
