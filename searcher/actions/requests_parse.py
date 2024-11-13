@@ -31,7 +31,7 @@ def fire_requests():
         asyncio.run(write_new_date(today_date))
     else:
         if last_date[0][1] == today:
-            today_date = last_date
+            today_date = last_date[0]
         else:
             today_date = (last_date[0][0] + 1, today)
             asyncio.run(write_new_date(today_date))
