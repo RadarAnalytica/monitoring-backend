@@ -41,7 +41,7 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
     return x
 
 
-async def get_r_data(r, city, date, http_session, request_product_queue=None):
+async def get_r_data(r, city, date, http_session, db_queue=None):
     while True:
         try:
             full_res = []
@@ -73,7 +73,7 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
                 if cpm > 65535:
                     cpm = 65535
                 request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
-            await request_product_queue.put(request_products)
+            await db_queue.put(request_products)
             return
         except Exception as e:
             logger.critical(f"{e}")
@@ -82,18 +82,18 @@ async def get_r_data(r, city, date, http_session, request_product_queue=None):
 
 async def get_city_result(city, date, requests, request_batch_no):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
-    # requests = [r for r in await get_requests_data() if not r[1].isdigit() or "javascript" not in r[1]]
+    requests = tuple([r for r in await requests if not r[1].isdigit() or "javascript" not in r[1]])
     logger.info("Запросы есть")
-    request_product_queue = asyncio.Queue()
+    db_queue = asyncio.Queue(3)
     request_product_save_task = [
         asyncio.create_task(
             save_to_db(
-                request_product_queue,
+                db_queue,
                 "request_product",
                 ["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
             )
         )
-        for _ in range(1)
+        for _ in range(2)
     ]
     logger.info("Задачи на запись созданы")
     batch_size = 20
@@ -108,7 +108,7 @@ async def get_city_result(city, date, requests, request_batch_no):
                         city=city,
                         date=date,
                         http_session=http_session,
-                        request_product_queue=request_product_queue,
+                        db_queue=db_queue,
                     )
                 )
                 for r in requests[prev:batch_i]
@@ -116,7 +116,7 @@ async def get_city_result(city, date, requests, request_batch_no):
             prev = batch_i
             await asyncio.gather(*requests_tasks)
 
-        await request_product_queue.put(None)
+        await db_queue.put(None)
         await asyncio.gather(*request_product_save_task)
 
 
