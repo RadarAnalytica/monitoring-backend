@@ -2,8 +2,8 @@ from clickhouse_db.get_async_connection import get_async_connection
 
 async def get_product_db_data(product_id, city, interval):
     async with get_async_connection() as client:
-        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place, sd.advert, sd.natural_place)) AS date_info
-        FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place, rp.advert as advert, rp.natural_place as natural_place
+        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place, sd.advert, sd.natural_place, sd.cpm)) AS date_info
+        FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place, rp.advert as advert, rp.natural_place as natural_place, rp.cpm as cpm 
         FROM request_product AS rp
         JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
         JOIN dates as d ON d.id = rp.date
