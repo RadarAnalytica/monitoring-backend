@@ -1,5 +1,5 @@
 from datetime import date
-
+from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
 
@@ -9,7 +9,9 @@ async def get_cities_data():
         FROM city
         WHERE (updated = (SELECT max(updated) FROM city)) ORDER BY id;"""
         q = await client.query(query)
-    return q.result_rows
+        result = q.result_rows
+        logger.info(result)
+    return result
 
 
 async def get_requests_data():
