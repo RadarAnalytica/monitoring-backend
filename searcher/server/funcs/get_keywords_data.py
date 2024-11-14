@@ -5,7 +5,7 @@ async def get_keywords_db_data(products, city=-1257786):
     async with get_async_connection() as client:
         query = f"""SELECT rp.query, r.quantity
         FROM request_product AS rp
-        JOIN (SELECT * FROM request FINAL) AS r ON r.query = rp.query 
+        JOIN (SELECT * FROM request FINAL) AS r ON r.id = rp.query 
         JOIN city as c ON c.id = rp.city 
         WHERE rp.product IN {tuple(products)} AND c.dest = {city}
         ORDER BY r.quantity DESC;"""
