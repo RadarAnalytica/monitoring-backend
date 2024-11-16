@@ -8,7 +8,7 @@ from parser.save_to_db_worker import save_to_db
 
 
 async def get_r_data_q(
-    queue: asyncio.Queue, city, date, http_session, request_product_queue=None
+    queue: asyncio.Queue, city, date, http_session
 ):
     while True:
         r = await queue.get()
@@ -20,7 +20,6 @@ async def get_r_data_q(
             city=city,
             date=date,
             http_session=http_session,
-            request_product_queue=request_product_queue,
         )
         queue.task_done()
 
