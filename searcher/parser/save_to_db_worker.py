@@ -6,7 +6,7 @@ async def save_to_db(queue, table, fields):
     while True:
         items = []
         item = None
-        while len(items) < 10000:
+        while len(items) < 6000:
             item = await queue.get()
             if item is None:
                 break
@@ -17,7 +17,7 @@ async def save_to_db(queue, table, fields):
             try:
                 async with get_async_connection() as client:
                     await client.insert(table, items, column_names=fields)
-                    logger.info("Запись в БД +")
+                    logger.info(f"Запись в БД +{items[0][1]}")
             except Exception as e:
                 logger.critical(f"{e}, {items}")
         if item is None:
