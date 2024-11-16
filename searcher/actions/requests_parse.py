@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, date
 import pytz
 
 from parser.get_init_data import get_cities_data, get_dates_data, write_new_date, get_requests_data
@@ -30,6 +30,8 @@ def fire_requests():
         today_date = (1, today)
         asyncio.run(write_new_date(today_date))
     else:
+        if isinstance(last_date[0][1], str):
+            last_date[0][1] = date.fromisoformat(last_date[0][1])
         if last_date[0][1] == today:
             today_date = last_date[0]
         else:

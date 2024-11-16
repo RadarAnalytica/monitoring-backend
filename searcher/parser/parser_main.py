@@ -1,7 +1,6 @@
 import asyncio
 from aiohttp import ClientSession
 
-from parser.get_init_data import get_requests_data
 from parser.get_single_query_data import get_query_data
 from settings import logger
 from parser.save_to_db_worker import save_to_db
@@ -92,7 +91,7 @@ async def get_city_result(city, date, requests, request_batch_no):
                 ["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
             )
         )
-        for _ in range(2)
+        for _ in range(1)
     ]
     logger.info("Задачи на запись созданы")
     batch_size = 20
