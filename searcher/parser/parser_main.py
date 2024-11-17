@@ -2,7 +2,7 @@ import asyncio
 from aiohttp import ClientSession
 from psutil import swap_memory
 
-from clickhouse_db.get_async_connection import get_async_connection
+from clickhouse_db.get_async_connection import get_async_connection, get_sync_connection
 from parser.get_single_query_data import get_query_data
 from settings import logger
 from parser.save_to_db_worker import save_to_db
@@ -88,7 +88,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
     prev = 0
     full_res = []
     async with ClientSession() as http_session:
-        async with get_async_connection() as client:
+        with get_sync_connection() as client:
             for batch_i in range(batch_size, len(requests_list) + 1, batch_size):
                 request_batch = requests_list[prev:batch_i]
                 requests_tasks = [
