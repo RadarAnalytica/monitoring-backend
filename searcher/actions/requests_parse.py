@@ -9,10 +9,11 @@ from settings import logger
 
 
 @celery_app.task(name="process_city")
-def process_city(city, date, requests, batch_no):
+def process_city(city, date_, requests, batch_no):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
-    asyncio.run(get_city_result(city, date, requests, batch_no))
+    ioloop = asyncio.get_event_loop()
+    ioloop.run_until_complete(get_city_result(city, date_, requests, batch_no))
     end_time = datetime.now()
     delta = (end_time - start_time).seconds
     logger.info(
@@ -37,9 +38,14 @@ def fire_requests():
         else:
             today_date = (last_date[0][0] + 1, today)
             asyncio.run(write_new_date(today_date))
-    cities = asyncio.run(get_cities_data())
+    cities = asyncio.run(get_cities_data(1))
     requests = asyncio.run(get_requests_data())
-    request_batches = (tuple(requests[:500000]), tuple(requests[500000:]))
-    for city in cities:
-        for i, r_batch in enumerate(request_batches, 1):
-            process_city.delay(city, today_date, r_batch, i)
+    request_batches = []
+    batch_size = 125000
+    prev = 0
+    for r_id in range(batch_size, len(requests) + batch_size, batch_size):
+        request_batches.append(requests[prev:r_id])
+        prev = batch_size
+    city = cities[0]
+    for i, r_batch in enumerate(request_batches, 1):
+        process_city.delay(city, today_date, r_batch, i)

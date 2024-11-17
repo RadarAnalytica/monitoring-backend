@@ -3,11 +3,11 @@ from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
 
-async def get_cities_data():
+async def get_cities_data(city_id):
     async with get_async_connection() as client:
         query = f"""SELECT id, dest
         FROM city
-        WHERE (updated = (SELECT max(updated) FROM city)) ORDER BY id;"""
+        WHERE id = {city_id} ORDER BY id;"""
         q = await client.query(query)
         result = q.result_rows
         logger.info(result)
