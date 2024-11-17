@@ -12,8 +12,7 @@ from settings import logger
 def process_city(city, date_, requests, batch_no):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
-    ioloop = asyncio.get_event_loop()
-    ioloop.run_until_complete(get_city_result(city, date_, requests, batch_no))
+    asyncio.run(get_city_result(city, date_, requests, batch_no))
     end_time = datetime.now()
     delta = (end_time - start_time).seconds
     logger.info(
