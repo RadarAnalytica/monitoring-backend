@@ -1,5 +1,6 @@
 import asyncio
 from aiohttp import ClientSession
+from psutil import swap_memory
 
 from parser.get_single_query_data import get_query_data
 from settings import logger
@@ -107,6 +108,9 @@ async def get_city_result(city, date, requests, request_batch_no):
                 table="request_product",
                 fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
             )
+            while swap_memory().percent > 35:
+                logger.info("Превышен SWAP, ждём")
+                await asyncio.sleep(1)
 
 
 # def run_pool_threads(func, *args, **kwargs):
