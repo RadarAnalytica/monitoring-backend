@@ -108,6 +108,7 @@ async def get_city_result(city, date, requests, request_batch_no):
                 table="request_product",
                 fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
             )
+            full_res.clear()
             while swap_memory().percent > 35:
                 logger.info("Превышен SWAP, ждём")
                 await asyncio.sleep(1)
