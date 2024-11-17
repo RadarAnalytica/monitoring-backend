@@ -2,6 +2,7 @@ import asyncio
 from aiohttp import ClientSession
 from psutil import swap_memory
 
+from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
 from settings import logger
 from parser.save_to_db_worker import save_to_db
@@ -80,42 +81,45 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
 
 async def get_city_result(city, date, requests, request_batch_no):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
-    requests = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
+    requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
+    del requests
     logger.info("Запросы есть")
     batch_size = 4
     prev = 0
-    for batch_i in range(batch_size, len(requests) + 1, batch_size):
-        async with ClientSession() as http_session:
-            request_batch = requests[prev:batch_i]
-            requests_tasks = [
-                asyncio.create_task(
-                    get_r_data(
-                        r=r,
-                        city=city,
-                        date=date,
-                        http_session=http_session,
+    async with ClientSession() as http_session:
+        async with get_async_connection() as client:
+            for batch_i in range(batch_size, len(requests_list) + 1, batch_size):
+                request_batch = requests_list[prev:batch_i]
+                requests_tasks = [
+                    asyncio.create_task(
+                        get_r_data(
+                            r=r,
+                            city=city,
+                            date=date,
+                            http_session=http_session,
+                        )
                     )
+                    for r in request_batch
+                ]
+                product_batches: tuple = await asyncio.gather(*requests_tasks)
+                prev = batch_i
+                full_res = []
+                for batch in product_batches:
+                    full_res.extend(batch)
+                await save_to_db(
+                    items=full_res,
+                    table="request_product",
+                    fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
+                    client=client
                 )
-                for r in request_batch
-            ]
-            product_batches: tuple = await asyncio.gather(*requests_tasks)
-        prev = batch_i
-        full_res = []
-        for batch in product_batches:
-            full_res.extend(batch)
-        await save_to_db(
-            items=full_res,
-            table="request_product",
-            fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
-        )
-        full_res.clear()
-        request_batch.clear()
-        for batch in product_batches:
-            batch.clear()
-        del product_batches
-        while swap_memory().percent > 35:
-            logger.info("Превышен SWAP, ждём")
-            await asyncio.sleep(1)
+                full_res.clear()
+                request_batch.clear()
+                for batch in product_batches:
+                    batch.clear()
+                del product_batches
+                while swap_memory().percent > 35:
+                    logger.info("Превышен SWAP, ждём")
+                    await asyncio.sleep(1)
 
 
 # def run_pool_threads(func, *args, **kwargs):
