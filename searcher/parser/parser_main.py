@@ -79,7 +79,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
             break
 
 
-async def get_city_result(city, date, requests, request_batch_no, client):
+async def get_city_result(city, date, requests, request_batch_no, client=None):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
     del requests
