@@ -106,12 +106,12 @@ async def get_city_result(city, date, requests, request_batch_no, client):
             full_res = []
             for batch in product_batches:
                 full_res.extend(batch)
-            await save_to_db(
-                items=full_res,
-                table="request_product",
-                fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
-                client=client
-            )
+            # await save_to_db(
+            #     items=full_res,
+            #     table="request_product",
+            #     fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
+            #     client=client
+            # )
             full_res.clear()
             request_batch.clear()
             for batch in product_batches:
