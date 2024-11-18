@@ -10,5 +10,6 @@ async def save_to_db(items, table, fields, client: Client):
         try:
             client.insert(table, items, column_names=fields)
             logger.info(f"Запись в БД + city: {items[0][1]}  date: {items[0][2]}")
+
         except Exception as e:
             logger.critical(f"{e}, {items}")

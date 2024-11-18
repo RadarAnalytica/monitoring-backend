@@ -1,4 +1,7 @@
 import asyncio
+import gc
+
+import psutil
 from aiohttp import ClientSession
 from psutil import swap_memory
 
@@ -81,6 +84,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
 
 async def get_city_result(city, date, requests, request_batch_no, client=None):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
+    process_ = psutil.Process()
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
     del requests
     logger.info("Запросы есть")
@@ -88,7 +92,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
     prev = 0
     full_res = []
     async with ClientSession() as http_session:
-        with get_sync_connection() as client:
+        async with get_async_connection() as client:
             for batch_i in range(batch_size, len(requests_list) + 1, batch_size):
                 request_batch = requests_list[prev:batch_i]
                 requests_tasks = [
@@ -114,10 +118,8 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
                         client=client
                     )
                     full_res.clear()
-            while swap_memory().percent > 35:
-                logger.info("Превышен SWAP, ждём")
-                await asyncio.sleep(1)
-
+                    gc.collect()
+                logger.info(f"Память: {process_.memory_info().rss}")
 
 # def run_pool_threads(func, *args, **kwargs):
 #     try:
