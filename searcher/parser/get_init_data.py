@@ -24,6 +24,13 @@ async def get_requests_data():
     return q.result_rows
 
 
+async def get_requests_id_download_data():
+    async with get_async_connection() as client:
+        query = f"""SELECT DISTINCT query, id FROM request;"""
+        q = await client.query(query)
+    return dict(q.result_rows)
+
+
 async def get_dates_data():
     async with get_async_connection() as client:
         query = "SELECT id, date FROM dates WHERE id = (SELECT max(id) FROM dates);"

@@ -88,7 +88,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
     del requests
     logger.info("Запросы есть")
-    batch_size = 4
+    batch_size = 10
     prev = 0
     full_res = []
     async with ClientSession() as http_session:

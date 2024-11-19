@@ -1,4 +1,15 @@
+from asyncio import TaskGroup
+
+from _datetime import datetime, timedelta
+
 from clickhouse_db.get_async_connection import get_async_connection
+
+
+async def gen_dates(interval):
+    now = datetime.now().date()
+    dates = [str(now + timedelta(days=i)) for i in range(interval)][-1::-1]
+    return dates
+
 
 async def get_product_db_data(product_id, city, interval):
     async with get_async_connection() as client:
@@ -15,8 +26,13 @@ async def get_product_db_data(product_id, city, interval):
         ) AS sd
         GROUP BY sd.query, sd.quantity
         ORDER BY sd.quantity DESC, sd.query;"""
-        query_result = await client.query(query)
-        result = [
+        async with TaskGroup() as tg:
+            query_result = tg.create_task(client.query(query))
+            dates = tg.create_task(gen_dates(interval))
+        result = {
+            "dates": dates.result(),
+            "queries":
+            [
             {
                 "query": row[0],
                 "quantity": row[1],
@@ -26,8 +42,8 @@ async def get_product_db_data(product_id, city, interval):
                     for j_row in row[2]
                 }
             }
-            for row in query_result.result_rows
-        ]
+            for row in query_result.result().result_rows
+        ]}
     return result
 
 
