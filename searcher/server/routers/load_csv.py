@@ -26,8 +26,7 @@ async def upload_csv(
     try:
         contents = [row.decode() for row in file.file.readlines()]
         requests_data, error_rows = await prepare_csv_contents(contents)
-        logger.info(str(requests_data[:200]))
-        # background_tasks.add_task(upload_requests_csv_bg, requests_data)
+        background_tasks.add_task(upload_requests_csv_bg, requests_data)
     except Exception as e:
         logger.error(f"{e}")
         return {"message": "There was an error uploading the file"}
