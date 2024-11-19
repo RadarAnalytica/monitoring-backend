@@ -93,7 +93,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
     full_res = []
     async with ClientSession() as http_session:
         async with get_async_connection() as client:
-            for batch_i in range(batch_size, len(requests_list) + 1, batch_size):
+            for batch_i in range(batch_size, len(requests_list) + batch_size, batch_size):
                 request_batch = requests_list[prev:batch_i]
                 requests_tasks = [
                     asyncio.create_task(
