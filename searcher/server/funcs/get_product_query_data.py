@@ -21,7 +21,7 @@ async def get_product_db_data(product_id, city, interval):
         JOIN city as c ON c.id = rp.city
         WHERE (rp.product = {product_id})
         AND (c.dest = {city})
-        AND (d.date >= toStartOfDay(now() - INTERVAL {interval} DAY))
+        AND (d.date > toStartOfDay(now() - INTERVAL {interval} DAY))
         ORDER BY rp.date, r.quantity DESC
         ) AS sd
         GROUP BY sd.query, sd.quantity
