@@ -7,7 +7,7 @@ from clickhouse_db.get_async_connection import get_async_connection
 
 async def gen_dates(interval):
     now = datetime.now().date()
-    dates = [str(now + timedelta(days=i)) for i in range(interval)][-1::-1]
+    dates = [str(now - timedelta(days=i)) for i in range(interval)][-1::-1]
     return dates
 
 
