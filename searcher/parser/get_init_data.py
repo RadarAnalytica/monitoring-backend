@@ -26,7 +26,7 @@ async def get_requests_data():
 
 async def get_requests_id_download_data():
     async with get_async_connection() as client:
-        query = f"""SELECT DISTINCT query, id FROM request LIMIT 100;"""
+        query = f"""SELECT DISTINCT query, id FROM request ORDER BY id LIMIT 100;"""
         q = await client.query(query)
     return dict(q.result_rows)
 
