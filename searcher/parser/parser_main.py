@@ -5,7 +5,7 @@ import psutil
 from aiohttp import ClientSession
 from psutil import swap_memory
 
-from clickhouse_db.get_async_connection import get_async_connection, get_sync_connection
+from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
 from settings import logger
 from parser.save_to_db_worker import save_to_db
@@ -109,7 +109,8 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
                 product_batches: tuple = await asyncio.gather(*requests_tasks)
                 prev = batch_i
                 for batch in product_batches:
-                    full_res.extend(batch)
+                    if isinstance(batch, list):
+                        full_res.extend(batch)
                 if len(full_res) > 8000:
                     await save_to_db(
                         items=full_res,
