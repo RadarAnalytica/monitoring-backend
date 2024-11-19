@@ -23,7 +23,7 @@ def process_city(city, date_, requests, batch_no):
 
 
 @celery_app.task(name="fire_requests")
-def fire_requests():
+def fire_requests(city_no):
     today = datetime.now(tz=pytz.utc).date()
     last_date = asyncio.run(get_dates_data())
     if not last_date:
@@ -37,7 +37,7 @@ def fire_requests():
         else:
             today_date = (last_date[0][0] + 1, today)
             asyncio.run(write_new_date(today_date))
-    cities = asyncio.run(get_cities_data(1))
+    cities = asyncio.run(get_cities_data(city_no))
     requests = asyncio.run(get_requests_data())
     request_batches = []
     batch_size = 125000
