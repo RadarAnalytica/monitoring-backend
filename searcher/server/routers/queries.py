@@ -2,6 +2,8 @@ from datetime import datetime
 from fastapi import APIRouter
 from fastapi.params import Body, Query, Depends
 from starlette.responses import JSONResponse
+
+from server.funcs.get_best_similar import get_best_similar_products
 from settings import logger
 from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
@@ -35,4 +37,14 @@ async def get_products_keywords(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     result = await get_keywords_payload(products=products_ids)
+    return result
+
+
+@query_router.post("/get_similar")
+async def get_products_keywords(
+    product_id: int = Query(), token: str = Depends(oauth2_scheme)
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    result = await get_best_similar_products(product_id=product_id)
     return result
