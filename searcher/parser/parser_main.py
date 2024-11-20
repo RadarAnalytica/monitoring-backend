@@ -7,6 +7,7 @@ from psutil import swap_memory
 
 from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
+from service.log_alert import log_alert, send_log_message
 from settings import logger
 from parser.save_to_db_worker import save_to_db
 
@@ -61,7 +62,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
                         http_session=http_session,
                     )
                 )
-                for i in range(1, 3)
+                for i in range(1, 4)
             ]
             result = await asyncio.gather(*tasks)
             for res in result:
@@ -87,10 +88,11 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
 
 async def get_city_result(city, date, requests, request_batch_no, client=None):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
+    await send_log_message(f"Начался сбор данных по городу:\n{city}")
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
     del requests
     db_queue = asyncio.Queue(2)
-    http_queue = asyncio.Queue(5)
+    http_queue = asyncio.Queue(3)
     logger.info("Запросы есть")
     async with ClientSession() as http_session:
         async with get_async_connection() as client:
@@ -119,7 +121,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
                 try:
                     counter += 1
                     await http_queue.put(requests_list.pop())
-                    if not (counter % 100):
+                    if not (counter % 1000):
                         logger.info(f"Осталось запросов в батче: {len(requests_list)}")
                 except Exception as e:
                     logger.error(f"{e}")
@@ -127,6 +129,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
             await asyncio.gather(*requests_tasks)
             await db_queue.put(None)
             await asyncio.gather(db_worker)
+    await send_log_message(f"Завершен сбор данных по городу: {city}")
 
 
 # def run_pool_threads(func, *args, **kwargs):

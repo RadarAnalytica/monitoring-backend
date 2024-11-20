@@ -46,3 +46,7 @@ CLICKHOUSE_CONFING = {
 SECRET_KEY = os.getenv("SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE")
 
 ALGORITHM = "HS256"
+
+BOT_TOKEN = os.getenv("BOT_TOKEN", None)
+
+ADMINS = os.getenv("ADMINS", [])
