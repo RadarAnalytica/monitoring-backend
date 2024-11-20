@@ -22,7 +22,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
                 WHERE (rp.product != {product_id})
                 AND (c.id = {city})
                 AND (d.date > toStartOfDay(now() - INTERVAL 7 DAY))
-                AND (r.query IN ({','.join(keywords)}))
+                AND (rp.query IN ({','.join(keywords)}))
                 ORDER BY r.quantity DESC, rp.place LIMIT {amount};"""
         query_result = await client.query(query)
         result = [p[0] for p in query_result.result_rows]
