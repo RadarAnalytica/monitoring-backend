@@ -20,9 +20,15 @@ celery_app.conf.result_backend = os.environ.get(
 celery_app.conf.broker_connection_retry_on_startup = True
 
 celery_app.conf.beat_schedule = {
-    "parse_search": {
+    "parse_search_moscow": {
         "task": "fire_requests",
-        "schedule": crontab(hour="22", minute="5",),
+        "schedule": crontab(hour="14", minute="30",),
+        "args": (1,)
+    },
+    "parse_search_vladivostok": {
+        "task": "fire_requests",
+        "schedule": crontab(hour="3", minute="0",),
         "args": (4,)
     }
+
 }

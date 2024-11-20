@@ -12,20 +12,21 @@ from parser.save_to_db_worker import save_to_db
 
 
 async def get_r_data_q(
-    queue: asyncio.Queue, city, date, http_session
+    http_queue: asyncio.Queue, db_queue, city, date, http_session
 ):
     while True:
-        r = await queue.get()
+        r = await http_queue.get()
         if r is None:
-            await queue.put(r)
+            await http_queue.put(r)
             break
         await get_r_data(
             r=r,
             city=city,
             date=date,
             http_session=http_session,
+            db_queue=db_queue
         )
-        queue.task_done()
+
 
 
 async def try_except_query_data(query_string, dest, limit, page, http_session, rqa=5):
@@ -45,7 +46,8 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
 
 
 async def get_r_data(r, city, date, http_session, db_queue=None):
-    while True:
+    count = 0
+    while count <= 3:
         try:
             full_res = []
             tasks = [
@@ -76,51 +78,56 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
                 if cpm > 65535:
                     cpm = 65535
                 request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
-            return request_products
+            await db_queue.put(request_products)
+            return
         except Exception as e:
+            count += 1
             logger.critical(f"{e}")
-            break
 
 
 async def get_city_result(city, date, requests, request_batch_no, client=None):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
-    process_ = psutil.Process()
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
     del requests
+    db_queue = asyncio.Queue(2)
+    http_queue = asyncio.Queue(5)
     logger.info("Запросы есть")
-    batch_size = 12
-    prev = 0
-    full_res = []
     async with ClientSession() as http_session:
         async with get_async_connection() as client:
-            for batch_i in range(batch_size, len(requests_list) + batch_size, batch_size):
-                request_batch = requests_list[prev:batch_i]
-                requests_tasks = [
-                    asyncio.create_task(
-                        get_r_data(
-                            r=r,
-                            city=city,
-                            date=date,
-                            http_session=http_session,
-                        )
+            db_worker = asyncio.create_task(
+                save_to_db(
+                    queue=db_queue,
+                    table="request_product",
+                    fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
+                    client=client
+                )
+            )
+            requests_tasks = [
+                asyncio.create_task(
+                    get_r_data_q(
+                        city=city,
+                        date=date,
+                        http_session=http_session,
+                        db_queue=db_queue,
+                        http_queue=http_queue
                     )
-                    for r in request_batch
-                ]
-                product_batches: tuple = await asyncio.gather(*requests_tasks)
-                prev = batch_i
-                for batch in product_batches:
-                    if isinstance(batch, list):
-                        full_res.extend(batch)
-                if len(full_res) > 8000:
-                    await save_to_db(
-                        items=full_res,
-                        table="request_product",
-                        fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
-                        client=client
-                    )
-                    full_res.clear()
-                    gc.collect()
-                logger.info(f"Память: {process_.memory_info().rss}")
+                )
+                for _ in range(5)
+            ]
+            counter = 0
+            while requests_list:
+                try:
+                    counter += 1
+                    await http_queue.put(requests_list.pop())
+                    if not (counter % 100):
+                        logger.info(f"Осталось запросов в батче: {len(requests_list)}")
+                except Exception as e:
+                    logger.error(f"{e}")
+            await http_queue.put(None)
+            await asyncio.gather(*requests_tasks)
+            await db_queue.put(None)
+            await asyncio.gather(db_worker)
+
 
 # def run_pool_threads(func, *args, **kwargs):
 #     try:
