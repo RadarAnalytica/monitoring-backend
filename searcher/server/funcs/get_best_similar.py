@@ -6,6 +6,7 @@ from clickhouse_db.get_async_connection import get_async_connection
 
 async def get_best_similar_products(product_id, city=1, amount=25):
     async with get_async_connection() as client:
+        start = datetime.now()
         query = f"""SELECT DISTINCT rp.query
         FROM request_product AS rp
         JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
@@ -17,7 +18,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         ORDER BY r.quantity DESC LIMIT 10;"""
         query_result = await client.query(query)
         keywords = [str(kw[0]) for kw in query_result.result_rows]
-        start = datetime.now()
+        logger.info(f"Ключевые слова: {(datetime.now() - start).total_seconds()}s")
         query = f"""SELECT DISTINCT rp.product 
                 FROM request_product AS rp
                 JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
