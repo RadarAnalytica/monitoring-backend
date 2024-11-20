@@ -44,7 +44,7 @@ def fire_requests(city_no):
     prev = 0
     for r_id in range(batch_size, len(requests) + batch_size, batch_size):
         request_batches.append(requests[prev:r_id])
-        prev = batch_size
+        prev = r_id
     city = cities[0]
     for i, r_batch in enumerate(request_batches, 1):
         process_city.delay(city, today_date, r_batch, i)
