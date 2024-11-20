@@ -49,4 +49,10 @@ ALGORITHM = "HS256"
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", None)
 
-ADMINS = os.getenv("ADMINS", [])
+admins_list = (os.getenv("ADMINS", "")).split(",")
+ADMINS = []
+for admin_id in admins_list:
+    try:
+        ADMINS.append(int(admin_id))
+    except ValueError:
+        pass
