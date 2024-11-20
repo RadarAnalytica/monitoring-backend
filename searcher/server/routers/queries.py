@@ -40,7 +40,7 @@ async def get_products_keywords(
     return result
 
 
-@query_router.post("/get_similar")
+@query_router.get("/get_similar")
 async def get_products_keywords(
     product_id: int = Query(), token: str = Depends(oauth2_scheme)
 ):
