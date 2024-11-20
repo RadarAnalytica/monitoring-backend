@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy.dialects.postgresql.psycopg import logger
-
+from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
 
