@@ -29,7 +29,6 @@ async def get_best_similar_products(product_id, city=1, amount=5):
         query = f"""SELECT DISTINCT product 
                 FROM request_product
                 WHERE (product != {product_id})
-                AND (date = {last_date})
                 AND (query IN ({','.join(keywords)}))
                 ORDER BY place 
                 LIMIT {amount};"""
