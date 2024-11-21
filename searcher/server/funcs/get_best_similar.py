@@ -29,7 +29,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
                 AND (city = {city})
                 AND (date = {last_date})
                 AND (query IN ({','.join(keywords)})) 
-                GROUP BY product 
+                GROUP BY product, place 
                 ORDER BY place  
                 LIMIT {amount * 2};"""
         query_result = await client.query(query)
