@@ -70,7 +70,7 @@ async def setup_database():
     #                     ORDER BY (product, city, date, query, place);''')
     #
     logger.info("Tables created successfully.")
-    client.command("""ALTER TABLE request_product ADD INDEX request_product_place_idx my_value TYPE set(100) GRANULARITY 2;""")
+    client.command("""ALTER TABLE request_product ADD INDEX request_product_place_idx place TYPE set(100) GRANULARITY 2;""")
     client.command("""ALTER TABLE request_product MATERIALIZE INDEX request_product_place_idx;""")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
