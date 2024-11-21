@@ -19,7 +19,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         query_result = await client.query(query)
         keywords = [str(kw[0]) for kw in query_result.result_rows]
         logger.info(f"Ключевые слова: {(datetime.now() - start).total_seconds()}s")
-        query = f"""SELECT DISTINCT rp.product 
+        query = f"""SELECT DISTINCT product 
                 FROM request_product
                 WHERE (rp.product != {product_id})
                 AND (city = {city})
