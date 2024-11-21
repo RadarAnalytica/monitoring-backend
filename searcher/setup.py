@@ -70,9 +70,9 @@ async def setup_database():
     #                     ORDER BY (product, city, date, query, place);''')
     #
     logger.info("Tables created successfully.")
-    # client.command("""ALTER TABLE request_product ADD INDEX IF NOT EXISTS request_product_place_minmax_idx place TYPE minmax GRANULARITY 1;""")
-    # client.command("""ALTER TABLE request_product MATERIALIZE INDEX request_product_place_minmax_idx;""")
-    # client.command("""ALTER TABLE request_product DROP INDEX IF EXISTS request_product_place_idx;""")
+    client.command("""ALTER TABLE request_product ADD INDEX IF NOT EXISTS request_product_place_bloom_idx (product, query, place) TYPE bloom_filter GRANULARITY 1;""")
+    client.command("""ALTER TABLE request_product MATERIALIZE INDEX request_product_place_bloom_idx;""")
+    client.command("""ALTER TABLE request_product DROP INDEX IF EXISTS request_product_minmax_place_idx;""")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
     request_product_cols = client.query('''SELECT name, type 
