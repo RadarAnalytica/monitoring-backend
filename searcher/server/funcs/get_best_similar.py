@@ -23,7 +23,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         query_result = await client.query(query)
         last_date = query_result.result_rows[0][0]
         logger.info(f"Дата: {(datetime.now() - start).total_seconds()}s")
-        query = f"""SELECT DISTINCT product 
+        query = f"""EXPLAIN SELECT DISTINCT product 
                 FROM request_product
                 WHERE (product != {product_id})
                 AND (city = {city})
@@ -32,6 +32,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
                 ORDER BY city, date, query, place 
                 LIMIT {amount};"""
         query_result = await client.query(query)
-        result = [p[0] for p in query_result.result_rows][:amount]
+        logger.info(query_result.result_rows)
+        result = [p[0] for p in query_result.result_rows]
         logger.info(f"Выполнено за: {(datetime.now() - start).total_seconds()}s")
     return result
