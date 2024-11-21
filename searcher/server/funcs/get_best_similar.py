@@ -18,7 +18,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         WHERE (rp.product = {product_id})
         AND (c.id = {city})
         AND (d.date > toStartOfDay(now() - INTERVAL 7 DAY))
-        ORDER BY r.quantity DESC LIMIT 10;"""
+        ORDER BY r.quantity DESC LIMIT 5;"""
         query_result = await client.query(query)
         keywords = [str(kw[0]) for kw in query_result.result_rows]
         logger.info(f"Ключевые слова: {(datetime.now() - start).total_seconds()}s")
@@ -26,16 +26,17 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         query_result = await client.query(query)
         last_date = query_result.result_rows[0][0]
         logger.info(f"Дата: {(datetime.now() - start).total_seconds()}s")
-        query = f"""EXPLAIN SELECT DISTINCT product 
-                FROM request_product
-                WHERE (product != {product_id})
-                AND (city = {city})
-                AND (date = {last_date})
-                AND (query IN ({','.join(keywords)}))
-                ORDER BY city, date, query, place 
-                LIMIT {amount};"""
-        query_result = await client.query(query)
-        logger.info(query_result.summary)
-        result = [p[0] for p in query_result.result_rows]
+        r = []
+        for kw in keywords:
+            query = f"""SELECT DISTINCT product 
+                    FROM request_product
+                    WHERE (product != {product_id})
+                    AND (city = {city})
+                    AND (date = {last_date})
+                    AND (query = {kw}) 
+                    ORDER BY place 
+                    LIMIT 5;"""
+            query_result = await client.query(query)
+            r.extend([p[0] for p in query_result.result_rows])
         logger.info(f"Выполнено за: {(datetime.now() - start).total_seconds()}s")
-    return result
+    return list(set(r))
