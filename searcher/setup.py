@@ -70,7 +70,7 @@ async def setup_database():
     #                     ORDER BY (product, city, date, query, place);''')
     #
     logger.info("Tables created successfully.")
-    client.command("""ALTER TABLE request_product DROP INDEX IF EXISTS request_product_place_bloom_idx;""")
+    client.command("""DROP TABLE IF EXISTS request_product_3;""")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
     request_product_cols = client.query('''SELECT name, type 
