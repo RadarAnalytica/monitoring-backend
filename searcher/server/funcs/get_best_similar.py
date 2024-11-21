@@ -1,11 +1,14 @@
 from datetime import datetime
 
+from clickhouse_connect.driver import AsyncClient
+
 from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
 
 async def get_best_similar_products(product_id, city=1, amount=25):
     async with get_async_connection() as client:
+        client: AsyncClient = client
         start = datetime.now()
         query = f"""SELECT DISTINCT rp.query
         FROM request_product AS rp
@@ -32,7 +35,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
                 ORDER BY city, date, query, place 
                 LIMIT {amount};"""
         query_result = await client.query(query)
-        logger.info(query_result.result_rows)
+        logger.info(query_result.summary)
         result = [p[0] for p in query_result.result_rows]
         logger.info(f"Выполнено за: {(datetime.now() - start).total_seconds()}s")
     return result
