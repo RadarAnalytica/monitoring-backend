@@ -29,7 +29,6 @@ async def get_best_similar_products(product_id, city=1, amount=25):
                 AND (city = {city})
                 AND (date = {last_date})
                 AND (query IN ({','.join(keywords)})) 
-                AND (place IN (1,2,3,4,5)) 
                 LIMIT {amount * 2};"""
         query_result = await client.query(query)
         result = list(set([p[0] for p in query_result.result_rows]))[:amount]
