@@ -6,7 +6,7 @@ from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
 
-async def get_best_similar_products(product_id, city=1, amount=5):
+async def get_best_similar_products(product_id, city=1, amount=25):
     async with get_async_connection() as client:
         client: AsyncClient = client
         start = datetime.now()
