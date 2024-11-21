@@ -37,7 +37,7 @@ celery_app.conf.beat_schedule = {
     },
     "parse_search_vladivostok": {
         "task": "fire_requests",
-        "schedule": crontab(hour="20", minute="00",),
+        "schedule": crontab(hour="23", minute="39",),
         "args": (4,)
     }
 
