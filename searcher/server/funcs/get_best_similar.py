@@ -21,7 +21,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         logger.info(f"Ключевые слова: {(datetime.now() - start).total_seconds()}s")
         query = f"""SELECT DISTINCT product 
                 FROM request_product
-                WHERE (rp.product != {product_id})
+                WHERE (product != {product_id})
                 AND (city = {city})
                 AND (date = (SELECT max(id) FROM dates))
                 AND (query IN ({','.join(keywords)}))
