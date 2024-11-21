@@ -30,8 +30,8 @@ async def get_best_similar_products(product_id, city=1, amount=25):
                 AND (date = {last_date})
                 AND (query = {keywords[0]}) 
                 ORDER BY place 
-                LIMIT {amount * 2};"""
+                LIMIT {amount};"""
         query_result = await client.query(query)
-        result = list(set([p[0] for p in query_result.result_rows]))[:amount]
+        result = [p[0] for p in query_result.result_rows]
         logger.info(f"Выполнено за: {(datetime.now() - start).total_seconds()}s")
     return result
