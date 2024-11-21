@@ -1,25 +1,28 @@
 import asyncio
 from datetime import datetime, date
 import pytz
-
+from celery.exceptions import SoftTimeLimitExceeded
 from parser.get_init_data import get_cities_data, get_dates_data, write_new_date, get_requests_data
 from parser.parser_main import get_city_result
 from celery_main import celery_app
 from settings import logger
 
 
-@celery_app.task(name="process_city")
+@celery_app.task(name="process_city", time_limit=3600 * 3)
 def process_city(city, date_, requests, batch_no):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
-    asyncio.run(get_city_result(city, date_, requests, batch_no))
-    end_time = datetime.now()
-    delta = (end_time - start_time).seconds
-    logger.info(
-        f"Старт парса: {start_time.strftime('%H:%M %d.%m.%Y')}\n"
-        f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
-        f"Выполнено за: {delta // 60 // 60} часов, {delta // 60 % 60} минут"
-    )
+    try:
+        asyncio.run(get_city_result(city, date_, requests, batch_no))
+        end_time = datetime.now()
+        delta = (end_time - start_time).seconds
+        logger.info(
+            f"Старт парса: {start_time.strftime('%H:%M %d.%m.%Y')}\n"
+            f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
+            f"Выполнено за: {delta // 60 // 60} часов, {delta // 60 % 60} минут"
+        )
+    except SoftTimeLimitExceeded:
+        logger.info(f"Превышен лимит времени: город: {city} батч: {batch_no}")
 
 
 @celery_app.task(name="fire_requests")
