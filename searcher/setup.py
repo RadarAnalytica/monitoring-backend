@@ -56,8 +56,8 @@ async def setup_database():
                     PRIMARY KEY (product, city, date) 
                     ORDER BY (product, city, date, query);''')
     logger.info("Tables created successfully.")
-    # client.command("""ALTER TABLE request_product ADD INDEX idx_bloom_place place TYPE bloom_filter(0.1) GRANULARITY 1;""")
-    # client.command("""ALTER TABLE request_product MATERIALIZE INDEX idx_bloom_place;""")
+    client.command("""ALTER TABLE request_product ADD INDEX idx_bloom_place place TYPE bloom_filter(0.01) GRANULARITY 1;""")
+    client.command("""ALTER TABLE request_product MATERIALIZE INDEX idx_bloom_place;""")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
     request_product_cols = client.query('''SELECT name, type 
