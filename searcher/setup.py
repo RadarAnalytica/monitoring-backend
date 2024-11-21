@@ -70,8 +70,11 @@ async def setup_database():
     #                     ORDER BY (product, city, date, query, place);''')
     #
     client.command("""
-    EXCHANGE TABLES request_product_2 AND request_product;
+    RENAME TABLE request_product TO request_product_3;
     """)
+    client.command("""
+        RENAME TABLE request_product_2 TO request_product;
+        """)
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
