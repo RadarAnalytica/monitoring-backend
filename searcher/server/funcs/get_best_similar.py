@@ -26,12 +26,13 @@ async def get_best_similar_products(product_id, city=1, amount=25):
         query_result = await client.query(query)
         last_date = query_result.result_rows[0][0]
         logger.info(f"Дата: {(datetime.now() - start).total_seconds()}s")
-        query = f"""SELECT DISTINCT product 
+        query = f"""SELECT product 
                 FROM request_product
                 WHERE (product != {product_id})
                 AND (city = {city})
                 AND (date = {last_date})
                 AND (query IN ({','.join(keywords)}))
+                AND (place < 10)
                 ORDER BY place 
                 LIMIT {amount};"""
         query_result = await client.query(query)
