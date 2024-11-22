@@ -130,6 +130,7 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
             await db_queue.put(None)
             await asyncio.gather(db_worker)
     await send_log_message(f"Завершен сбор данных по городу: {city}")
+    return
 
 
 # def run_pool_threads(func, *args, **kwargs):

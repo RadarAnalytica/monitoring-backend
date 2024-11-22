@@ -43,34 +43,20 @@ async def setup_database():
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY name;
         ''')
-    # client.command('''CREATE TABLE IF NOT EXISTS request_product_3 (
-    #                     product UInt32 CODEC(LZ4HC),
-    #                     city UInt8 CODEC(LZ4HC),
-    #                     date UInt16 CODEC(LZ4HC),
-    #                     query UInt32 CODEC(LZ4HC),
-    #                     place UInt16 Codec(LZ4HC),
-    #                     advert FixedString(1) Codec(LZ4HC),
-    #                     natural_place UInt16 Codec (LZ4HC),
-    #                     cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
-    #                 ) ENGINE = MergeTree()
-    #                 PRIMARY KEY (product, city, date)
-    #                 ORDER BY (product, city, date, query);''')
-    #
-    # client.command('''CREATE TABLE IF NOT EXISTS request_product(
-    #                         product UInt32 CODEC(LZ4HC),
-    #                         city UInt8 CODEC(LZ4HC),
-    #                         date UInt16 CODEC(LZ4HC),
-    #                         query UInt32 CODEC(LZ4HC),
-    #                         place UInt16 Codec(LZ4HC),
-    #                         advert FixedString(1) Codec(LZ4HC),
-    #                         natural_place UInt16 Codec (LZ4HC),
-    #                         cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
-    #                     ) ENGINE = MergeTree()
-    #                     PRIMARY KEY (product, city, date)
-    #                     ORDER BY (product, city, date, query, place);''')
-    #
+    client.command('''CREATE TABLE IF NOT EXISTS request_product(
+                            product UInt32 CODEC(LZ4HC),
+                            city UInt8 CODEC(LZ4HC),
+                            date UInt16 CODEC(LZ4HC),
+                            query UInt32 CODEC(LZ4HC),
+                            place UInt16 Codec(LZ4HC),
+                            advert FixedString(1) Codec(LZ4HC),
+                            natural_place UInt16 Codec (LZ4HC),
+                            cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
+                        ) ENGINE = MergeTree()
+                        PRIMARY KEY (product, city, date)
+                        ORDER BY (product, city, date, query, place);''')
+
     logger.info("Tables created successfully.")
-    client.command("""DROP TABLE IF EXISTS request_product_3;""")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
     request_product_cols = client.query('''SELECT name, type 
