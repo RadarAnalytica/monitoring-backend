@@ -15,6 +15,7 @@ async def send_log_message(message: str, ex: Exception | None = None):
                 await bot.send_message(admin, f"Мониторинг\n{message}\nОшибка: {ex}")
             else:
                 await bot.send_message(admin, f"Мониторинг\nСообщение: {message}")
+    return
 
 
 def log_alert(message=None, track_error=False):
