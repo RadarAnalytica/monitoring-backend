@@ -25,13 +25,13 @@ async def upload_csv(
     try:
         contents = [tuple(row) for row in pd.read_csv(file.file).itertuples(index=False)]
 
-        # requests_data, error_rows = await prepare_csv_contents(contents)
-        # background_tasks.add_task(upload_requests_csv_bg, requests_data)
+        requests_data, error_rows = await prepare_csv_contents(contents)
+        background_tasks.add_task(upload_requests_csv_bg, requests_data)
     except Exception as e:
         logger.error(f"{e}")
         return {"message": "There was an error uploading the file"}
     return JSONResponse(
-        content={"message": "CSV uploaded to background.", "error_rows": dict(contents[:10])},
+        content={"message": "CSV uploaded to background.", "error_rows": error_rows},
         status_code=201,
     )
 
