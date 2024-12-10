@@ -64,8 +64,12 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
             ]
             result = await asyncio.gather(*tasks)
             preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
-            preset = int(preset) if preset else None
-            norm_query = result[0].get("metadata", dict()).get("normquery", None)
+            try:
+                preset = int(preset) if preset else None
+                norm_query = result[0].get("metadata", dict()).get("normquery", None)
+            except (ValueError, TypeError):
+                preset = None
+                norm_query = None
             for res in result:
                 full_res.extend(res.get("data").get("products", []))
             if not full_res:
