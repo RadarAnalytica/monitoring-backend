@@ -66,22 +66,6 @@ async def get_product_db_data(product_id, city, interval):
                 prev_place = date_row[1]
                 prev_date = date_row[0]
             result["queries"].append(row_res)
-
-        # result = {
-        #     "dates": dates.result(),
-        #     "queries":
-        #     [
-        #     {
-        #         "query": row[0],
-        #         "quantity": row[1],
-        #         "dates": {
-        #             str(j_row[0]): {"place": j_row[1], "ad": j_row[2].decode() if j_row[2] != b"z" else None,
-        #                             "nat": j_row[3] or None, "cpm": j_row[4] or 0 if j_row[2] != b"z" else None}
-        #             for j_row in row[2]
-        #         }
-        #     }
-        #     for row in query_result.result().result_rows
-        # ]}
     return result
 
 
