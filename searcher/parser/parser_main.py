@@ -84,7 +84,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
                     cpm = 65535
                 request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
             if client and preset and norm_query:
-                await save_to_db_single(client=client, table="preset", fields=["preset", "norm_query", "query", "city", "date"], data=((preset, norm_query, r[1], city[1]), date[1]))
+                await save_to_db_single(client=client, table="preset", fields=["preset", "norm_query", "query", "city", "date"], data=((preset, norm_query, r[1], city[0], date[1]), ))
             await db_queue.put(request_products)
             return
         except Exception as e:
