@@ -5,7 +5,6 @@ async def get_preset_db_data(city=2):
     async with get_async_connection() as client:
         query = f"""SELECT preset, groupArray(norm_query) AS query_info FROM preset 
         WHERE (date = (SELECT max(date) FROM preset)) 
-        AND (city = {city}) 
         GROUP BY preset 
         ORDER BY preset;"""
         q = await client.query(query)
