@@ -1,13 +1,10 @@
 import asyncio
-import gc
 
-import psutil
 from aiohttp import ClientSession
-from psutil import swap_memory
 
 from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
-from service.log_alert import log_alert, send_log_message
+from service.log_alert import send_log_message
 from settings import logger
 from parser.save_to_db_worker import save_to_db, save_to_db_single
 
@@ -70,7 +67,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
             preset = int(preset) if preset else None
             norm_query = result[0].get("metadata", dict()).get("normquery", None)
             for res in result:
-                full_res.extend(res.get("products", []))
+                full_res.extend(res.get("data").get("products", []))
             if not full_res:
                 full_res = []
             request_products = []

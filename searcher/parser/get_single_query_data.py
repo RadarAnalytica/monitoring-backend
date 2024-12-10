@@ -29,7 +29,7 @@ async def get_query_data(
                     try:
                         _data = await response.json(content_type="text/plain")
                     except (ContentTypeError, JSONDecodeError):
-                        return _data.get("data")
+                        return _data
                 else:
                     # logger.critical("response not ok")
                     continue
@@ -40,8 +40,19 @@ async def get_query_data(
             counter -= 1
             continue
 
-    return _data.get("data")
+    return _data
 
-
+async def test():
+    async with ClientSession() as session:
+        res = await get_query_data(session, "джинсы женски", 286, 300, 1)
+        preset = res.get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
+        normquery = res.get("metadata", dict()).get("normquery", "")
+        if preset:
+            preset = int(preset)
+        print(preset or None)
+        print(normquery or None)
 # взято с https://user-geo-data.wildberries.ru/get-geo-info?latitude=[ШИРОТА float]&longitude=[ДОЛГОТА float]
 # {"Москва": -1257786, "Краснодар": 12358063, "Екатеринбург": -5817698, "Владивосток": 123587791}
+
+if __name__ == "__main__":
+    asyncio.run(test())
