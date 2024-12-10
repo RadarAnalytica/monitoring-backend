@@ -9,11 +9,11 @@ from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
 from service.log_alert import log_alert, send_log_message
 from settings import logger
-from parser.save_to_db_worker import save_to_db
+from parser.save_to_db_worker import save_to_db, save_to_db_single
 
 
 async def get_r_data_q(
-    http_queue: asyncio.Queue, db_queue, city, date, http_session
+    http_queue: asyncio.Queue, db_queue, city, date, http_session, client=None
 ):
     while True:
         r = await http_queue.get()
@@ -25,7 +25,8 @@ async def get_r_data_q(
             city=city,
             date=date,
             http_session=http_session,
-            db_queue=db_queue
+            db_queue=db_queue,
+            client=client
         )
 
 
@@ -46,7 +47,7 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
     return x
 
 
-async def get_r_data(r, city, date, http_session, db_queue=None):
+async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
     count = 0
     while count <= 3:
         try:
@@ -65,6 +66,9 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
                 for i in range(1, 4)
             ]
             result = await asyncio.gather(*tasks)
+            preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
+            preset = int(preset) if preset else None
+            norm_query = result[0].get("metadata", dict()).get("normquery", None)
             for res in result:
                 full_res.extend(res.get("products", []))
             if not full_res:
@@ -79,6 +83,8 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
                 if cpm > 65535:
                     cpm = 65535
                 request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
+            if client and preset and norm_query:
+                await save_to_db_single(client=client, table="preset", fields=["preset", "norm_query", "query", "city", "date"], data=((preset, norm_query, r[1], city[1]), date[1]))
             await db_queue.put(request_products)
             return
         except Exception as e:
@@ -86,7 +92,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None):
             logger.critical(f"{e}")
 
 
-async def get_city_result(city, date, requests, request_batch_no, client=None):
+async def get_city_result(city, date, requests, request_batch_no):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
     await send_log_message(f"Начался сбор данных по городу:\n{city}")
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
@@ -111,7 +117,8 @@ async def get_city_result(city, date, requests, request_batch_no, client=None):
                         date=date,
                         http_session=http_session,
                         db_queue=db_queue,
-                        http_queue=http_queue
+                        http_queue=http_queue,
+                        client=client
                     )
                 )
                 for _ in range(5)
