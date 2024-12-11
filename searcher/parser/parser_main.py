@@ -6,11 +6,11 @@ from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
 from service.log_alert import send_log_message
 from settings import logger
-from parser.save_to_db_worker import save_to_db, save_to_db_single
+from parser.save_to_db_worker import save_to_db
 
 
 async def get_r_data_q(
-    http_queue: asyncio.Queue, db_queue, city, date, http_session, client=None
+    http_queue: asyncio.Queue, db_queue, city, date, http_session, preset_queue=None
 ):
     while True:
         r = await http_queue.get()
@@ -23,7 +23,7 @@ async def get_r_data_q(
             date=date,
             http_session=http_session,
             db_queue=db_queue,
-            client=client
+            preset_queue=preset_queue
         )
 
 
@@ -44,7 +44,7 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
     return x
 
 
-async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
+async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=None):
     count = 0
     while count <= 3:
         try:
@@ -77,7 +77,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
                 if cpm > 65535:
                     cpm = 65535
                 request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
-            if client:
+            if preset_queue:
                 preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
                 try:
                     preset = int(preset) if preset else None
@@ -86,11 +86,8 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
                     preset = None
                     norm_query = None
                 if preset and norm_query:
-                    await save_to_db_single(
-                        client=client,
-                        table="preset",
-                        fields=["preset", "norm_query", "query", "date"],
-                        data=((preset, norm_query, r[0], date[1]), )
+                    await preset_queue.put(
+                        [(preset, norm_query, r[0], date[1])]
                     )
             await db_queue.put(request_products)
             return
@@ -104,6 +101,9 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
     await send_log_message(f"Начался сбор данных по городу:\n{city}")
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
     del requests
+    preset_queue = None
+    if get_preset:
+        preset_queue = asyncio.Queue(2)
     db_queue = asyncio.Queue(2)
     http_queue = asyncio.Queue(3)
     logger.info("Запросы есть")
@@ -117,6 +117,15 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                     client=client
                 )
             )
+            if get_preset:
+                preset_worker = asyncio.create_task(
+                    save_to_db(
+                        queue=preset_queue,
+                        table="preset",
+                        fields=["preset", "norm_query", "query", "date"],
+                        client=client
+                    )
+                )
             requests_tasks = [
                 asyncio.create_task(
                     get_r_data_q(
@@ -125,7 +134,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         http_session=http_session,
                         db_queue=db_queue,
                         http_queue=http_queue,
-                        client=client if get_preset else None
+                        preset_queue=preset_queue,
                     )
                 )
                 for _ in range(5)
@@ -143,6 +152,9 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
             await asyncio.gather(*requests_tasks)
             await db_queue.put(None)
             await asyncio.gather(db_worker)
+            if get_preset:
+                await preset_queue.put(None)
+                await asyncio.gather(preset_worker)
     await send_log_message(f"Завершен сбор данных по городу: {city}")
     return
 
