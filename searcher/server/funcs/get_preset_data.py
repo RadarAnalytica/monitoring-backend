@@ -11,5 +11,5 @@ async def get_preset_db_data():
         q = await client.query(query)
     result = dict()
     for row in q.result_rows:
-        result[row[0]] = list(row[1])
+        result[row[0]] = {"name": row[1], "queries": list(row[2])}
     return result

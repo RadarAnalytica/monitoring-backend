@@ -25,11 +25,11 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour="15", minute="40",),
         "args": (1,)
     },
-    # "parse_search_krasnodar": {
-    #     "task": "fire_requests",
-    #     "schedule": crontab(hour="15", minute="30",),
-    #     "args": (2,)
-    # },
+    "parse_search_krasnodar": {
+        "task": "fire_requests",
+        "schedule": crontab(hour="18", minute="30",),
+        "args": (2,)
+    },
     # "parse_search_ekaterinburg": {
     #     "task": "fire_requests",
     #     "schedule": crontab(hour="19", minute="30",),
