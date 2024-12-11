@@ -32,7 +32,7 @@ async def save_to_db(queue: asyncio.Queue, table, fields, client: AsyncClient):
 async def save_to_db_single(table, fields, client: AsyncClient, data):
     try:
         await client.insert(table, data, column_names=fields)
-        logger.info(f"Запись в preset {data[0][0]} query: {data[0][1]} date: {data[0][2]}")
+        logger.info(f"Запись в preset {data[0][0]} norm_query: {data[0][1]} query: {data[0][2]} date: {data[0][-1]}")
         gc.collect()
     except Exception as e:
         logger.critical(f"{e}, {data}")

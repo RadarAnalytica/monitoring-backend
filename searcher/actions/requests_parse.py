@@ -8,12 +8,12 @@ from celery_main import celery_app
 from settings import logger
 
 
-@celery_app.task(name="process_city", time_limit=3600 * 3)
+@celery_app.task(name="process_city", time_limit=3600 * 4)
 def process_city(city, date_, requests, batch_no):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
     try:
-        asyncio.run(get_city_result(city, date_, requests, batch_no))
+        asyncio.run(get_city_result(city, date_, requests, batch_no, get_preset=True if city[0] == 1 else False))
         end_time = datetime.now()
         delta = (end_time - start_time).seconds
         logger.info(

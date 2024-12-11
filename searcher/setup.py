@@ -55,16 +55,15 @@ async def setup_database():
                         ) ENGINE = MergeTree()
                         PRIMARY KEY (product, city, date)
                         ORDER BY (product, city, date, query, place);''')
-
+    client.command('''DROP TABLE IF EXISTS preset;''')
     client.command('''CREATE TABLE IF NOT EXISTS preset(
                           preset Int64 CODEC(LZ4HC),
                           norm_query String CODEC(LZ4HC),
-                          query String CODEC(LZ4HC),
-                          city UInt8 CODEC(LZ4HC),
+                          query UInt32 CODEC(LZ4HC),
                           date Date CODEC(LZ4HC)
                       ) ENGINE = MergeTree()
-                      PRIMARY KEY (preset, norm_query, query)
-                      ORDER BY (preset, norm_query, query)
+                      PRIMARY KEY (preset, query, norm_query)
+                      ORDER BY (preset, query, norm_query)
                       TTL date + INTERVAL 2 DAY;''')
 
     logger.info("Tables created successfully.")

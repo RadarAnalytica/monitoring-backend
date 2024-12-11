@@ -63,13 +63,6 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
                 for i in range(1, 4)
             ]
             result = await asyncio.gather(*tasks)
-            preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
-            try:
-                preset = int(preset) if preset else None
-                norm_query = result[0].get("metadata", dict()).get("normquery", None)
-            except (ValueError, TypeError):
-                preset = None
-                norm_query = None
             for res in result:
                 full_res.extend(res.get("data").get("products", []))
             if not full_res:
@@ -84,8 +77,21 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
                 if cpm > 65535:
                     cpm = 65535
                 request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
-            if client and preset and norm_query:
-                await save_to_db_single(client=client, table="preset", fields=["preset", "norm_query", "query", "city", "date"], data=((preset, norm_query, r[1], city[0], date[1]), ))
+            if client:
+                preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
+                try:
+                    preset = int(preset) if preset else None
+                    norm_query = result[0].get("metadata", dict()).get("normquery", None)
+                except (ValueError, TypeError):
+                    preset = None
+                    norm_query = None
+                if preset and norm_query:
+                    await save_to_db_single(
+                        client=client,
+                        table="preset",
+                        fields=["preset", "norm_query", "query", "date"],
+                        data=((preset, norm_query, r[0], date[1]), )
+                    )
             await db_queue.put(request_products)
             return
         except Exception as e:
@@ -93,7 +99,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None, client=None):
             logger.critical(f"{e}")
 
 
-async def get_city_result(city, date, requests, request_batch_no):
+async def get_city_result(city, date, requests, request_batch_no, get_preset=False):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
     await send_log_message(f"Начался сбор данных по городу:\n{city}")
     requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
@@ -119,7 +125,7 @@ async def get_city_result(city, date, requests, request_batch_no):
                         http_session=http_session,
                         db_queue=db_queue,
                         http_queue=http_queue,
-                        client=client
+                        client=client if get_preset else None
                     )
                 )
                 for _ in range(5)
