@@ -40,6 +40,8 @@ async def get_product_queries_latest(
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
+    if not city:
+        city = -1257786
     start = datetime.now()
     result = await get_product_db_data_latest(product_id, city)
     logger.info(f"Время выполнения latest {(datetime.now() - start).total_seconds()}s")
