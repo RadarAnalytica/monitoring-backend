@@ -69,4 +69,31 @@ async def get_product_db_data(product_id, city, interval):
     return result
 
 
+async def get_product_db_data_latest(product_id, city):
+    now = datetime.now().date() - timedelta(days=1)
+    async with get_async_connection() as client:
+        query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
+        FROM request_product AS rp
+        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
+        JOIN dates as d ON d.id = rp.date
+        JOIN city as c ON c.id = rp.city
+        WHERE (rp.product = {product_id})
+        AND (c.dest = {city})
+        AND (d.date = '{str(now)}')
+        ORDER BY r.quantity DESC;"""
+        query_result = await client.query(query)
+        result = {"queries": []}
+        for row in query_result.result().result_rows:
+            row_res = {
+                "query": row[0],
+                "quantity": row[1],
+                "place": row[2],
+                "ad_type": row[3].decode() if row[3] != b"z" else None,
+                "nat_place": row[4] or 0 if row[3] != b"z" else None,
+                "cpm": row[5] or 0 if row[3] != b"z" else None
+            }
+            result["queries"].append(row_res)
+    return result
+
+
 
