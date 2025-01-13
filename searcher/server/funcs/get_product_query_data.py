@@ -83,7 +83,7 @@ async def get_product_db_data_latest(product_id, city):
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query)
         result = {"queries": []}
-        for row in query_result.result().result_rows:
+        for row in query_result.result_rows:
             row_res = {
                 "query": row[0],
                 "quantity": row[1],
