@@ -33,7 +33,7 @@ async def get_product_queries_v2(
 
 
 @query_router.get("/latest")
-async def get_product_queries_v2(
+async def get_product_queries_latest(
     product_id: int = Query(),
     city: Optional[int] = Query(default=None),
     token: str = Depends(oauth2_scheme),
