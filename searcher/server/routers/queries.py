@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter
 from fastapi.params import Body, Query, Depends
 from starlette.responses import JSONResponse
@@ -33,14 +35,13 @@ async def get_product_queries_v2(
 @query_router.get("/latest")
 async def get_product_queries_v2(
     product_id: int = Query(),
-    city: int = Query(),
-    interval: int = Query(),
+    city: Optional[int] = Query(default=None),
     token: str = Depends(oauth2_scheme),
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     start = datetime.now()
-    result = await get_product_db_data(product_id, city, interval)
+    result = await get_product_db_data_latest(product_id, city)
     logger.info(f"Время выполнения latest {(datetime.now() - start).total_seconds()}s")
     return result
 
