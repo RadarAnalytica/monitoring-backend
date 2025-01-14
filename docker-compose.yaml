@@ -1,6 +1,6 @@
 services:
   db:
-    image: yandex/clickhouse-server:latest
+    image: clickhouse/clickhouse-server
     container_name: ${CLICKHOUSE_DB_NAME}
     volumes:
       - ./app_data/db:/var/lib/clickhouse
