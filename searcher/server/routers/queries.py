@@ -32,6 +32,21 @@ async def get_product_queries_v2(
     return result
 
 
+@query_router.get("/product_bot")
+async def get_product_simple(
+    product_id: int = Query(),
+    city: int = Query(),
+    interval: int = Query(),
+    token: str = Depends(oauth2_scheme),
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    start = datetime.now()
+    result = await get_product_db_data(product_id, city, interval)
+    logger.info(f"Время выполнения product_bot {(datetime.now() - start).total_seconds()}s")
+    return result
+
+
 @query_router.get("/latest")
 async def get_product_queries_latest(
     product_id: int = Query(),

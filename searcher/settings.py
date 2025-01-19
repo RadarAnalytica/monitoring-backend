@@ -1,4 +1,3 @@
-import os
 from os import getenv
 from pathlib import Path
 from sys import stdout
@@ -28,28 +27,28 @@ POPULAR_REQUESTS_URL = "https://seller.wildberries.ru/popular-search-requests"
 
 GEOCODING_URL = "https://openweathermap.org/api/geocoding-api"
 
-REDIS_HOST = os.getenv("REDIS_CONTAINER_NAME", "localhost")
+REDIS_HOST = getenv("REDIS_CONTAINER_NAME", "localhost")
 
 POSTGRES_CONFIG = {
     "driver": "postgresql+asyncpg",
-    "username": os.getenv("PG_USER", "admin"),
-    "password": os.getenv("PG_PASSWORD", "admin321"),
-    "database": os.getenv("PG_DATABASE", "admin"),
-    "host": os.getenv("PG_HOST", "localhost"),
-    "port": os.getenv("PG_PORT", "5432"),
+    "username": getenv("PG_USER", "admin"),
+    "password": getenv("PG_PASSWORD", "admin321"),
+    "database": getenv("PG_DATABASE", "admin"),
+    "host": getenv("PG_HOST", "localhost"),
+    "port": getenv("PG_PORT", "5432"),
 }
 
 CLICKHOUSE_CONFING = {
-    "host": os.getenv("CLICKHOUSE_DB_NAME", "localhost"),
-    "username": os.getenv("CLICKHOUSE_USERNAME", "default"),
+    "host": getenv("CLICKHOUSE_DB_NAME", "localhost"),
+    "username": getenv("CLICKHOUSE_USERNAME", "default"),
 }
-SECRET_KEY = os.getenv("SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE")
+SECRET_KEY = getenv("SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE")
 
 ALGORITHM = "HS256"
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", None)
+BOT_TOKEN = getenv("BOT_TOKEN", None)
 
-admins_list = (os.getenv("ADMINS", "")).split(",")
+admins_list = (getenv("ADMINS", "")).split(",")
 ADMINS = []
 for admin_id in admins_list:
     try:
