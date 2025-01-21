@@ -13,6 +13,11 @@ async def gen_dates(interval):
 
 
 async def get_product_db_data(product_id, city, interval):
+    params = {
+        "v1": product_id,
+        "v2": city,
+        "v3": interval
+    }
     async with get_async_connection() as client:
         query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place, sd.advert, sd.natural_place, sd.cpm)) AS date_info
         FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place, rp.advert as advert, rp.natural_place as natural_place, rp.cpm as cpm 
@@ -20,15 +25,15 @@ async def get_product_db_data(product_id, city, interval):
         JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
         JOIN dates as d ON d.id = rp.date
         JOIN city as c ON c.id = rp.city
-        WHERE (rp.product = {product_id})
-        AND (c.dest = {city})
-        AND (d.date > toStartOfDay(now() - INTERVAL {interval} DAY))
+        WHERE (rp.product = %(v1)s)
+        AND (c.dest = %(v2)s)
+        AND (d.date > toStartOfDay(now() - INTERVAL %(v3)s DAY))
         ORDER BY rp.date, r.quantity DESC
         ) AS sd
         GROUP BY sd.query, sd.quantity
         ORDER BY sd.quantity DESC, sd.query;"""
         async with TaskGroup() as tg:
-            query_result = tg.create_task(client.query(query))
+            query_result = tg.create_task(client.query(query, parameters=params))
             dates = tg.create_task(gen_dates(interval))
         dates = dates.result()
         result = {"dates": dates, "queries": []}
@@ -71,17 +76,22 @@ async def get_product_db_data(product_id, city, interval):
 
 async def get_product_db_data_latest(product_id, city):
     now = datetime.now().date() - timedelta(days=1)
+    params = {
+        "v1": product_id,
+        "v2": city,
+        "v3": now
+    }
     async with get_async_connection() as client:
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
         FROM request_product AS rp
         JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
         JOIN dates as d ON d.id = rp.date
         JOIN city as c ON c.id = rp.city
-        WHERE (rp.product = {product_id})
-        AND (c.dest = {city})
-        AND (d.date = '{str(now)}')
+        WHERE (rp.product = %(v1)s)
+        AND (c.dest = %(v2)s)
+        AND (d.date = %(v3)s)
         ORDER BY r.quantity DESC;"""
-        query_result = await client.query(query)
+        query_result = await client.query(query, parameters=params)
         result = {"queries": []}
         for row in query_result.result_rows:
             row_res = {

@@ -39,8 +39,10 @@ POSTGRES_CONFIG = {
 }
 
 CLICKHOUSE_CONFING = {
-    "host": getenv("CLICKHOUSE_DB_NAME", "localhost"),
-    "username": getenv("CLICKHOUSE_USERNAME", "default"),
+    "host": getenv("CLICKHOUSE_CONTAINER_NAME", "localhost"),
+    "username": getenv("CLICKHOUSE_USER", "default"),
+    "password": getenv("CLICKHOUSE_PASSWORD", ""),
+    "database": getenv("CLICKHOUSE_DB", "__default__"),
 }
 SECRET_KEY = getenv("SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE")
 

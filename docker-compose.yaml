@@ -1,12 +1,13 @@
 services:
   db:
     image: clickhouse/clickhouse-server
-    container_name: ${CLICKHOUSE_DB_NAME}
+    container_name: ${CLICKHOUSE_CONTAINER_NAME}
     volumes:
       - ./app_data/db:/var/lib/clickhouse
-    ports:
-      - "9000:9000"
-      - "8123:8123"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1" ]
       interval: 10s
