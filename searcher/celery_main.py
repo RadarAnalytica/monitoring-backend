@@ -22,22 +22,22 @@ celery_app.conf.broker_connection_retry_on_startup = True
 celery_app.conf.beat_schedule = {
     "parse_search_moscow": {
         "task": "fire_requests",
-        "schedule": crontab(hour="9", minute="30",),
+        "schedule": crontab(hour="12", minute="50",),
         "args": (1,)
     },
     "parse_search_krasnodar": {
         "task": "fire_requests",
-        "schedule": crontab(hour="14", minute="0",),
+        "schedule": crontab(hour="15", minute="30",),
         "args": (2,)
     },
     "parse_search_ekaterinburg": {
         "task": "fire_requests",
-        "schedule": crontab(hour="18", minute="0",),
+        "schedule": crontab(hour="19", minute="0",),
         "args": (3,)
     },
     "parse_search_vladivostok": {
         "task": "fire_requests",
-        "schedule": crontab(hour="22", minute="0",),
+        "schedule": crontab(hour="22", minute="30",),
         "args": (4,)
     }
 
