@@ -43,18 +43,20 @@ async def setup_database():
         ) ENGINE = ReplacingMergeTree(updated)
         ORDER BY name;
         ''')
-    client.command('''CREATE TABLE IF NOT EXISTS request_product(
-                            product UInt32 CODEC(LZ4HC),
-                            city UInt8 CODEC(LZ4HC),
-                            date UInt16 CODEC(LZ4HC),
-                            query UInt32 CODEC(LZ4HC),
-                            place UInt16 Codec(LZ4HC),
-                            advert FixedString(1) Codec(LZ4HC),
-                            natural_place UInt16 Codec (LZ4HC),
-                            cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
-                        ) ENGINE = MergeTree()
-                        PRIMARY KEY (product, city, date)
-                        ORDER BY (product, city, date, query, place);''')
+    client.command(
+        '''CREATE TABLE IF NOT EXISTS request_product(
+            product UInt32 CODEC(LZ4HC),
+            city UInt8 CODEC(LZ4HC),
+            date UInt16 CODEC(LZ4HC),
+            query UInt32 CODEC(LZ4HC),
+            place UInt16 Codec(LZ4HC),
+            advert FixedString(1) Codec(LZ4HC),
+            natural_place UInt16 Codec (LZ4HC),
+            cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
+        ) ENGINE = MergeTree()
+        PRIMARY KEY (product, city, date, query)
+        ORDER BY (product, city, date, query, place);'''
+    )
     client.command('''CREATE TABLE IF NOT EXISTS preset(
                           preset Int64 CODEC(LZ4HC),
                           norm_query String CODEC(LZ4HC),
