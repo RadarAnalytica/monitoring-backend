@@ -34,27 +34,27 @@ services:
     container_name: ${REDIS_CONTAINER_NAME}
     image: redis:7-alpine
 
-#  celery:
-#    build: .
-#    container_name: celery_worker
-#    entrypoint: celery -A celery_main.celery_app worker --autoscale=10,0 --loglevel=info
-#    env_file:
-#      - .env
-#    volumes:
-#      - ./logs:/app_data/logs/celery
-#    depends_on:
-#      - redis
-#
-#  celery-beat:
-#    build: .
-#    container_name: celery_beat
-#    entrypoint: celery -A celery_main.celery_app beat --loglevel=info
-#    env_file:
-#      - .env
-#    volumes:
-#      - ./logs:/app_data/logs/celery_beat
-#    depends_on:
-#        - redis
+  celery:
+    build: .
+    container_name: celery_worker
+    entrypoint: celery -A celery_main.celery_app worker --autoscale=10,0 --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app_data/logs/celery
+    depends_on:
+      - redis
+
+  celery-beat:
+    build: .
+    container_name: celery_beat
+    entrypoint: celery -A celery_main.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app_data/logs/celery_beat
+    depends_on:
+        - redis
 
 
 networks:
