@@ -87,3 +87,5 @@ venv/
 
 # VS Code
 .vscode/
+searcher/downloads_patch/
+downloads_patch/
