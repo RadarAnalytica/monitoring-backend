@@ -4,6 +4,8 @@ services:
     container_name: ${CLICKHOUSE_CONTAINER_NAME}
     volumes:
       - ./app_data/db:/var/lib/clickhouse
+      - ./logs/db:/var/log/clickhouse-server
+      - ./clickhouse:/etc/clickhouse-server
     environment:
       CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
