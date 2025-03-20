@@ -11,7 +11,7 @@ async def get_query_data(
 ):
     _data = {"data": {"products": []}}
     counter = 0
-    while len(_data.get("data", {}).get("products", [])) < 2 and counter < rqa:
+    while len(_data.get("data", dict()).get("products", [])) < 2 and counter < rqa:
         counter += 1
         try:
             async with http_session.get(
@@ -44,13 +44,9 @@ async def get_query_data(
 
 async def test():
     async with ClientSession() as session:
-        res = await get_query_data(session, "джинсы женски", 286, 300, 1)
-        preset = res.get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
-        normquery = res.get("metadata", dict()).get("normquery", "")
-        if preset:
-            preset = int(preset)
-        print(preset or None)
-        print(normquery or None)
+        res = await get_query_data(session, "джинсы женские", -1257786, 20, 1)
+        for product in res.get("data", {}).get("products"):
+            print(f"{product.get("id")},")
 # взято с https://user-geo-data.wildberries.ru/get-geo-info?latitude=[ШИРОТА float]&longitude=[ДОЛГОТА float]
 # {"Москва": -1257786, "Краснодар": 12358063, "Екатеринбург": -5817698, "Владивосток": 123587791}
 

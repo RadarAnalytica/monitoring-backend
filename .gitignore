@@ -162,3 +162,5 @@ cython_debug/
 .idea/
 app_data/
 log/
+downloads_patch/
+searcher/downloads_patch/

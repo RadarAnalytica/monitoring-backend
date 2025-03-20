@@ -66,6 +66,13 @@ async def setup_database():
                       PRIMARY KEY (preset, query, norm_query)
                       ORDER BY (preset, query, norm_query)
                       TTL date + INTERVAL 2 DAY;''')
+    client.command('''CREATE TABLE IF NOT EXISTS request_frequency(
+            query_id UInt32 CODEC(LZ4HC),
+            date Date CODEC(LZ4HC),
+            frequency UInt32 CODEC(LZ4HC),
+        ) ENGINE = MergeTree()
+        PRIMARY KEY (query_id, date)
+        ORDER BY (query_id, date);''')
     logger.info("Tables created successfully.")
     tables = client.query("SHOW TABLES")
     logger.info(tables.result_rows)
