@@ -47,7 +47,7 @@ async def download_file(session, filename, direct_link):
     print(f"❌ Ошибка при скачивании {filename}: {response.status}")
     return None
 
-async def load_to_clickhouse(filename: str):
+async def load_to_clickhouse(filename: str, queries_dict: dict):
     file_path = os.path.join(SAVE_DIR, filename)
     if not os.path.exists(file_path):
         return
@@ -70,25 +70,18 @@ async def load_to_clickhouse(filename: str):
             continue
         file_date = row["parse_date"]
         main_dict[request_str] = (total_weekly, file_date)
-    queries = tuple(main_dict.keys())
+    queries_ids = tuple(queries_dict.values())
     queries_parts = []
     step = 1000
     for i in range(1001):
-        queries_parts.append(queries[i * step: (step * i) + step])
-    query_1 = f"""SELECT r.query, r.id, rf.frequency 
-        FROM request as r 
-        JOIN (
-            SELECT query_id as query_id, sum(frequency) as frequency 
-            FROM {TABLE_NAME} 
-            WHERE 
-                date BETWEEN '{str(start_week)}' 
-                AND '{str(file_date - timedelta(days=1))}' 
-            GROUP BY query_id
-        ) as rf ON rf.query_id = r.id 
-        WHERE query IN %(v1)s"""
-    query_2 = "SELECT max(id) FROM request"
+        queries_parts.append(queries_ids[i * step: (step * i) + step])
+    query_1 = f"""SELECT query_id, sum(frequency) 
+        FROM request_frequency
+        WHERE query_id IN %(v1)s 
+        AND date BETWEEN '{str(start_week)}' AND '{str(file_date - timedelta(days=1))}'
+        GROUP BY query_id"""
+    queries_frequency = dict()
     print("getting query ids")
-    query_ids = dict()
     async with get_async_connection() as client:
         client: AsyncClient = client
         for queries_part in queries_parts:
@@ -98,20 +91,21 @@ async def load_to_clickhouse(filename: str):
                 "v1": queries_part
             }
             query_ids_query = await client.query(query_1, parameters=params)
-            query_ids_temp = {row[0]: (row[1], row[2]) for row in query_ids_query.result_rows}
-            query_ids.update(query_ids_temp)
-        max_query_id_query = await client.query(query_2)
-        max_query_id = max_query_id_query.result_rows[0][0] + 1 if max_query_id_query.result_rows and max_query_id_query.result_rows[0] else 1
-        print(max_query_id)
-    new_query_id_increment = 0
+            query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
+            queries_frequency.update(query_ids_temp)
+    try:
+        max_query_id = max(queries_dict.values())
+    except:
+        max_query_id = 0
+    new_query_id_increment = 1
     for request_str, dt_tuple in main_dict.items():
         total_weekly, file_date = dt_tuple
-        db_tuple = query_ids.get(request_str, (None, None))
-        query_id = db_tuple[0]
-        prev_total = db_tuple[1]
+        query_id = queries_dict.get(request_str)
         if not query_id:
+            queries_dict[request_str] = max_query_id + new_query_id_increment
             query_id = max_query_id + new_query_id_increment
             new_query_id_increment += 1
+        prev_total = queries_frequency.get(query_id)
         new_queries.append((query_id, request_str, total_weekly, update_time))
         if not prev_total:
             mid_quantity = total_weekly // 7
@@ -133,29 +127,36 @@ async def load_to_clickhouse(filename: str):
             print(f"⚠️ Пустой файл: {filename}")
         if new_queries:
             await client.insert("request", new_queries, column_names=["id", "query", "quantity", "updated"])
+            await client.command("OPTIMIZE TABLE request")
         print(f"✅ Загружено в ClickHouse: {filename}")
 
 async def main():
     filenames = await get_files_list()
-    downloaded_files = []
-    async with aiohttp.ClientSession() as session:
-        files_to_dl = list(filenames.items())
-        files_to_dl_parts = []
-        step = 3
-        for i in range(0, 1000, step):
-            part = files_to_dl[i: i + step]
-            if part:
-                files_to_dl_parts.append(part)
-        for part in files_to_dl_parts:
-            print(f"DOWNLOADING {part}")
-            tasks = [
-                asyncio.create_task(
-                    download_file(session=session, filename=fn, direct_link=url)
-                ) for fn, url in part
-            ]
-            fns = await asyncio.gather(*tasks)
-            downloaded_files.extend(fns)
+    downloaded_files = [key for key in filenames]
+    # async with aiohttp.ClientSession() as session:
+    #     files_to_dl = list(filenames.items())
+    #     files_to_dl_parts = []
+    #     step = 3
+    #     for i in range(0, 1000, step):
+    #         part = files_to_dl[i: i + step]
+    #         if part:
+    #             files_to_dl_parts.append(part)
+    #     for part in files_to_dl_parts:
+    #         print(f"DOWNLOADING {part}")
+    #         tasks = [
+    #             asyncio.create_task(
+    #                 download_file(session=session, filename=fn, direct_link=url)
+    #             ) for fn, url in part
+    #         ]
+    #         fns = await asyncio.gather(*tasks)
+    #         downloaded_files.extend(fns)
+    async with get_async_connection() as client:
+        await client.command("OPTIMIZE TABLE request")
+        query = """SELECT query, id from request
+        """
+        queries_query = await client.query(query)
+        queries_dict = {row[0]: row[1] for row in queries_query.result_rows}
     for fn in downloaded_files:
-        await load_to_clickhouse(fn)
+        await load_to_clickhouse(fn, queries_dict)
 
 asyncio.run(main())
