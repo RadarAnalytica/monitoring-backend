@@ -132,25 +132,25 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
 
 async def main(start_file=None, start_dl_file=None):
     filenames = await get_files_list()
-    downloaded_files = []
-    async with aiohttp.ClientSession() as session:
-        files_to_dl = list(filenames.items())
-        files_to_dl_parts = []
-        step = 3
-        for i in range(0, 1000, step):
-            part = files_to_dl[i: i + step]
-            if part:
-                files_to_dl_parts.append(part)
-        for part in files_to_dl_parts:
-            print(f"DOWNLOADING {part}")
-            tasks = [
-                asyncio.create_task(
-                    download_file(session=session, filename=fn, direct_link=url)
-                ) for fn, url in part if fn > start_dl_file
-            ]
-            if tasks:
-                fns = await asyncio.gather(*tasks)
-                downloaded_files.extend(fns)
+    downloaded_files = [fn for fn in filenames.keys()]
+    # async with aiohttp.ClientSession() as session:
+    #     files_to_dl = list(filenames.items())
+    #     files_to_dl_parts = []
+    #     step = 3
+    #     for i in range(0, 1000, step):
+    #         part = files_to_dl[i: i + step]
+    #         if part:
+    #             files_to_dl_parts.append(part)
+    #     for part in files_to_dl_parts:
+    #         print(f"DOWNLOADING {part}")
+    #         tasks = [
+    #             asyncio.create_task(
+    #                 download_file(session=session, filename=fn, direct_link=url)
+    #             ) for fn, url in part if fn > start_dl_file
+    #         ]
+    #         if tasks:
+    #             fns = await asyncio.gather(*tasks)
+    #             downloaded_files.extend(fns)
     async with get_async_connection() as client:
         await client.command("OPTIMIZE TABLE request")
         query = """SELECT query, id from request
