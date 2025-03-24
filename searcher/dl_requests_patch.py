@@ -70,7 +70,7 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             continue
         file_date = row["parse_date"]
         main_dict[request_str] = (total_weekly, file_date)
-    queries_ids = tuple(queries_dict.values())
+    queries_ids = tuple(queries_dict.get(key) for key in main_dict.keys())
     queries_parts = []
     step = 1000
     for i in range(1001):
