@@ -130,26 +130,26 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             await client.command("OPTIMIZE TABLE request")
         print(f"✅ Загружено в ClickHouse: {filename}")
 
-async def main():
+async def main(start_file=None):
     filenames = await get_files_list()
-    downloaded_files = [key for key in filenames]
-    # async with aiohttp.ClientSession() as session:
-    #     files_to_dl = list(filenames.items())
-    #     files_to_dl_parts = []
-    #     step = 3
-    #     for i in range(0, 1000, step):
-    #         part = files_to_dl[i: i + step]
-    #         if part:
-    #             files_to_dl_parts.append(part)
-    #     for part in files_to_dl_parts:
-    #         print(f"DOWNLOADING {part}")
-    #         tasks = [
-    #             asyncio.create_task(
-    #                 download_file(session=session, filename=fn, direct_link=url)
-    #             ) for fn, url in part
-    #         ]
-    #         fns = await asyncio.gather(*tasks)
-    #         downloaded_files.extend(fns)
+    downloaded_files = []
+    async with aiohttp.ClientSession() as session:
+        files_to_dl = list(filenames.items())
+        files_to_dl_parts = []
+        step = 3
+        for i in range(0, 1000, step):
+            part = files_to_dl[i: i + step]
+            if part:
+                files_to_dl_parts.append(part)
+        for part in files_to_dl_parts:
+            print(f"DOWNLOADING {part}")
+            tasks = [
+                asyncio.create_task(
+                    download_file(session=session, filename=fn, direct_link=url)
+                ) for fn, url in part
+            ]
+            fns = await asyncio.gather(*tasks)
+            downloaded_files.extend(fns)
     async with get_async_connection() as client:
         await client.command("OPTIMIZE TABLE request")
         query = """SELECT query, id from request
@@ -157,6 +157,10 @@ async def main():
         queries_query = await client.query(query)
         queries_dict = {row[0]: row[1] for row in queries_query.result_rows}
     for fn in downloaded_files:
-        await load_to_clickhouse(fn, queries_dict)
+        if start_file:
+            if fn >= start_file:
+                await load_to_clickhouse(fn, queries_dict)
+        else:
+            await load_to_clickhouse(fn, queries_dict)
 
-asyncio.run(main())
+asyncio.run(main(start_file="2023-03-08.csv"))

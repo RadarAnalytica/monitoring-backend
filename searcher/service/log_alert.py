@@ -10,11 +10,14 @@ else:
 
 async def send_log_message(message: str, ex: Exception | None = None):
     if bot:
-        for admin in ADMINS:
-            if ex:
-                await bot.send_message(admin, f"Мониторинг\n{message}\nОшибка: {ex}")
-            else:
-                await bot.send_message(admin, f"Мониторинг\nСообщение: {message}")
+        try:
+            for admin in ADMINS:
+                if ex:
+                    await bot.send_message(admin, f"Мониторинг\n{message}\nОшибка: {ex}")
+                else:
+                    await bot.send_message(admin, f"Мониторинг\nСообщение: {message}")
+        except Exception as e:
+            print(e)
     return
 
 
