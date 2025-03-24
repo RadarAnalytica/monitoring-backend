@@ -164,4 +164,4 @@ async def main(start_file=None, start_dl_file=None):
         else:
             await load_to_clickhouse(fn, queries_dict)
 
-asyncio.run(main(start_file="2023-03-08.csv"), start_dl_file="2024-05-10.csv")
+asyncio.run(main(start_file="2023-03-08.csv", start_dl_file="2024-05-10.csv"))
