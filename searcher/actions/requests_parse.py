@@ -8,7 +8,7 @@ from celery_main import celery_app
 from settings import logger
 
 
-@celery_app.task(name="process_city", time_limit=3600 * 5)
+@celery_app.task(name="process_city", time_limit=(3600 * 3) + 1800)
 def process_city(city, date_, requests, batch_no):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
@@ -43,7 +43,7 @@ def fire_requests(city_no):
     cities = asyncio.run(get_cities_data(city_no))
     requests = asyncio.run(get_requests_data())
     request_batches = []
-    batch_size = 250000
+    batch_size = 150000
     prev = 0
     for r_id in range(batch_size, len(requests) + batch_size, batch_size):
         request_batches.append(requests[prev:r_id])
