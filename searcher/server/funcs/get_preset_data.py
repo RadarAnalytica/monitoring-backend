@@ -40,7 +40,7 @@ async def get_preset_by_id_db_data(preset_id: int):
         ) as rf 
         JOIN request as r ON r.id = rf.query_id 
         GROUP BY r.query
-        ORDER BY total
+        ORDER BY total DESC
         """
         q_f = await client.query(frequency_query, parameters=param_freq)
         result = [{"query": row[0], "frequency": dict(row[1]), "total": row[2]} for row in q_f.result_rows]
