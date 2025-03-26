@@ -130,7 +130,7 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             await client.command("OPTIMIZE TABLE request")
         print(f"✅ Загружено в ClickHouse: {filename}")
 
-async def main(start_file=None, start_dl_file=None):
+async def main(start_file=None):
     filenames = os.listdir(SAVE_DIR)
     downloaded_files = [str(fn) for fn in filenames]
     # async with aiohttp.ClientSession() as session:
@@ -164,4 +164,4 @@ async def main(start_file=None, start_dl_file=None):
         else:
             await load_to_clickhouse(fn, queries_dict)
 
-asyncio.run(main())
+asyncio.run(main(start_file='2024-05-29.csv'))
