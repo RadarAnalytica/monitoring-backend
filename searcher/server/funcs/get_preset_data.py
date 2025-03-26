@@ -83,7 +83,7 @@ async def get_query_frequency_db(query: str):
         }
         query_frequency = """SELECT rf.date, sum(rf.frequency) FROM request_frequency as rf  WHERE rf.query_id = %(v1)s AND date >= %(v2)s GROUP BY rf.date ORDER BY rf.date"""
         q_f = await client.query(query_frequency, parameters=param_sums)
-        frequency_data = [{row[0].strftime("%d.%m.%Y")} for row in q_f.result_rows]
+        frequency_data = [{row[0].strftime("%d.%m.%Y"): row[1]} for row in q_f.result_rows]
     result = {
         query: frequency_data
     }
