@@ -133,6 +133,7 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
 async def main(start_file=None):
     filenames = os.listdir(SAVE_DIR)
     downloaded_files = [str(fn) for fn in filenames]
+    downloaded_files.sort()
     # async with aiohttp.ClientSession() as session:
     #     files_to_dl = list(filenames.items())
     #     files_to_dl_parts = []
