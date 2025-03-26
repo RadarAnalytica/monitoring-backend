@@ -44,7 +44,7 @@ async def get_query_frequency_db(query: str):
             "v1": query
         }
         query_preset = """SELECT p.preset, p.norm_query FROM preset as p JOIN request as r ON r.id = p.query WHERE r.query = %(v1)s GROUP BY p.preset, p.norm_query"""
-        query_frequency = """SELECT rf.date, sum(rf.frequency) FROM request_frequency as rf JOIN request as r ON r.id = rf.query_iq WHERE r.query = %(v1)s AND rf.date >= %(v2)s GROUP BY rf.date ORDER BY rf.date"""
+        query_frequency = """SELECT rf.date, sum(rf.frequency) FROM request_frequency as rf JOIN request as r ON r.id = rf.query_id WHERE r.query = %(v1)s AND rf.date >= %(v2)s GROUP BY rf.date ORDER BY rf.date"""
         q_p = await client.query(query_preset, parameters=param)
         param["v2"] = start_date
         q_f = await client.query(query_frequency, parameters=param)
