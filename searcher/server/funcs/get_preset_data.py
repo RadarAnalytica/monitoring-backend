@@ -40,7 +40,7 @@ async def get_preset_by_id_db_data(query: str):
         param = {
             "v1": query,
         }
-        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query"""
+        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
         q = await client.query(queries_query, parameters=param)
         norm_query = None
         queries_list = []
@@ -131,7 +131,7 @@ async def get_preset_by_query_all_time_db_data(query: str):
         param = {
             "v1": query,
         }
-        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query"""
+        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
         q = await client.query(queries_query, parameters=param)
         norm_query = None
         queries_list = []
