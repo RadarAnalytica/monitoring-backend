@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Path, Body, Query
 from fastapi.params import Body, Query, Depends
 from starlette.responses import JSONResponse
 
@@ -94,7 +94,7 @@ async def get_presets(
     return result
 
 
-@query_router.get("/get_preset_data/{query}")
+@query_router.get("/get_preset_data/day/{query}")
 async def get_preset_queries(
     query: str,
     token: str = Depends(oauth2_scheme)
@@ -106,7 +106,7 @@ async def get_preset_queries(
     return result
 
 
-@query_router.get("/get_query_frequency/{query}")
+@query_router.get("/get_query_frequency/day/{query}")
 async def get_preset_queries(
     query: str | int,
     token: str = Depends(oauth2_scheme)
