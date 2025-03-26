@@ -40,9 +40,17 @@ async def get_preset_by_id_db_data(query: str):
         param = {
             "v1": query,
         }
-        queries_query = """SELECT query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s)"""
+        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query"""
         q = await client.query(queries_query, parameters=param)
-        queries = tuple((row[0] for row in q.result_rows))
+        norm_query = None
+        queries_list = []
+        for row in q.result_rows:
+            if not norm_query:
+                norm_query = row[0]
+            queries_list.append(row[1])
+        if not norm_query:
+            return dict()
+        queries = tuple((row[1] for row in q.result_rows))
         param_freq = {
             "v1": queries,
             "v2": start_date,
@@ -60,7 +68,12 @@ async def get_preset_by_id_db_data(query: str):
         ORDER BY total DESC
         """
         q_f = await client.query(frequency_query, parameters=param_freq)
-        result = [{"query": row[0], "frequency": dict(row[1]), "total": row[2]} for row in q_f.result_rows]
+        result = {
+            "preset": norm_query,
+            "queries": {
+                row[0]: [{sub_row[0].strftime("%d.%m.%Y"): sub_row[1]} for sub_row in row[2]] for row in q_f.result_rows
+            }
+        }
     return result
 
 
@@ -118,9 +131,17 @@ async def get_preset_by_query_all_time_db_data(query: str):
         param = {
             "v1": query,
         }
-        queries_query = """SELECT query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s)"""
+        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query"""
         q = await client.query(queries_query, parameters=param)
-        queries = tuple((row[0] for row in q.result_rows))
+        norm_query = None
+        queries_list = []
+        for row in q.result_rows:
+            if not norm_query:
+                norm_query = row[0]
+            queries_list.append(row[1])
+        if not norm_query:
+            return dict()
+        queries = tuple((row[1] for row in q.result_rows))
         param_freq = {
             "v1": queries,
         }
@@ -128,6 +149,7 @@ async def get_preset_by_query_all_time_db_data(query: str):
         SELECT query_id as query_id, toYear(date) as y, toMonth(date) as m, sum(frequency) as date_sum 
         FROM request_frequency 
         WHERE query_id IN %(v1)s 
+        AND date >= %(v2)s
         GROUP BY query_id, y, m
         ORDER BY query_id, y, m
         ) as rf 
@@ -136,5 +158,10 @@ async def get_preset_by_query_all_time_db_data(query: str):
         ORDER BY total DESC
         """
         q_f = await client.query(frequency_query, parameters=param_freq)
-        result = [{"query": row[0], "frequency": dict(row[1]), "total": row[2]} for row in q_f.result_rows]
+        result = {
+            "preset": norm_query,
+            "queries": {
+                row[0]: [{f"{sub_row[0]} {MONTH_DICT.get(sub_row[1])}": sub_row[2]} for sub_row in row[2]] for row in q_f.result_rows
+            }
+        }
     return result
