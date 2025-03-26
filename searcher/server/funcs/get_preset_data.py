@@ -87,19 +87,22 @@ async def get_query_frequency_db(query: str):
 async def get_query_frequency_all_time_db(query: str):
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
-        param = {
+        param_q_id = {
             "v1": query
         }
-        query_frequency = """SELECT toYear(rf.date) as y, toMonth(rf.date) as m, sum(rf.frequency) FROM request_frequency as rf JOIN request as r ON r.id = rf.query_id WHERE r.query = %(v1)s GROUP BY y, m ORDER BY y, m"""
-        param["v2"] = start_date
-        q_f = await client.query(query_frequency, parameters=param)
-        frequency_data = []
-        for row in q_f.result_rows:
-            year = row[0]
-            month = row[1]
-            ym_string = f"{year} {MONTH_DICT.get(month)}"
-            val = row[2]
-            frequency_data.append({ym_string: val})
+        query_id_query = """SELECT id FROM request where query = %(v1)s"""
+        q_id = await client.query(query_id_query, parameters=param_q_id)
+        query_id = q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
+        if not query_id:
+            return {
+                query: []
+            }
+        param_sums = {
+            "v1": query_id,
+        }
+        query_frequency = """SELECT toYear(rf.date) as y, toMonth(rf.date) as m, sum(rf.frequency) FROM request_frequency as rf  WHERE rf.query_id = %(v1)s GROUP BY y, m ORDER BY y, m"""
+        q_f = await client.query(query_frequency, parameters=param_sums)
+        frequency_data = [{f"{row[0]} {MONTH_DICT.get(row[1])}": row[3]} for row in q_f.result_rows]
     result = {
         query: frequency_data
     }
