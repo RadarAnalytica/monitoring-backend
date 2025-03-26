@@ -30,7 +30,7 @@ async def get_preset_by_id_db_data(preset_id: int):
             "v1": queries,
             "v2": start_date,
         }
-        frequency_query = """SELECT r.query, groupArray((rf.date, rf.date_sum)) FROM (
+        frequency_query = """SELECT r.query, groupArray((rf.date, rf.date_sum)), sum(rf.date_sum) as total FROM (
         SELECT query_id as query_id, date as date, sum(frequency) as date_sum 
         FROM request_frequency 
         WHERE query_id IN %(v1)s 
@@ -40,9 +40,10 @@ async def get_preset_by_id_db_data(preset_id: int):
         ) as rf 
         JOIN request as r ON r.id = rf.query_id 
         GROUP BY r.query
+        ORDER BY total
         """
         q_f = await client.query(frequency_query, parameters=param_freq)
-        result = [{"query": row[0], "frequency": dict(row[1])} for row in q_f.result_rows]
+        result = [{"query": row[0], "frequency": dict(row[1]), "total": row[2]} for row in q_f.result_rows]
     return result
 
 
