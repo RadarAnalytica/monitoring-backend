@@ -70,7 +70,7 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             continue
         file_date = row["parse_date"]
         main_dict[request_str] = (total_weekly, file_date)
-    queries_ids = tuple(sorted([queries_dict.get(key) for key in main_dict.keys()]))
+    queries_ids = tuple(sorted([queries_dict.get(key) for key in main_dict.keys() if queries_dict.get(key)]))
     queries_parts = []
     step = 1000
     for i in range(1001):
@@ -134,6 +134,7 @@ async def main(start_file=None):
     filenames = os.listdir(SAVE_DIR)
     downloaded_files = [str(fn) for fn in filenames]
     downloaded_files.sort()
+    print(downloaded_files)
     # async with aiohttp.ClientSession() as session:
     #     files_to_dl = list(filenames.items())
     #     files_to_dl_parts = []
