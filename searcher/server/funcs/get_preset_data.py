@@ -149,7 +149,6 @@ async def get_preset_by_query_all_time_db_data(query: str):
         SELECT query_id as query_id, toYear(date) as y, toMonth(date) as m, sum(frequency) as date_sum 
         FROM request_frequency 
         WHERE query_id IN %(v1)s 
-        AND date >= %(v2)s
         GROUP BY query_id, y, m
         ORDER BY query_id, y, m
         ) as rf 
