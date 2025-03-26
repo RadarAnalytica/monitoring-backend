@@ -71,7 +71,7 @@ async def get_preset_by_id_db_data(query: str):
         result = {
             "preset": norm_query,
             "queries": {
-                row[0]: [{sub_row[0].strftime("%d.%m.%Y"): sub_row[1]} for sub_row in row[2]] for row in q_f.result_rows
+                row[0]: [{sub_row[0].strftime("%d.%m.%Y"): sub_row[1]} for sub_row in row[1]] for row in q_f.result_rows
             }
         }
     return result
@@ -161,7 +161,7 @@ async def get_preset_by_query_all_time_db_data(query: str):
         result = {
             "preset": norm_query,
             "queries": {
-                row[0]: [{f"{sub_row[0]} {MONTH_DICT.get(sub_row[1])}": sub_row[2]} for sub_row in row[2]] for row in q_f.result_rows
+                row[0]: [{f"{sub_row[0]} {MONTH_DICT.get(sub_row[1])}": sub_row[2]} for sub_row in row[1]] for row in q_f.result_rows
             }
         }
     return result
