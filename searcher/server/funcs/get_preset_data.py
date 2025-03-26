@@ -93,13 +93,16 @@ async def get_query_frequency_all_time_db(query: str):
         query_frequency = """SELECT toYear(rf.date) as y, toMonth(rf.date) as m, sum(rf.frequency) FROM request_frequency as rf JOIN request as r ON r.id = rf.query_id WHERE r.query = %(v1)s GROUP BY y, m ORDER BY y, m"""
         param["v2"] = start_date
         q_f = await client.query(query_frequency, parameters=param)
-        result = dict()
+        frequency_data = []
         for row in q_f.result_rows:
             year = row[0]
             month = row[1]
             ym_string = f"{year} {MONTH_DICT.get(month)}"
             val = row[2]
-            result[ym_string] = val
+            frequency_data.append({ym_string: val})
+    result = {
+        query: frequency_data
+    }
     return result
 
 
