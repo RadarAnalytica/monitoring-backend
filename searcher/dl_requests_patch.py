@@ -126,7 +126,7 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             for i in range(0, len(new_records) + 1, step):
                 batch = new_records[i: i + step]
                 if batch:
-                    await client.insert(TABLE_NAME, new_records, column_names=["date", "query_id", "frequency"])
+                    await client.insert(TABLE_NAME, batch, column_names=["date", "query_id", "frequency"])
         else:
             print(f"⚠️ Пустой файл: {filename}")
         if new_queries:
