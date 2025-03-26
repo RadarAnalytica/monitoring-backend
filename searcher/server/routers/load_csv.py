@@ -28,6 +28,7 @@ async def upload_csv(
             requests_data, error_rows = await prepare_csv_contents(contents, filename=file.filename)
         except:
             return {"message": "Error with file name, must be {YYYY-MM-DD}.csv"}
+        logger.info("Loading to background")
         background_tasks.add_task(upload_requests_csv_bg, requests_data)
     except Exception as e:
         logger.error(f"{e}")

@@ -28,19 +28,20 @@ async def upload_requests_csv_bg(requests_data: list[list[int, str, int, datetim
         frequency_rows_1 = await prepare_request_frequency(slice_1, client)
         if frequency_rows_1:
             await upload_request_frequency_worker(frequency_rows_1, client)
-
+        logger.info("Slice 1 ready")
         await upload_requests_worker(slice_2, client)
         frequency_rows_2 = await prepare_request_frequency(slice_2, client)
         if frequency_rows_2:
             await upload_request_frequency_worker(frequency_rows_2, client)
-
+        logger.info("Slice 2 ready")
         await upload_requests_worker(slice_3, client)
         frequency_rows_3 = await prepare_request_frequency(slice_3, client)
         if frequency_rows_3:
             await upload_request_frequency_worker(frequency_rows_3, client)
-
+        logger.info("Slice 3 ready")
         await upload_requests_worker(slice_4, client)
         frequency_rows_4 = await prepare_request_frequency(slice_4, client)
         if frequency_rows_4:
             await upload_request_frequency_worker(frequency_rows_4, client)
+        logger.info("Slice 4 ready")
     logger.warning("DB renewal complete")

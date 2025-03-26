@@ -13,20 +13,22 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename:str):
     file_date = date.fromisoformat(filename.strip().replace(".csv", ""))
     now_date = datetime(year=file_date.year, month=file_date.month, day=file_date.day, hour=1, minute=0, second=0, microsecond=0)
     max_query_id = await get_requests_max_id()
+    queries_dict = await get_requests_id_download_data()
     requests_data = []
     error_rows = []
     new_query_scaler = 1
     for row in contents:
-        val = str(row[0])
+        query = str(row[0]).strip().lower()
         try:
-            prev_row_id = await get_requests_id_download_data_new(val)
+            prev_row_id = queries_dict.get(query)
             if not prev_row_id:
-                requests_data.append((max_query_id + new_query_scaler, val, row[1], now_date))
+                requests_data.append((max_query_id + new_query_scaler, query, row[1], now_date))
                 new_query_scaler += 1
             else:
-                requests_data.append((prev_row_id, val, row[1], now_date))
+                requests_data.append((prev_row_id, query, row[1], now_date))
         except (ValueError, TypeError, IndexError):
             error_rows.append(row)
+    logger.info("Data prepared")
     return requests_data, error_rows
 
 
