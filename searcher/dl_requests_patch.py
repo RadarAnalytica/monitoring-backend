@@ -131,8 +131,8 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
         print(f"✅ Загружено в ClickHouse: {filename}")
 
 async def main(start_file=None, start_dl_file=None):
-    filenames = await get_files_list()
-    downloaded_files = [fn for fn in filenames.keys()]
+    filenames = os.listdir(SAVE_DIR)
+    downloaded_files = [str(fn) for fn in filenames]
     # async with aiohttp.ClientSession() as session:
     #     files_to_dl = list(filenames.items())
     #     files_to_dl_parts = []
