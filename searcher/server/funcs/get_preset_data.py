@@ -17,13 +17,13 @@ async def get_preset_db_data():
     return result
 
 
-async def get_preset_by_id_db_data(preset_id: int):
+async def get_preset_by_id_db_data(query: str):
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
         param = {
-            "v1": preset_id,
+            "v1": query,
         }
-        queries_query = """SELECT query FROM preset WHERE preset = %(v1)s"""
+        queries_query = """SELECT query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE query = %(v1)s)"""
         q = await client.query(queries_query, parameters=param)
         queries = tuple((row[0] for row in q.result_rows))
         param_freq = {

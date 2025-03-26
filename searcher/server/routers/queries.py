@@ -94,14 +94,15 @@ async def get_presets(
     return result
 
 
-@query_router.get("/get_preset_data/{preset_id}")
+@query_router.get("/get_preset_data/{query}")
 async def get_preset_queries(
-    preset_id: int,
+    query: str,
     token: str = Depends(oauth2_scheme)
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
-    result = await get_preset_by_id_db_data(preset_id)
+    query = query.strip().lower()
+    result = await get_preset_by_id_db_data(query)
     return result
 
 
@@ -113,5 +114,6 @@ async def get_preset_queries(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     query = str(query)
+    query = query.strip().lower()
     result = await get_query_frequency_db(query)
     return result
