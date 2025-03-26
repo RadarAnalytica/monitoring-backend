@@ -28,6 +28,7 @@ async def upload_requests_csv_bg(requests_data: list[list[int, str, int, datetim
         await upload_requests_worker(slice_2, client)
         await upload_requests_worker(slice_3, client)
         await upload_requests_worker(slice_4, client)
+        await client.command("OPTIMIZE TABLE request")
         logger.info("Requests uploaded")
         frequency_rows_1 = await prepare_request_frequency(slice_1, client)
         if frequency_rows_1:

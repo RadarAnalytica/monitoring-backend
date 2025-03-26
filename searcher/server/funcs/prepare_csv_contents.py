@@ -71,7 +71,7 @@ async def prepare_request_frequency(rows, client):
                 new_freq = week_frequency - prev_query_sum
                 if new_freq < 0:
                     new_freq = 0
-                frequency_rows.append((query_id, new_freq, row[1], new_date))
+                frequency_rows.append((query_id, new_freq, new_date))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return frequency_rows
