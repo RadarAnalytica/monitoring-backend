@@ -6,7 +6,7 @@ from fastapi.params import Body, Query, Depends
 from starlette.responses import JSONResponse
 
 from server.funcs.get_best_similar import get_best_similar_products
-from server.funcs.get_preset_data import get_preset_db_data
+from server.funcs.get_preset_data import get_preset_db_data, get_preset_by_id_db_data, get_query_frequency_db
 from settings import logger
 from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
@@ -91,4 +91,27 @@ async def get_presets(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     result = await get_preset_db_data()
+    return result
+
+
+@query_router.get("/get_preset_data/{preset_id}")
+async def get_preset_queries(
+    preset_id: int,
+    token: str = Depends(oauth2_scheme)
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    result = await get_preset_by_id_db_data(preset_id)
+    return result
+
+
+@query_router.get("/get_query_frequency/{query}")
+async def get_preset_queries(
+    query: str | int,
+    token: str = Depends(oauth2_scheme)
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    query = str(query)
+    result = await get_query_frequency_db(query)
     return result

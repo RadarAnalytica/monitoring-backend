@@ -28,6 +28,8 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename:str):
         except (ValueError, TypeError, IndexError):
             error_rows.append(row)
     logger.info("Data prepared")
+    if len(requests_data) < 750000:
+        raise ValueError
     return requests_data, error_rows
 
 
