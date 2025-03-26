@@ -20,12 +20,11 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename:str):
     for row in contents:
         query = str(row[0]).strip().lower()
         try:
-            prev_row_id = queries_dict.get(query)
-            if not prev_row_id:
-                requests_data.append((max_query_id + new_query_scaler, query, row[1], now_date))
+            query_id = queries_dict.get(query)
+            if not query_id:
+                query_id = max_query_id + new_query_scaler
                 new_query_scaler += 1
-            else:
-                requests_data.append((prev_row_id, query, row[1], now_date))
+            requests_data.append((query_id, query, row[1], now_date))
         except (ValueError, TypeError, IndexError):
             error_rows.append(row)
     logger.info("Data prepared")
