@@ -18,22 +18,31 @@ async def get_preset_db_data():
 
 
 async def get_preset_by_id_db_data(preset_id: int):
+    start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
         param = {
-            "v1": preset_id
+            "v1": preset_id,
         }
-        query = f"""SELECT preset, norm_query, groupArray(distinct r.query) AS query_info FROM preset as p
-        JOIN (SELECT * FROM request FINAL) AS r ON r.id = p.query 
-        WHERE (date = (SELECT max(date) FROM preset))
-        AND preset = %(v1)s 
-        GROUP BY preset, norm_query 
-        ORDER BY preset, norm_query;"""
-        q = await client.query(query, parameters=param)
-    row = q.result_rows[0] if q.result_rows else None
-    if not row:
-        return dict()
-    queries = sorted(list(row[2]))
-    result = {"name": row[1], "cluster": row[1], "queries": sorted(list(row[2]))}
+        queries_query = """SELECT query FROM preset WHERE preset = %(v1)s"""
+        q = await client.query(queries_query, parameters=param)
+        queries = tuple((row[0] for row in q.result_rows))
+        param_freq = {
+            "v1": queries,
+            "v2": start_date,
+        }
+        frequency_query = """SELECT r.query, groupArray((rf.date, rf.date_sum)) FROM (
+        SELECT query_id as query_id, date as date, sum(frequency) as date_sum 
+        FROM request_frequency 
+        WHERE query_id IN %(v1)s 
+        AND date >= %(v2)s
+        GROUP BY query_id, date
+        ORDER BY query_id, date
+        ) as rf 
+        JOIN request as r ON r.id = rf.query_id 
+        GROUP BY r.query
+        """
+        q_f = await client.query(frequency_query, parameters=param_freq)
+        result = [{"query": row[0], "frequency": dict(row[1])} for row in q_f.result_rows]
     return result
 
 
