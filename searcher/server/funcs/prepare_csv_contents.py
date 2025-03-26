@@ -36,7 +36,7 @@ async def prepare_request_frequency(rows, client):
     for row in rows:
         query_id = int(row[0])
         week_frequency = int(row[2])
-        new_date = row[3]
+        new_date = row[3].date()
         try:
             prev_query_sum = await get_request_frequency_download_data_new(query_id, new_date, client)
             if not prev_query_sum:
