@@ -33,12 +33,35 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename:str):
 
 async def prepare_request_frequency(rows, client):
     frequency_rows = []
+    queries_ids = tuple(sorted([row[0] for row in rows]))
+    queries_parts = []
+    step = 1000
+    new_date = rows[0][3].date()
+    start_week = new_date - timedelta(days=6)
+    end_week = new_date - timedelta(days=1)
+    for i in range(300):
+        queries_parts.append(queries_ids[i * step: (step * i) + step])
+    query_1 = f"""SELECT query_id, sum(frequency) 
+            FROM request_frequency
+            WHERE query_id IN %(v1)s 
+            AND date BETWEEN '{str(start_week)}' AND '{str(end_week)}'
+            GROUP BY query_id"""
+    queries_frequency = dict()
+    print("getting query ids")
+    for queries_part in queries_parts:
+        if not queries_part:
+            continue
+        params = {
+            "v1": queries_part
+        }
+        query_ids_query = await client.query(query_1, parameters=params)
+        query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
+        queries_frequency.update(query_ids_temp)
     for row in rows:
         query_id = int(row[0])
         week_frequency = int(row[2])
-        new_date = row[3].date()
         try:
-            prev_query_sum = await get_request_frequency_download_data_new(query_id, new_date, client)
+            prev_query_sum = queries_frequency.get(query_id)
             if not prev_query_sum:
                 start_date = new_date - timedelta(days=6)
                 avg_freq = week_frequency // 7

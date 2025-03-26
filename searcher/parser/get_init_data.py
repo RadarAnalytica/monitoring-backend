@@ -51,6 +51,7 @@ async def get_request_frequency_download_data_new(query_id: int, new_date, clien
     return q.result_rows[0][0] if q.result_rows and q.result_rows[0] else None
 
 
+
 async def get_requests_max_id():
     async with get_async_connection() as client:
         query = f"""SELECT max(id) FROM request FINAL"""
