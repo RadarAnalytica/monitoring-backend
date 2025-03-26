@@ -65,22 +65,27 @@ async def get_preset_by_id_db_data(query: str):
 
 
 async def get_query_frequency_db(query: str):
-    start_date = datetime.now().date() - timedelta(days=30)
+    start_date = datetime.now().date() - timedelta(days=29)
     async with get_async_connection() as client:
-        param = {
+        param_q_id = {
             "v1": query
         }
-        query_preset = """SELECT p.preset, p.norm_query FROM preset as p JOIN request as r ON r.id = p.query WHERE r.query = %(v1)s GROUP BY p.preset, p.norm_query"""
-        query_frequency = """SELECT rf.date, sum(rf.frequency) FROM request_frequency as rf JOIN request as r ON r.id = rf.query_id WHERE r.query = %(v1)s AND rf.date >= %(v2)s GROUP BY rf.date ORDER BY rf.date"""
-        q_p = await client.query(query_preset, parameters=param)
-        param["v2"] = start_date
-        q_f = await client.query(query_frequency, parameters=param)
-        preset_data = q_p.result_rows[0] if q_p.result_rows else None
-        frequency_data = {str(row[0]): row[1] for row in q_f.result_rows}
+        query_id_query = """SELECT id FROM request where query = %(v1)s"""
+        q_id = await client.query(query_id_query, parameters=param_q_id)
+        query_id = q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
+        if not query_id:
+            return {
+                query: []
+            }
+        param_sums = {
+            "v1": query_id,
+            "v2": start_date
+        }
+        query_frequency = """SELECT rf.date, sum(rf.frequency) FROM request_frequency as rf  WHERE rf.query_id = %(v1)s AND date >= %(v2)s GROUP BY rf.date ORDER BY rf.date"""
+        q_f = await client.query(query_frequency, parameters=param_sums)
+        frequency_data = [{row[0].strftime("%d.%m.%Y")} for row in q_f.result_rows]
     result = {
-        "preset": preset_data[0] if preset_data else None,
-        "norm_query": preset_data[1] if preset_data else None,
-        "frequency": frequency_data
+        query: frequency_data
     }
     return result
 
