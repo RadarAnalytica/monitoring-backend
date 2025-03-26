@@ -99,7 +99,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
 async def get_city_result(city, date, requests, request_batch_no, get_preset=False):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
     await send_log_message(f"Начался сбор данных по городу:\n{city}")
-    requests_list = [r for r in requests if not r[1].isdigit() or "javascript" not in r[1]]
+    requests_list = [r for r in requests]
     del requests
     preset_queue = None
     if get_preset:
