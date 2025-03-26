@@ -23,7 +23,7 @@ async def get_preset_by_id_db_data(query: str):
         param = {
             "v1": query,
         }
-        queries_query = """SELECT query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE query = %(v1)s)"""
+        queries_query = """SELECT query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s)"""
         q = await client.query(queries_query, parameters=param)
         queries = tuple((row[0] for row in q.result_rows))
         param_freq = {
