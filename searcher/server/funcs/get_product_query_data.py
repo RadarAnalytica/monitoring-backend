@@ -4,6 +4,7 @@ from _datetime import datetime, timedelta
 from copy import deepcopy
 
 from clickhouse_db.get_async_connection import get_async_connection
+from clickhouse_connect.driver import AsyncClient
 
 
 async def gen_dates(interval):
@@ -114,6 +115,7 @@ async def get_ex_ad(product_id):
         "v1": str(product_id),
     }
     async with get_async_connection() as client:
+        client: AsyncClient
         query = """SELECT id FROM request FINAL WHERE query = %(v1)s"""
         query_result = await client.query(query, parameters=params)
         query_id = query_result.result_rows[0][0] if query_result.result_rows and query_result.result_rows[0] else None
@@ -139,7 +141,8 @@ async def get_ex_ad(product_id):
         ) AS prf ON trf.query_id = prf.query_id
         """
         query_fr_result = await client.query(query, parameters=rf_params)
-        this_period_quantity, past_period_quantity = query_fr_result.result_rows[0] if query_fr_result.result_rows else 0, 0
+        results = list(query_fr_result.result_rows)
+        this_period_quantity, past_period_quantity = (results[0][0], results[0][1]) if results else (0, 0)
         delta = this_period_quantity - past_period_quantity
         percent = round(delta * 100 / past_period_quantity, 2) if past_period_quantity else 0
         result = {
