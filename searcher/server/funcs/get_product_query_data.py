@@ -77,24 +77,36 @@ async def get_product_db_data(product_id, city, interval):
 
 
 async def get_product_db_data_latest(product_id, city):
-    now = datetime.now().date() - timedelta(days=1)
-    params = {
-        "v1": product_id,
-        "v2": city,
-        "v3": now
-    }
+    now = datetime.now().date() - timedelta(days=2)
+    result = {"queries": []}
     async with get_async_connection() as client:
+        city_param = {
+            "v1": city
+        }
+        date_param = {
+            "v1": now
+        }
+        city_id_q = await client.query("""SELECT id FROM city WHERE dest = %(v1)s""", parameters=city_param)
+        date_id_q = await client.query("""SELECT id FROM dates WHERE date = %(v1)s""", parameters=date_param)
+        date_id = list(date_id_q.result_rows)
+        date_id = date_id[0][0] if date_id and date_id[0] else None
+        city_id = list(city_id_q.result_rows)
+        city_id = city_id[0][0] if city_id and city_id[0] else None
+        if not city_id or not date_id:
+            return result
+        params = {
+            "v1": product_id,
+            "v2": city_id,
+            "v3": date_id
+        }
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
         FROM request_product AS rp
-        JOIN dates as d ON d.id = rp.date 
-        JOIN city as c ON c.id = rp.city 
         JOIN request AS r ON r.id = rp.query 
         WHERE (rp.product = %(v1)s)
-        AND (c.dest = %(v2)s)
-        AND (d.date = %(v3)s)
+        AND (rp.city = %(v2)s)
+        AND (rp.date = %(v3)s)
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query, parameters=params)
-        result = {"queries": []}
         for row in query_result.result_rows:
             row_res = {
                 "query": row[0],

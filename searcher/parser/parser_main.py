@@ -69,6 +69,8 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
                 full_res = []
             request_products = []
             for i, p in enumerate(full_res, 1):
+                if not p.get("id"):
+                    continue
                 log = p.get("log", {})
                 natural_place = log.get("position", 0)
                 if natural_place > 65535:
