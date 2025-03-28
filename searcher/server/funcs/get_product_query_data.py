@@ -145,7 +145,7 @@ async def get_ex_ad(product_id):
         results = list(query_fr_result.result_rows)
         this_period_quantity, past_period_quantity = (results[0][0], results[0][1]) if results else (0, 0)
         delta = this_period_quantity - past_period_quantity
-        logger.info(this_period_quantity, past_period_quantity, delta)
+        logger.info(f"this {this_period_quantity}, that {past_period_quantity}, delta {delta}")
         percent = round(delta * 100 / past_period_quantity, 2) if past_period_quantity else 0
         result = {
             "quantity": this_period_quantity,
