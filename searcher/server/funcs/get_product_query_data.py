@@ -107,15 +107,45 @@ async def get_product_db_data_latest(product_id, city):
 
 
 async def get_ex_ad(product_id):
-    now = datetime.now() - timedelta(days=30)
+    this_period = datetime.now().date() - timedelta(days=30)
+    past_period_start = this_period - timedelta(days=30)
+    past_period_end = this_period - timedelta(days=1)
     params = {
         "v1": str(product_id),
-        "v2": now
     }
     async with get_async_connection() as client:
-        query = f"""SELECT quantity FROM request FINAL WHERE query = %(v1)s AND updated >= %(v2)s"""
+        query = """SELECT id FROM request FINAL WHERE query = %(v1)s"""
         query_result = await client.query(query, parameters=params)
-        result = {"quantity": query_result.result_rows[0][0] if query_result.result_rows and query_result.result_rows[0] else 0}
+        query_id = query_result.result_rows[0][0] if query_result.result_rows and query_result.result_rows[0] else None
+        if not query_id:
+            return {"quantity": 0, "comparison": 0}
+        rf_params = {
+            "v1": query_id,
+            "v2": this_period,
+            "v3": past_period_start,
+            "v4": past_period_end
+        }
+        query = """SELECT sum(trf.frequency), sum(prf.frequency) FROM (
+        SELECT query_id as query_id, sum(frequency) as frequency FROM request_frequency 
+        WHERE query_id = %(v1)s 
+        AND date >= %(v2)s 
+        GROUP BY query_id 
+        ) AS trf
+        JOIN (
+        SELECT query_id as query_id, sum(frequency) as frequency FROM request_frequency 
+        WHERE query_id = %(v1)s 
+        AND date BETWEEN %(v3)s AND %(v4)s 
+        GROUP BY query_id 
+        ) AS prf ON trf.query_id = prf.query_id
+        """
+        query_fr_result = await client.query(query, parameters=rf_params)
+        this_period_quantity, past_period_quantity = query_fr_result.result_rows[0] if query_fr_result.result_rows else 0, 0
+        delta = this_period_quantity - past_period_quantity
+        percent = round(delta * 100 / past_period_quantity, 2) if past_period_quantity else 0
+        result = {
+            "quantity": this_period_quantity,
+            "comparison": percent
+        }
     return result
 
 
