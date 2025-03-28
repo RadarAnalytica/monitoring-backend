@@ -63,7 +63,7 @@ async def get_preset_by_id_db_data(query: str):
         GROUP BY query_id, date
         ORDER BY query_id, date
         ) as rf 
-        JOIN request as r ON r.id = rf.query_id 
+        JOIN request FINAL as r ON r.id = rf.query_id 
         GROUP BY r.query
         ORDER BY total DESC
         """

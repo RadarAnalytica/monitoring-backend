@@ -84,9 +84,9 @@ async def get_product_db_data_latest(product_id, city):
     async with get_async_connection() as client:
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
         FROM request_product AS rp
-        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
         JOIN dates as d ON d.id = rp.date
         JOIN city as c ON c.id = rp.city
+        JOIN request FINAL AS r ON r.id = rp.query
         WHERE (rp.product = %(v1)s)
         AND (c.dest = %(v2)s)
         AND (d.date = %(v3)s)
@@ -103,6 +103,19 @@ async def get_product_db_data_latest(product_id, city):
                 "cpm": row[5] or 0 if row[3] != b"z" else None
             }
             result["queries"].append(row_res)
+    return result
+
+
+async def get_ex_ad(product_id):
+    now = datetime.now() - timedelta(days=30)
+    params = {
+        "v1": str(product_id),
+        "v2": now
+    }
+    async with get_async_connection() as client:
+        query = f"""SELECT quantity FROM request FINAL WHERE query = %(v1)s AND updated >= %(v2)s"""
+        query_result = await client.query(query, parameters=params)
+        result = {"quantity": query_result.result_rows[0][0] if query_result.result_rows and query_result.result_rows[0] else 0}
     return result
 
 
