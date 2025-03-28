@@ -86,9 +86,9 @@ async def get_product_db_data_latest(product_id, city):
     async with get_async_connection() as client:
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
         FROM request_product AS rp
-        JOIN dates as d ON d.id = rp.date
-        JOIN city as c ON c.id = rp.city
-        JOIN request FINAL AS r ON r.id = rp.query
+        JOIN dates as d ON d.id = rp.date 
+        JOIN city as c ON c.id = rp.city 
+        JOIN request AS r ON r.id = rp.query 
         WHERE (rp.product = %(v1)s)
         AND (c.dest = %(v2)s)
         AND (d.date = %(v3)s)

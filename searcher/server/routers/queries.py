@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 from server.funcs.get_best_similar import get_best_similar_products
 from server.funcs.get_preset_data import get_preset_db_data, get_preset_by_id_db_data, get_query_frequency_db, \
-    get_query_frequency_all_time_db, get_preset_by_query_all_time_db_data
+    get_query_frequency_all_time_db, get_preset_by_query_all_time_db_data, get_single_preset_db_data
 from settings import logger
 from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
@@ -105,6 +105,17 @@ async def get_presets(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     result = await get_preset_db_data()
+    return result
+
+
+@query_router.get("/get_preset")
+async def get_preset(
+    query: str,
+    token: str = Depends(oauth2_scheme)
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    result = await get_single_preset_db_data(query=query)
     return result
 
 

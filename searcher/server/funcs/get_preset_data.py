@@ -34,6 +34,21 @@ async def get_preset_db_data():
     return result
 
 
+async def get_single_preset_db_data(query: str):
+    async with get_async_connection() as client:
+        param = {
+            "v1": query,
+        }
+        query = f"""SELECT preset, norm_query FROM preset WHERE query = (SELECT max(id) FROM request WHERE query = %(v1)s)"""
+        q = await client.query(query, parameters=param)
+        q_result = list(q.result_rows)
+        result = {
+            "preset": q_result[0][0] if q_result and q_result[0] else None,
+            "norm_query": q_result[0][1] if q_result and q_result[0] else None
+        }
+    return result
+
+
 async def get_preset_by_id_db_data(query: str):
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
