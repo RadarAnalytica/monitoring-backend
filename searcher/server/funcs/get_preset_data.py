@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 from clickhouse_db.get_async_connection import get_async_connection
@@ -78,7 +77,7 @@ async def get_preset_by_id_db_data(query: str):
         GROUP BY query_id, date
         ORDER BY query_id, date
         ) as rf 
-        JOIN request FINAL as r ON r.id = rf.query_id 
+        JOIN (SELECT id as id, query as query FROM request WHERE id IN %(v1)s) as r ON r.id = rf.query_id 
         GROUP BY r.query
         ORDER BY total DESC
         """
@@ -167,7 +166,7 @@ async def get_preset_by_query_all_time_db_data(query: str):
         GROUP BY query_id, y, m
         ORDER BY query_id, y, m
         ) as rf 
-        JOIN request as r ON r.id = rf.query_id 
+        JOIN (SELECT id as id, query as query FROM request WHERE id IN %(v1)s) as r ON r.id = rf.query_id 
         GROUP BY r.query
         ORDER BY total DESC
         """
