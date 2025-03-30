@@ -20,7 +20,7 @@ def check_jwt_token(token: str):
 def gen_token():
     to_encode = {
         "exp": (datetime.now() + timedelta(hours=1)).timestamp(),
-        "date": datetime.now().strftime("%Y-%m-%d"),
+        "date": (datetime.now() + timedelta(hours=3)).strftime("%Y-%m-%d"),
     }
     token = jwt.encode(payload=to_encode, algorithm=ALGORITHM, key=SECRET_KEY)
     return token
