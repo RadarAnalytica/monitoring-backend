@@ -119,27 +119,41 @@ async def get_preset(
     return result
 
 
-@query_router.get("/get_preset_data/day/{query}")
+@query_router.get("/get_preset_data/day")
 async def get_preset_queries(
-    query: str,
+    query: Optional[str] = Query(default=None),
+    preset: Optional[str] = Query(default=None),
     token: str = Depends(oauth2_scheme)
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
-    query = query.strip().lower()
-    result = await get_preset_by_id_db_data(query)
+    if preset:
+        try:
+            preset = int(preset)
+        except ValueError:
+            preset = None
+    if query:
+        query = query.strip().lower()
+    result = await get_preset_by_id_db_data(query=query, preset_id=preset)
     return result
 
 
-@query_router.get("/get_preset_data/month/{query}")
+@query_router.get("/get_preset_data/month")
 async def get_preset_queries(
-    query: str,
+    query: Optional[str] = Query(default=None),
+    preset: Optional[str] = Query(default=None),
     token: str = Depends(oauth2_scheme)
 ):
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
-    query = query.strip().lower()
-    result = await get_preset_by_query_all_time_db_data(query)
+    if preset:
+        try:
+            preset = int(preset)
+        except ValueError:
+            preset = None
+    if query:
+        query = query.strip().lower()
+    result = await get_preset_by_query_all_time_db_data(query=query, preset_id=preset)
     return result
 
 

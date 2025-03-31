@@ -48,13 +48,18 @@ async def get_single_preset_db_data(query: str):
     return result
 
 
-async def get_preset_by_id_db_data(query: str):
+async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
+    if not query and not preset_id:
+        return dict()
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
         param = {
-            "v1": query,
+            "v1": preset_id or query,
         }
-        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
+        if preset_id:
+            queries_query = """SELECT norm_query, query FROM preset WHERE preset = %(v1)s GROUP BY norm_query, query"""
+        else:
+            queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
         q = await client.query(queries_query, parameters=param)
         norm_query = None
         queries_list = []
@@ -140,12 +145,18 @@ async def get_query_frequency_all_time_db(query: str):
     return result
 
 
-async def get_preset_by_query_all_time_db_data(query: str):
+async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int = None):
+    if not query and not preset_id:
+        return dict()
     async with get_async_connection() as client:
         param = {
-            "v1": query,
+            "v1": preset_id or query,
         }
-        queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
+
+        if preset_id:
+            queries_query = """SELECT norm_query, query FROM preset WHERE preset = %(v1)s GROUP BY norm_query, query"""
+        else:
+            queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
         q = await client.query(queries_query, parameters=param)
         norm_query = None
         queries_list = []
