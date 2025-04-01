@@ -89,7 +89,7 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
                     norm_query = None
                 if preset and norm_query:
                     await preset_queue.put(
-                        [(preset, norm_query, r[0], date[1])]
+                        [(preset, norm_query, r[0])]
                     )
             await db_queue.put(request_products)
             return
@@ -124,7 +124,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                     save_to_db(
                         queue=preset_queue,
                         table="preset",
-                        fields=["preset", "norm_query", "query", "date"],
+                        fields=["preset", "norm_query", "query"],
                         client=client
                     )
                 )

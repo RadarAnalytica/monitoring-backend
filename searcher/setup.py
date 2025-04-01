@@ -61,11 +61,10 @@ async def setup_database():
                           preset Int64 CODEC(LZ4HC),
                           norm_query String CODEC(LZ4HC),
                           query UInt32 CODEC(LZ4HC),
-                          date Date CODEC(LZ4HC)
-                      ) ENGINE = MergeTree()
+                          updated DateTime DEFAULT now() CODEC(LZ4HC)
+                      ) ENGINE = ReplacingMergeTree(updated)
                       PRIMARY KEY (preset, query, norm_query)
-                      ORDER BY (preset, query, norm_query)
-                      TTL date + INTERVAL 2 DAY;''')
+                      ORDER BY (preset, query, norm_query);''')
     client.command('''CREATE TABLE IF NOT EXISTS request_frequency(
             query_id UInt32 CODEC(LZ4HC),
             date Date CODEC(LZ4HC),
