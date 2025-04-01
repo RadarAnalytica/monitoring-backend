@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date, timedelta
 from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
@@ -16,12 +17,15 @@ async def get_cities_data(city_id):
 
 async def get_requests_data():
     async with get_async_connection() as client:
+        await client.command("optimize table request;")
+        await asyncio.sleep(5)
         query = f"""SELECT id, query
                 FROM request
                 WHERE (updated = (SELECT max(updated) FROM request)) 
                 ORDER BY quantity DESC LIMIT 1000000;"""
         q = await client.query(query)
-    return q.result_rows
+        result = list(q.result_rows)
+    return result
 
 
 async def get_requests_id_download_data():

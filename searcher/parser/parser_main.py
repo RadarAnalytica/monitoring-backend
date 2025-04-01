@@ -100,8 +100,8 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
 
 async def get_city_result(city, date, requests, request_batch_no, get_preset=False):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
-    await send_log_message(f"Начался сбор данных по городу:\n{city}")
-    requests_list = [r for r in requests]
+    await send_log_message(f"Начался сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}")
+    requests_list = [r for r in requests if not r[1].isdigit()]
     del requests
     preset_queue = None
     if get_preset:
@@ -116,7 +116,8 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                     queue=db_queue,
                     table="request_product",
                     fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
-                    client=client
+                    client=client,
+                    batch_no=request_batch_no
                 )
             )
             if get_preset:
@@ -157,7 +158,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
             if get_preset:
                 await preset_queue.put(None)
                 await asyncio.gather(preset_worker)
-    await send_log_message(f"Завершен сбор данных по городу: {city}")
+    await send_log_message(f"Завершен сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}")
     return
 
 
