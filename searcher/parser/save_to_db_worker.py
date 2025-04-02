@@ -6,6 +6,7 @@ from settings import logger
 
 
 async def save_to_db(queue: asyncio.Queue, table, fields, client: AsyncClient, batch_no=None):
+    counter = 0
     while True:
         items = []
         item = []
@@ -17,7 +18,10 @@ async def save_to_db(queue: asyncio.Queue, table, fields, client: AsyncClient, b
         if items:
             try:
                 await client.insert(table, items, column_names=fields)
-                logger.info(f"Запись в БД: {items[0][1]} {items[0][2]}, batch: {batch_no}")
+                counter += 1
+                if counter == 10:
+                    counter = 0
+                    logger.info(f"Запись в БД: {items[0][1]} {items[0][2]}, batch: {batch_no}")
                 gc.collect()
             except Exception as e:
                 logger.critical(f"{e}, {items}")
