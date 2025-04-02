@@ -44,10 +44,9 @@ def fire_requests(city_no):
     requests = asyncio.run(get_requests_data())
     request_batches = []
     batch_size = 167000
-    prev = 0
-    for r_id in range(batch_size, len(requests) + batch_size, batch_size):
-        request_batches.append(requests[prev:r_id])
-        prev = r_id
+    for r_id in range(0, len(requests) + batch_size, batch_size):
+        request_batches.append(requests[r_id:r_id + batch_size])
     city = cities[0]
     for i, r_batch in enumerate(request_batches, 1):
-        process_city.delay(city, today_date, r_batch, i)
+        if r_batch:
+            process_city.delay(city, today_date, r_batch, i)
