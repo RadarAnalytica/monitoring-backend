@@ -12,7 +12,8 @@ from settings import logger
 from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
 from server.funcs.get_keywords_data import get_keywords_payload
-from server.funcs.get_product_query_data import get_product_db_data, get_product_db_data_latest, get_ex_ad
+from server.funcs.get_product_query_data import get_product_db_data, get_product_db_data_latest, get_ex_ad, \
+    get_ex_ad_query
 
 query_router = APIRouter()
 
@@ -73,8 +74,32 @@ async def get_product_queries_external(
         return JSONResponse(status_code=403, content="Unauthorized")
     start = datetime.now()
     result = await get_ex_ad(product_id)
-    logger.info(f"Время выполнения latest {(datetime.now() - start).total_seconds()}s")
+    logger.info(f"Время выполнения external {(datetime.now() - start).total_seconds()}s")
     return result
+
+
+@query_router.get("/external/query")
+async def get_product_queries_external_query(
+    products: str = Query(),
+    token: str = Depends(oauth2_scheme),
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    start = datetime.now()
+    p_ids_str = products.split(",")
+    p_ids = []
+    for p_id_str in p_ids_str:
+        try:
+            int(p_id_str)
+            p_ids.append(p_id_str)
+        except (ValueError, TypeError):
+            continue
+    result = 0
+    if p_ids:
+        result = await get_ex_ad_query(p_ids)
+    logger.info(f"Время выполнения /external/query {(datetime.now() - start).total_seconds()}s")
+    return result
+
 
 
 

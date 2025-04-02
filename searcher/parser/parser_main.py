@@ -140,7 +140,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         preset_queue=preset_queue,
                     )
                 )
-                for _ in range(5)
+                for _ in range(8)
             ]
             counter = 0
             while requests_list:
@@ -148,7 +148,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                     counter += 1
                     await http_queue.put(requests_list.pop())
                     if not (counter % 1000):
-                        logger.info(f"Осталось запросов в батче: {len(requests_list)}")
+                        logger.info(f"Осталось запросов в батче {request_batch_no}: {len(requests_list)}")
                 except Exception as e:
                     logger.error(f"{e}")
             await http_queue.put(None)

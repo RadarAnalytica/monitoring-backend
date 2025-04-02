@@ -165,5 +165,20 @@ async def get_ex_ad(product_id):
         }
     return result
 
+async def get_ex_ad_query(product_ids_strs: list[str]):
+    params = {
+        "v1": tuple(product_ids_strs),
+    }
+    async with get_async_connection() as client:
+        client: AsyncClient
+        query = """SELECT id FROM request FINAL WHERE query IN %(v1)s"""
+        query_result = await client.query(query, parameters=params)
+        query_ids = tuple((row[0] for row in query_result.result_rows))
+    if not query_ids:
+        return 0
+    return len(query_ids)
+
+
+
 
 
