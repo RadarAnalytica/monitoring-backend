@@ -179,6 +179,59 @@ async def get_ex_ad_query(product_ids_strs: list[str]):
     return len(query_ids)
 
 
+async def get_ex_ad_page(product_ids_strs: list[str]):
+    params = {
+        "v1": tuple(product_ids_strs),
+    }
+    this_period_start = datetime.now().date() - timedelta(days=30)
+    past_period_start = this_period_start - timedelta(days=30)
+    past_period_end = this_period_start - timedelta(days=1)
+    result = dict()
+    async with get_async_connection() as client:
+        client: AsyncClient
+        query = """SELECT id, query FROM request FINAL WHERE query = %(v1)s"""
+        query_result = await client.query(query, parameters=params)
+        query_ids = {row[0]: row[1] for row in query_result.result_rows}
+        if not query_ids:
+            return result
+        rf_params = {
+            "v1": tuple(query_ids.keys()),
+            "v2": this_period_start,
+            "v3": past_period_start,
+            "v4": past_period_end
+        }
+        query = """SELECT coalesce(trf.query_id, prf.query_id), sum(trf.frequency), sum(prf.frequency) FROM (
+        SELECT query_id as query_id, sum(frequency) as frequency FROM request_frequency 
+        WHERE query_id = %(v1)s 
+        AND date >= %(v2)s 
+        GROUP BY query_id 
+        ) AS trf
+        JOIN (
+        SELECT query_id as query_id, sum(frequency) as frequency FROM request_frequency 
+        WHERE query_id = %(v1)s 
+        AND date BETWEEN %(v3)s AND %(v4)s 
+        GROUP BY query_id 
+        ) AS prf ON trf.query_id = prf.query_id
+        GROUP BY trf.query_id
+        """
+        query_fr_result = await client.query(query, parameters=rf_params)
+        results = list(query_fr_result.result_rows)
+    for res_row in results:
+        query = query_ids.get(res_row[0])
+        this_period_quantity = res_row[1]
+        past_period_quantity = res_row[2]
+        delta = this_period_quantity - past_period_quantity
+        logger.info(f"this {this_period_quantity}, that {past_period_quantity}, delta {delta}")
+        percent = round(delta * 100 / past_period_quantity, 2) if past_period_quantity else 0
+        query_data = {
+            "quantity": this_period_quantity,
+            "comparison": percent
+        }
+        result[query] = query_data
+    return result
+
+
+
 
 
 
