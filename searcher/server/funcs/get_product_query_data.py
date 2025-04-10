@@ -189,7 +189,7 @@ async def get_ex_ad_page(product_ids_strs: list[str]):
     result = dict()
     async with get_async_connection() as client:
         client: AsyncClient
-        query = """SELECT id, query FROM request FINAL WHERE query = %(v1)s"""
+        query = """SELECT id, query FROM request FINAL WHERE query IN %(v1)s"""
         query_result = await client.query(query, parameters=params)
         query_ids = {row[0]: row[1] for row in query_result.result_rows}
         if not query_ids:
