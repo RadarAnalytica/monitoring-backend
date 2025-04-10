@@ -200,7 +200,8 @@ async def get_ex_ad_page(product_ids_strs: list[str]):
             "v3": past_period_start,
             "v4": past_period_end
         }
-        query = """SELECT coalesce(trf.query_id, prf.query_id), sum(trf.frequency), sum(prf.frequency) FROM (
+        query = """SELECT query_id, sum(tp_frequency), sum(p_frequency) 
+        FROM (SELECT coalesce(trf.query_id, prf.query_id) as query_id, trf.frequency as tp_frequency, prf.frequency as p_frequency FROM (
         SELECT query_id as query_id, sum(frequency) as frequency FROM request_frequency 
         WHERE query_id = %(v1)s 
         AND date >= %(v2)s 
@@ -211,9 +212,7 @@ async def get_ex_ad_page(product_ids_strs: list[str]):
         WHERE query_id = %(v1)s 
         AND date BETWEEN %(v3)s AND %(v4)s 
         GROUP BY query_id 
-        ) AS prf ON trf.query_id = prf.query_id
-        GROUP BY trf.query_id
-        """
+        ) AS prf ON trf.query_id = prf.query_id) GROUP BY query_id"""
         query_fr_result = await client.query(query, parameters=rf_params)
         results = list(query_fr_result.result_rows)
     for res_row in results:
