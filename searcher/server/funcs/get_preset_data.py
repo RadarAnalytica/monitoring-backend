@@ -89,10 +89,20 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         q_f = await client.query(frequency_query, parameters=param_freq)
         result = {
             "preset": norm_query,
-            "queries": {
-                row[0]: [{sub_row[0].strftime("%d.%m.%Y"): sub_row[1]} for sub_row in row[1]] for row in q_f.result_rows
-            }
+            "queries": dict()
         }
+        all_dates = set()
+        for row in q_f.result_rows:
+            query = row[0]
+            result["queries"][query] = list()
+            query_frequency = row[1]
+            for sub_row in query_frequency:
+                query_date = sub_row[0]
+                all_dates.add(query_date)
+                quantity = sub_row[1]
+                result["queries"][query].append({query_date.strftime("%d.%m.%Y"): quantity})
+        dates_list = [d.strftime("%d.%m.%Y") for d in sorted(all_dates)]
+        result["dates"] = dates_list
     return result
 
 
@@ -184,8 +194,19 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         q_f = await client.query(frequency_query, parameters=param_freq)
         result = {
             "preset": norm_query,
-            "queries": {
-                row[0]: [{f"{sub_row[0]} {MONTH_DICT.get(sub_row[1])}": sub_row[2]} for sub_row in row[1]] for row in q_f.result_rows
-            }
+            "queries": dict()
         }
+        all_dates = set()
+        for row in q_f.result_rows:
+            query = row[0]
+            result["queries"][query] = list()
+            query_frequency = row[1]
+            for sub_row in query_frequency:
+                query_year = sub_row[0]
+                query_month = sub_row[1]
+                all_dates.add((query_year, query_month))
+                quantity = sub_row[2]
+                result["queries"][query].append({f"{query_year} {MONTH_DICT.get(query_month)}": quantity})
+        dates_list = [f"{query_year} {MONTH_DICT.get(query_month)}" for query_year, query_month in sorted(all_dates)]
+        result["dates"] = dates_list
     return result
