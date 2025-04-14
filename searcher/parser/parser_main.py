@@ -114,7 +114,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
             db_worker = asyncio.create_task(
                 save_to_db(
                     queue=db_queue,
-                    table="request_product",
+                    table="request_product_temp",
                     fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
                     client=client,
                     batch_no=request_batch_no
