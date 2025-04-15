@@ -19,5 +19,6 @@ def transfer(left, right, step, city, date):
     client.close()
 
 
-transfer(70000000, 400000000, 10000000, 1, 1)
+for d in range(2, 85):
+    transfer(0, 400000000, 1000000, 1, d)
 
