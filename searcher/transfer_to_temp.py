@@ -3,6 +3,7 @@ from settings import CLICKHOUSE_CONFING, logger
 
 
 def transfer(left, right, step, city, date):
+    print(CLICKHOUSE_CONFING)
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
     for i in range(left, right, step):
         logger.info(f"Batch {i}")
