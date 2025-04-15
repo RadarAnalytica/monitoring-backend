@@ -77,7 +77,7 @@ async def get_product_db_data(product_id, city, interval):
 
 
 async def get_product_db_data_latest(product_id, city):
-    now = datetime.now().date() - timedelta(days=2)
+    now = datetime.now().date() - timedelta(days=1)
     result = {"queries": []}
     async with get_async_connection() as client:
         city_param = {
@@ -100,11 +100,11 @@ async def get_product_db_data_latest(product_id, city):
             "v3": date_id
         }
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
-        FROM request_product AS rp
+        FROM request_product_temp AS rp
         JOIN request AS r ON r.id = rp.query 
-        WHERE (rp.product = %(v1)s)
-        AND (rp.city = %(v2)s)
+        WHERE (rp.city = %(v2)s)
         AND (rp.date = %(v3)s)
+        AND (rp.product = %(v1)s)
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query, parameters=params)
         for row in query_result.result_rows:
