@@ -3,8 +3,8 @@ from settings import CLICKHOUSE_CONFING, logger
 
 
 def transfer(left, right, step, city, date):
-    print(CLICKHOUSE_CONFING)
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
+    logger.info(f"CITY {city}, DATE {date}")
     for i in range(left, right, step):
         logger.info(f"Batch {i}")
         client.command(f"""INSERT INTO 
@@ -21,5 +21,8 @@ def transfer(left, right, step, city, date):
 
 
 for d in range(2, 85):
-    transfer(0, 400000000, 1000000, 1, d)
+    s = 0
+    if d == 2:
+        s = 168000000
+    transfer(s, 400000000, 10000, 1, d)
 
