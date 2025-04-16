@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-
 from clickhouse_db.get_async_connection import get_async_connection
 
 
@@ -48,6 +47,41 @@ async def get_single_preset_db_data(query: str):
     return result
 
 
+# def unnest_subjects_list(subjects_list: list):
+#     result = dict()
+#     for subject_data in subjects_list:
+#         s_id = str(subject_data.get("id"))
+#         s_name = subject_data.get("name", "").strip().lower()
+#         s_parent = str(subject_data.get("parent", 0))
+#         children = subject_data.get("childs", [])
+#         result[s_id] = dict()
+#         result[s_id]["parent"] = s_parent
+#         result[s_id]["name"] = s_name
+#         children_dict = unnest_subjects_list(children)
+#         result.update(unnest_subjects_list(children))
+#         result[s_id]["children"] = [key for key in children_dict.keys()]
+#     return result
+#
+#
+# async def get_today_subjects_dict():
+#     url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
+#     async with ClientSession() as http_session:
+#         async with http_session.get(url) as resp:
+#             result = await resp.json()
+#     subjects_dict = unnest_subjects_list(result)
+#     return subjects_dict
+#
+#
+# async def get_subjects_dict():
+#     subjects_dict = await redis.get("subjects_dict")
+#     if not subjects_dict:
+#         subjects_dict = await get_today_subjects_dict()
+#         await redis.set("subjects_dict", dumps(subjects_dict), ex=60 * 60 * 24)
+#     else:
+#         subjects_dict = loads(subjects_dict)
+#     return subjects_dict
+
+
 async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
     if not query and not preset_id:
         return dict()
@@ -57,21 +91,37 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
             "v1": preset_id or query,
         }
         if preset_id:
-            queries_query = """SELECT norm_query, query FROM preset WHERE preset = %(v1)s GROUP BY norm_query, query"""
+            stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC 1;"""
         else:
-            queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
-        q = await client.query(queries_query, parameters=param)
-        norm_query = None
-        queries_list = []
-        for row in q.result_rows:
-            if not norm_query:
-                norm_query = row[0]
-            queries_list.append(row[1])
-        if not norm_query:
-            return dict()
-        queries = tuple((row[1] for row in q.result_rows))
+            stmt = """SELECT query FROM request WHERE id IN 
+            (
+                SELECT query FROM preset WHERE preset = 
+                    (
+                        SELECT preset FROM preset WHERE query = 
+                            coalesce((SELECT id FROM request WHERE query = 'мужские джинсы' LIMIT 1), 0)
+                    )
+            ) ORDER BY quantity DESC LIMIT 1;"""
+        q = await client.query(stmt, parameters=param)
+        norm_query_rows = list(q.result_rows)
+        if not norm_query_rows:
+            return {
+                "preset": preset_id or query,
+                "queries": dict()
+            }
+        norm_query = norm_query_rows[0][0]
+        result = {
+            "preset": norm_query,
+            "queries": dict()
+        }
+        nq_stmt = f"%{norm_query}%"
+        params = {
+            "v1": nq_stmt
+        }
+        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s"""
+        q = await client.query(stmt, parameters=params)
+        queries_list = [row[0] for row in q.result_rows]
         param_freq = {
-            "v1": queries,
+            "v1": queries_list,
             "v2": start_date,
         }
         frequency_query = """SELECT r.query, groupArray((rf.date, rf.date_sum)), sum(rf.date_sum) as total FROM (
@@ -87,10 +137,6 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         ORDER BY total DESC
         """
         q_f = await client.query(frequency_query, parameters=param_freq)
-        result = {
-            "preset": norm_query,
-            "queries": dict()
-        }
         all_dates = set()
         for row in q_f.result_rows:
             query = row[0]
@@ -136,7 +182,7 @@ async def get_query_frequency_all_time_db(query: str):
         param_q_id = {
             "v1": query
         }
-        query_id_query = """SELECT id FROM request where query = %(v1)s"""
+        query_id_query = """SELECT id FROM request where query = %(v1)s ORDER BY quantity DESC LIMIT 50"""
         q_id = await client.query(query_id_query, parameters=param_q_id)
         query_id = q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
         if not query_id:
@@ -164,21 +210,33 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         }
 
         if preset_id:
-            queries_query = """SELECT norm_query, query FROM preset WHERE preset = %(v1)s GROUP BY norm_query, query"""
+            stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC 1;"""
         else:
-            queries_query = """SELECT norm_query, query FROM preset WHERE preset IN (SELECT p.preset FROM preset as p JOIN request as r on r.id = p.query WHERE r.query = %(v1)s) GROUP BY norm_query, query"""
-        q = await client.query(queries_query, parameters=param)
-        norm_query = None
-        queries_list = []
-        for row in q.result_rows:
-            if not norm_query:
-                norm_query = row[0]
-            queries_list.append(row[1])
-        if not norm_query:
-            return dict()
-        queries = tuple((row[1] for row in q.result_rows))
+            stmt = """SELECT query FROM request WHERE id IN 
+            (
+                SELECT query FROM preset WHERE preset = 
+                    (
+                        SELECT preset FROM preset WHERE query = 
+                            coalesce((SELECT id FROM request WHERE query = 'мужские джинсы' LIMIT 1), 0)
+                    )
+            ) ORDER BY quantity DESC LIMIT 1;"""
+        q = await client.query(stmt, parameters=param)
+        norm_query_rows = list(q.result_rows)
+        if not norm_query_rows:
+            return {
+                "preset": preset_id or query,
+                "queries": dict()
+            }
+        norm_query = norm_query_rows[0][0]
+        nq_stmt = f"%{norm_query}%"
+        params = {
+            "v1": nq_stmt
+        }
+        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s ORDER BY quantity DESC LIMIT 50"""
+        q = await client.query(stmt, parameters=params)
+        queries_list = [row[0] for row in q.result_rows]
         param_freq = {
-            "v1": queries,
+            "v1": queries_list,
         }
         frequency_query = """SELECT r.query, groupArray((y, m, rf.date_sum)), sum(rf.date_sum) as total FROM (
         SELECT query_id as query_id, toYear(date) as y, toMonth(date) as m, sum(frequency) as date_sum 

@@ -20,9 +20,9 @@ def transfer(left, right, step, city, date):
     client.close()
 
 
-for d in range(2, 85):
+for d in range(3, 85):
     s = 0
-    if d == 2:
-        s = 168000000
-    transfer(s, 400000000, 10000, 1, d)
+    if d == 3:
+        s = 280000
+    transfer(s, 400000000, 10000000, 1, d)
 
