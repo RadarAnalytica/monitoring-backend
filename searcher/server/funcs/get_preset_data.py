@@ -232,12 +232,6 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         params = {
             "v1": nq_stmt
         }
-        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s ORDER BY quantity DESC LIMIT 100"""
-        q = await client.query(stmt, parameters=params)
-        queries_list = [row[0] for row in q.result_rows]
-        param_q = {
-            "v1": queries_list
-        }
         stmt = """SELECT query_id
         FROM (
             SELECT
@@ -248,11 +242,11 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
             WHERE p.preset IN (
                 SELECT DISTINCT preset
                 FROM preset
-                WHERE query IN %(v1)s
+                WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)
             )
         )
         WHERE rn <= 1"""
-        q = await client.query(stmt, parameters=param_q)
+        q = await client.query(stmt, parameters=params)
         final_queries_list = [row[0] for row in q.result_rows]
         param_freq = {
             "v1": final_queries_list,

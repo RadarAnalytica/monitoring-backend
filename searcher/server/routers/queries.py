@@ -181,7 +181,9 @@ async def get_preset_queries(
             preset = None
     if query:
         query = query.strip().lower()
+    start = datetime.now()
     result = await get_preset_by_id_db_data(query=query, preset_id=preset)
+    logger.info(f"Время выполнения /get_preset_data/day {(datetime.now() - start).total_seconds()}s")
     return result
 
 
@@ -200,7 +202,11 @@ async def get_preset_queries(
             preset = None
     if query:
         query = query.strip().lower()
+    start = datetime.now()
+
     result = await get_preset_by_query_all_time_db_data(query=query, preset_id=preset)
+    logger.info(f"Время выполнения /get_preset_data/month {(datetime.now() - start).total_seconds()}s")
+
     return result
 
 
