@@ -94,10 +94,6 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
         return result
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
-        result = {
-            "preset": preset_id or query,
-            "queries": dict()
-        }
         param = {
             "v1": str(preset_id or query),
         }
@@ -247,10 +243,6 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
     if not query and not preset_id:
         return result
     async with get_async_connection() as client:
-        result = {
-            "preset": preset_id or query,
-            "queries": dict()
-        }
         param = {
             "v1": str(preset_id or query),
         }
@@ -323,10 +315,6 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         ORDER BY total DESC
         """
         q_f = await client.query(frequency_query, parameters=param_freq)
-        result = {
-            "preset": norm_query,
-            "queries": dict()
-        }
         all_dates = set()
         for row in q_f.result_rows:
             query = row[0]
