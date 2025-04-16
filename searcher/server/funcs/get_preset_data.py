@@ -87,6 +87,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         return dict()
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
+        result = dict()
         param = {
             "v1": preset_id or query,
         }
@@ -109,19 +110,30 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
                 "queries": dict()
             }
         norm_query = norm_query_rows[0][0]
-        result = {
-            "preset": norm_query,
-            "queries": dict()
-        }
+        norm_query = ' '.join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
             "v1": nq_stmt
         }
-        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s ORDER BY quantity DESC LIMIT 1"""
+        stmt = """SELECT query_id
+        FROM (
+            SELECT
+                r.id AS query_id,
+                row_number() OVER (PARTITION BY p.preset ORDER BY r.quantity DESC) AS rn
+            FROM preset p
+            INNER JOIN request r ON p.query = r.id
+            WHERE p.preset IN (
+                SELECT DISTINCT preset
+                FROM preset
+                WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)
+            )
+        )
+        WHERE rn <= 1"""
         q = await client.query(stmt, parameters=params)
-        queries_list = [row[0] for row in q.result_rows]
+        final_queries_list = [row[0] for row in q.result_rows]
+
         param_freq = {
-            "v1": queries_list,
+            "v1": final_queries_list,
             "v2": start_date,
         }
         frequency_query = """SELECT r.query, groupArray((rf.date, rf.date_sum)), sum(rf.date_sum) as total FROM (
@@ -130,7 +142,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         WHERE query_id IN %(v1)s 
         AND date >= %(v2)s
         GROUP BY query_id, date
-        ORDER BY query_id, date
+        ORDER BY query_id, date DESC
         ) as rf 
         JOIN (SELECT id as id, query as query FROM request WHERE id IN %(v1)s) as r ON r.id = rf.query_id 
         GROUP BY r.query
@@ -147,7 +159,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
                 all_dates.add(query_date)
                 quantity = sub_row[1]
                 result["queries"][query].append({query_date.strftime("%d.%m.%Y"): quantity})
-        dates_list = [d.strftime("%d.%m.%Y") for d in sorted(all_dates)]
+        dates_list = [d.strftime("%d.%m.%Y") for d in sorted(all_dates, reverse=True)]
         result["dates"] = dates_list
     return result
 
