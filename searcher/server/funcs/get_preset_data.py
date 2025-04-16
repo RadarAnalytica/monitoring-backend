@@ -129,7 +129,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
         total_pages = (len(presets) // page_size) + (1 if len(presets) % page_size else 0) if presets else 0
         result["current_page"] = page
         result["total_pages"] = total_pages
-        if not total_pages:
+        if not total_pages or page > total_pages:
             return result
         params = {
             "v1": presets,
@@ -278,7 +278,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         total_pages = (len(presets) // page_size) + (1 if len(presets) % page_size else 0) if presets else 0
         result["current_page"] = page
         result["total_pages"] = total_pages
-        if not total_pages:
+        if not total_pages or page > total_pages:
             return result
         params = {
             "v1": presets,
