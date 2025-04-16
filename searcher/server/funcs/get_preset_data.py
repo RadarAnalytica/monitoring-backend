@@ -87,7 +87,10 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         return dict()
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
-        result = dict()
+        result = {
+            "preset": preset_id or query,
+            "queries": dict()
+        }
         param = {
             "v1": preset_id or query,
         }
@@ -105,10 +108,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         q = await client.query(stmt, parameters=param)
         norm_query_rows = list(q.result_rows)
         if not norm_query_rows:
-            return {
-                "preset": preset_id or query,
-                "queries": dict()
-            }
+            return result
         norm_query = norm_query_rows[0][0]
         norm_query = ' '.join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
