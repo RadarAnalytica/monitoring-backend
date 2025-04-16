@@ -91,7 +91,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
             "v1": preset_id or query,
         }
         if preset_id:
-            stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC 1;"""
+            stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC LIMIT 1;"""
         else:
             stmt = """SELECT query FROM request WHERE id IN 
             (
@@ -210,7 +210,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         }
 
         if preset_id:
-            stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC 1;"""
+            stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC LIMIT 1;"""
         else:
             stmt = """SELECT query FROM request WHERE id IN 
             (
