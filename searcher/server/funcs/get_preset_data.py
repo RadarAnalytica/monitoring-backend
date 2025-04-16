@@ -146,7 +146,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
             WHERE p.preset IN %(v1)s
         )
         WHERE rn = 1
-        ORDER BY quantity
+        ORDER BY quantity DESC
         LIMIT 100
         OFFSET %(v2)s"""
         q = await client.query(stmt, parameters=params)
@@ -295,7 +295,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
             WHERE p.preset IN %(v1)s
         )
         WHERE rn = 1
-        ORDER BY quantity
+        ORDER BY quantity DESC
         LIMIT 100
         OFFSET %(v2)s"""
         q = await client.query(stmt, parameters=params)
