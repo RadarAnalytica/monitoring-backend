@@ -92,7 +92,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
             "queries": dict()
         }
         param = {
-            "v1": preset_id or query,
+            "v1": str(preset_id or query),
         }
         if preset_id:
             stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC LIMIT 1;"""
@@ -110,6 +110,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         if not norm_query_rows:
             return result
         norm_query = norm_query_rows[0][0]
+        result["preset"] = norm_query
         norm_query = ' '.join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
@@ -236,7 +237,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         norm_query_rows = list(q.result_rows)
         if not norm_query_rows:
             return {
-                "preset": preset_id or query,
+                "preset": str(preset_id or query),
                 "queries": dict()
             }
         norm_query = norm_query_rows[0][0]
