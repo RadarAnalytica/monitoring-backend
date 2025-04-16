@@ -98,7 +98,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
                 SELECT query FROM preset WHERE preset = 
                     (
                         SELECT preset FROM preset WHERE query = 
-                            coalesce((SELECT id FROM request WHERE query = 'мужские джинсы' LIMIT 1), 0)
+                            coalesce((SELECT id FROM request WHERE query = %(v1)s LIMIT 1), 0)
                     )
             ) ORDER BY quantity DESC LIMIT 1;"""
         q = await client.query(stmt, parameters=param)
@@ -117,7 +117,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         params = {
             "v1": nq_stmt
         }
-        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s"""
+        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s ORDER BY quantity DESC LIMIT 1"""
         q = await client.query(stmt, parameters=params)
         queries_list = [row[0] for row in q.result_rows]
         param_freq = {
@@ -182,7 +182,7 @@ async def get_query_frequency_all_time_db(query: str):
         param_q_id = {
             "v1": query
         }
-        query_id_query = """SELECT id FROM request where query = %(v1)s ORDER BY quantity DESC LIMIT 50"""
+        query_id_query = """SELECT id FROM request where query = %(v1)s"""
         q_id = await client.query(query_id_query, parameters=param_q_id)
         query_id = q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
         if not query_id:
@@ -217,7 +217,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
                 SELECT query FROM preset WHERE preset = 
                     (
                         SELECT preset FROM preset WHERE query = 
-                            coalesce((SELECT id FROM request WHERE query = 'мужские джинсы' LIMIT 1), 0)
+                            coalesce((SELECT id FROM request WHERE query = %(v1)s LIMIT 1), 0)
                     )
             ) ORDER BY quantity DESC LIMIT 1;"""
         q = await client.query(stmt, parameters=param)
