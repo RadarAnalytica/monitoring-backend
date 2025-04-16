@@ -82,9 +82,16 @@ async def get_single_preset_db_data(query: str):
 #     return subjects_dict
 
 
-async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
+async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, page=1, page_size=100):
+    result = {
+        "preset": preset_id or query,
+        "queries": dict(),
+        "dates": [],
+        "total_pages": 0,
+        "current_page": 0
+    }
     if not query and not preset_id:
-        return dict()
+        return result
     start_date = datetime.now().date() - timedelta(days=30)
     async with get_async_connection() as client:
         result = {
@@ -106,6 +113,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
                     )
             ) ORDER BY quantity DESC LIMIT 1;"""
         q = await client.query(stmt, parameters=param)
+
         norm_query_rows = list(q.result_rows)
         if not norm_query_rows:
             return result
@@ -114,22 +122,37 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None):
         norm_query = ' '.join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
-            "v1": nq_stmt
+            "v1": nq_stmt,
+        }
+        presets_stmt = """
+                SELECT DISTINCT preset
+                FROM preset
+                WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)"""
+        q = await client.query(presets_stmt, parameters=params)
+        presets = [row[0] for row in q.result_rows]
+        total_pages = (len(presets) // page_size) + (1 if len(presets) % page_size else 0) if presets else 0
+        result["current_page"] = page
+        result["total_pages"] = total_pages
+        if not total_pages:
+            return result
+        params = {
+            "v1": presets,
+            "v2": (page - 1) * page_size
         }
         stmt = """SELECT query_id
         FROM (
             SELECT
                 r.id AS query_id,
+                r.quantity as quantity,
                 row_number() OVER (PARTITION BY p.preset ORDER BY r.quantity DESC) AS rn
             FROM preset p
             INNER JOIN request r ON p.query = r.id
-            WHERE p.preset IN (
-                SELECT DISTINCT preset
-                FROM preset
-                WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)
-            )
+            WHERE p.preset IN %(v1)s
         )
-        WHERE rn <= 1"""
+        WHERE rn = 1
+        ORDER BY quantity
+        LIMIT 100
+        OFFSET %(v2)s"""
         q = await client.query(stmt, parameters=params)
         final_queries_list = [row[0] for row in q.result_rows]
 
@@ -214,14 +237,23 @@ async def get_query_frequency_all_time_db(query: str):
     return result
 
 
-async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int = None):
+async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int = None, page=1, page_size=100):
+    result = {
+        "preset": preset_id or query,
+        "queries": dict(),
+        "total_pages": 0,
+        "current_page": 0
+    }
     if not query and not preset_id:
-        return dict()
+        return result
     async with get_async_connection() as client:
-        param = {
-            "v1": preset_id or query,
+        result = {
+            "preset": preset_id or query,
+            "queries": dict()
         }
-
+        param = {
+            "v1": str(preset_id or query),
+        }
         if preset_id:
             stmt = """SELECT query FROM request WHERE id IN (SELECT query FROM preset WHERE preset = %(v1)s) ORDER BY quantity DESC LIMIT 1;"""
         else:
@@ -234,32 +266,46 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
                     )
             ) ORDER BY quantity DESC LIMIT 1;"""
         q = await client.query(stmt, parameters=param)
+
         norm_query_rows = list(q.result_rows)
         if not norm_query_rows:
-            return {
-                "preset": str(preset_id or query),
-                "queries": dict()
-            }
+            return result
         norm_query = norm_query_rows[0][0]
+        result["preset"] = norm_query
         norm_query = ' '.join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
-            "v1": nq_stmt
+            "v1": nq_stmt,
+        }
+        presets_stmt = """
+                SELECT DISTINCT preset
+                FROM preset
+                WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)"""
+        q = await client.query(presets_stmt, parameters=params)
+        presets = [row[0] for row in q.result_rows]
+        total_pages = (len(presets) // page_size) + (1 if len(presets) % page_size else 0) if presets else 0
+        result["current_page"] = page
+        result["total_pages"] = total_pages
+        if not total_pages:
+            return result
+        params = {
+            "v1": presets,
+            "v2": (page - 1) * 100
         }
         stmt = """SELECT query_id
         FROM (
             SELECT
                 r.id AS query_id,
+                r.quantity as quantity,
                 row_number() OVER (PARTITION BY p.preset ORDER BY r.quantity DESC) AS rn
             FROM preset p
             INNER JOIN request r ON p.query = r.id
-            WHERE p.preset IN (
-                SELECT DISTINCT preset
-                FROM preset
-                WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)
-            )
+            WHERE p.preset IN %(v1)s
         )
-        WHERE rn <= 1"""
+        WHERE rn = 1
+        ORDER BY quantity
+        LIMIT 100
+        OFFSET %(v2)s"""
         q = await client.query(stmt, parameters=params)
         final_queries_list = [row[0] for row in q.result_rows]
         param_freq = {

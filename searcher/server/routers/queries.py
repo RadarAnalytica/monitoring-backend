@@ -170,6 +170,7 @@ async def get_preset(
 async def get_preset_queries(
     query: Optional[str] = Query(default=None),
     preset: Optional[str] = Query(default=None),
+    page: Optional[int] = Query(default=1),
     token: str = Depends(oauth2_scheme)
 ):
     if not check_jwt_token(token):
@@ -182,7 +183,7 @@ async def get_preset_queries(
     if query:
         query = query.strip().lower()
     start = datetime.now()
-    result = await get_preset_by_id_db_data(query=query, preset_id=preset)
+    result = await get_preset_by_id_db_data(query=query, preset_id=preset, page=page)
     logger.info(f"Время выполнения /get_preset_data/day {(datetime.now() - start).total_seconds()}s")
     return result
 
@@ -191,6 +192,7 @@ async def get_preset_queries(
 async def get_preset_queries(
     query: Optional[str] = Query(default=None),
     preset: Optional[str] = Query(default=None),
+    page: Optional[int] = Query(default=1),
     token: str = Depends(oauth2_scheme)
 ):
     if not check_jwt_token(token):
@@ -204,7 +206,7 @@ async def get_preset_queries(
         query = query.strip().lower()
     start = datetime.now()
 
-    result = await get_preset_by_query_all_time_db_data(query=query, preset_id=preset)
+    result = await get_preset_by_query_all_time_db_data(query=query, preset_id=preset, page=page)
     logger.info(f"Время выполнения /get_preset_data/month {(datetime.now() - start).total_seconds()}s")
 
     return result
