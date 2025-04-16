@@ -232,11 +232,30 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         params = {
             "v1": nq_stmt
         }
-        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s ORDER BY quantity DESC LIMIT 50"""
+        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s"""
         q = await client.query(stmt, parameters=params)
         queries_list = [row[0] for row in q.result_rows]
+        param_q = {
+            "v1": queries_list
+        }
+        stmt = """SELECT query_id
+        FROM (
+            SELECT
+                r.id AS query_id,
+                row_number() OVER (PARTITION BY p.preset ORDER BY r.quantity DESC) AS rn
+            FROM preset p
+            INNER JOIN request r ON p.query = r.id
+            WHERE p.preset IN (
+                SELECT DISTINCT preset
+                FROM preset
+                WHERE query IN %(v1)s
+            )
+        )
+        WHERE rn <= 1"""
+        q = await client.query(stmt, parameters=param_q)
+        final_queries_list = [row[0] for row in q.result_rows]
         param_freq = {
-            "v1": queries_list,
+            "v1": final_queries_list,
         }
         frequency_query = """SELECT r.query, groupArray((y, m, rf.date_sum)), sum(rf.date_sum) as total FROM (
         SELECT query_id as query_id, toYear(date) as y, toMonth(date) as m, sum(frequency) as date_sum 
