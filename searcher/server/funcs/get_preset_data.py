@@ -232,7 +232,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         params = {
             "v1": nq_stmt
         }
-        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s"""
+        stmt = """SELECT id FROM request WHERE query LIKE %(v1)s ORDER BY quantity DESC LIMIT 100"""
         q = await client.query(stmt, parameters=params)
         queries_list = [row[0] for row in q.result_rows]
         param_q = {
