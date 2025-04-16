@@ -257,7 +257,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         FROM request_frequency 
         WHERE query_id IN %(v1)s 
         GROUP BY query_id, y, m
-        ORDER BY query_id, y, m
+        ORDER BY query_id, y DESC, m DESC
         ) as rf 
         JOIN (SELECT id as id, query as query FROM request WHERE id IN %(v1)s) as r ON r.id = rf.query_id 
         GROUP BY r.query
@@ -279,6 +279,6 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
                 all_dates.add((query_year, query_month))
                 quantity = sub_row[2]
                 result["queries"][query].append({f"{query_year} {MONTH_DICT.get(query_month)}": quantity})
-        dates_list = [f"{query_year} {MONTH_DICT.get(query_month)}" for query_year, query_month in sorted(all_dates)]
+        dates_list = [f"{query_year} {MONTH_DICT.get(query_month)}" for query_year, query_month in sorted(all_dates, reverse=True)]
         result["dates"] = dates_list
     return result
