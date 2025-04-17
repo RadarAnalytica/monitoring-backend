@@ -13,7 +13,7 @@ from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
 from server.funcs.get_keywords_data import get_keywords_payload
 from server.funcs.get_product_query_data import get_product_db_data, get_product_db_data_latest, get_ex_ad, \
-    get_ex_ad_query, get_ex_ad_page
+    get_ex_ad_query, get_ex_ad_page, get_product_db_data_competitors
 
 query_router = APIRouter()
 
@@ -61,6 +61,19 @@ async def get_product_queries_latest(
         city = -1257786
     start = datetime.now()
     result = await get_product_db_data_latest(product_id, city)
+    logger.info(f"Время выполнения latest {(datetime.now() - start).total_seconds()}s")
+    return result
+
+
+@query_router.get("/competitors")
+async def get_product_competitors(
+    product_id: int = Query(),
+    token: str = Depends(oauth2_scheme),
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    start = datetime.now()
+    result = await get_product_db_data_competitors(product_id)
     logger.info(f"Время выполнения latest {(datetime.now() - start).total_seconds()}s")
     return result
 

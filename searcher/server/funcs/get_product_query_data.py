@@ -113,9 +113,10 @@ async def get_product_db_data_latest(product_id, city):
 
 
 async def get_product_db_data_competitors(product_id):
-    result = {"queries": []}
+    result = dict()
     async with get_async_connection() as client:
-        if not product_id:
+        client: AsyncClient = client
+        if not product_id or product_id < 1:
             return result
         params = {
             "v1": product_id,
@@ -159,7 +160,7 @@ async def get_product_db_data_competitors(product_id):
         GROUP BY rpt.product 
         LIMIT 50"""
         query_result = await client.query(query, parameters=params)
-        result = dict(query_result.result_rows)
+        result = dict(sorted(list(query_result.result_rows), key=lambda x: len(x[1]), reverse=True))
     return result
 
 
