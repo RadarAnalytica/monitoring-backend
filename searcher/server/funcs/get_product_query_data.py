@@ -112,6 +112,57 @@ async def get_product_db_data_latest(product_id, city):
     return result
 
 
+async def get_product_db_data_competitors(product_id):
+    result = {"queries": []}
+    async with get_async_connection() as client:
+        if not product_id:
+            return result
+        params = {
+            "v1": product_id,
+        }
+        query = f"""SELECT 
+            rpt.product, 
+            groupArray(rr.query) 
+        FROM request_product_temp AS rpt 
+        JOIN request AS rr on rr.id = rpt.query 
+        WHERE rpt.city = 1 
+        AND rpt.date = (
+            SELECT max(date) FROM request_product_temp WHERE city = 1 LIMIT 1
+        ) 
+        AND rpt.query IN (
+            SELECT qry FROM (
+                SELECT 
+                    p.preset,
+                    p.query AS qry, 
+                    pr.quantity, 
+                    ROW_NUMBER() OVER (
+                        PARTITION BY p.preset 
+                        ORDER BY pr.quantity DESC
+                    ) AS rn 
+                FROM preset AS p 
+                JOIN request AS pr on pr.id = p.query 
+                WHERE p.query IN (
+                    SELECT query 
+                    FROM request_product_temp 
+                    WHERE city = 1 
+                    AND date = (
+                        SELECT max(date) FROM request_product_temp WHERE city = 1 LIMIT 1
+                    ) 
+                    AND product = %(v1)s  
+                    AND place < 300
+                ) ORDER BY pr.quantity DESC
+            ) 
+            WHERE rn = 1
+        ) 
+        AND rpt.place = 1 
+        AND rpt.product != %(v1)s 
+        GROUP BY rpt.product 
+        LIMIT 50"""
+        query_result = await client.query(query, parameters=params)
+        result = dict(query_result.result_rows)
+    return result
+
+
 async def get_ex_ad(product_id):
     this_period = datetime.now().date() - timedelta(days=30)
     past_period_start = this_period - timedelta(days=30)

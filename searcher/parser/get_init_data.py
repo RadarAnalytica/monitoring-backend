@@ -20,7 +20,7 @@ async def get_requests_data():
         await client.command("optimize table request;")
         await asyncio.sleep(5)
         query = f"""SELECT id, query
-                FROM request
+                FROM request 
                 WHERE (updated = (SELECT max(updated) FROM request)) 
                 ORDER BY quantity DESC LIMIT 1000000;"""
         q = await client.query(query)
