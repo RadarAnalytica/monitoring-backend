@@ -77,33 +77,25 @@ async def get_product_db_data(product_id, city, interval):
 
 
 async def get_product_db_data_latest(product_id, city):
-    now = datetime.now().date() - timedelta(days=1)
     result = {"queries": []}
     async with get_async_connection() as client:
         city_param = {
             "v1": city
         }
-        date_param = {
-            "v1": now
-        }
         city_id_q = await client.query("""SELECT id FROM city WHERE dest = %(v1)s""", parameters=city_param)
-        date_id_q = await client.query("""SELECT id FROM dates WHERE date = %(v1)s""", parameters=date_param)
-        date_id = list(date_id_q.result_rows)
-        date_id = date_id[0][0] if date_id and date_id[0] else None
         city_id = list(city_id_q.result_rows)
         city_id = city_id[0][0] if city_id and city_id[0] else None
-        if not city_id or not date_id:
+        if not city_id:
             return result
         params = {
             "v1": product_id,
             "v2": city_id,
-            "v3": date_id
         }
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
         FROM request_product_temp AS rp
         JOIN request AS r ON r.id = rp.query 
         WHERE (rp.city = %(v2)s)
-        AND (rp.date = %(v3)s)
+        AND (rp.date = (SELECT max(date) FROM request_product_temp WHERE city = %(v2)s LIMIT 1))
         AND (rp.product = %(v1)s)
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query, parameters=params)
