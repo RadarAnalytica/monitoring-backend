@@ -14,7 +14,7 @@ def transfer(left, right, step, city, date):
         SELECT product, city, date, query, place, advert, natural_place, cpm 
         FROM request_product 
         WHERE 
-            product BETWEEN {i + 1} AND {i + step} 
+            product BETWEEN {i} AND {i + step - 1} 
         AND 
             city = {city} 
         AND 
