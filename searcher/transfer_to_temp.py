@@ -19,14 +19,15 @@ def transfer(left, right, step, city, date):
             city = {city} 
         AND 
             date = {date}""")
+        time.sleep(90)
     client.close()
 
 rng = [i for i in range(3, 84)]
 rng.sort(reverse=True)
 for d in rng:
     s = 0
-    if d == 3:
-        s = 280000
+    if d == 83:
+        s = 110000000
     transfer(s, 400000000, 10000000, 1, d)
     time.sleep(60)
 
