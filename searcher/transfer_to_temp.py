@@ -19,7 +19,9 @@ def transfer(left, right, step, city, date):
             city = {city} 
         AND 
             date = {date}""")
+        logger.info("SLEEPING")
         time.sleep(90)
+        logger.info("WOKE UP")
     client.close()
 
 rng = [i for i in range(3, 84)]
