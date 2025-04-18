@@ -16,7 +16,7 @@ async def upload_request_frequency_worker(requests_slice: list[list[int, int, da
     logger.info("Start of part DB renewal - request_frequency")
 
 
-async def upload_requests_csv_bg(requests_data: list[list[int, str, int, datetime]]):
+async def upload_requests_csv_bg(requests_data: list):
     logger.info("Uploading requests data")
     async with get_async_connection() as client:
         slice_1 = requests_data[:250000]
