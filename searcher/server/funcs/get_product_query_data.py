@@ -1,4 +1,4 @@
-from asyncio import TaskGroup
+from asyncio import TaskGroup, create_task, gather
 
 from _datetime import datetime, timedelta
 from copy import deepcopy
@@ -15,30 +15,57 @@ async def gen_dates(interval):
 
 
 async def get_product_db_data(product_id, city, interval):
-    params = {
-        "v1": product_id,
-        "v2": city,
-        "v3": interval
+    interval = interval - 1
+    city_param = {
+        "v1": city
+    }
+    date_param = {
+        "v1": interval
     }
     async with get_async_connection() as client:
-        query = f"""SELECT sd.query, sd.quantity, groupArray((sd.date, sd.place, sd.advert, sd.natural_place, sd.cpm)) AS date_info
-        FROM (SELECT r.query as query, r.quantity as quantity, d.date as date, rp.place as place, rp.advert as advert, rp.natural_place as natural_place, rp.cpm as cpm 
-        FROM request_product AS rp
-        JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
-        JOIN dates as d ON d.id = rp.date
-        JOIN city as c ON c.id = rp.city
-        WHERE (rp.product = %(v1)s)
-        AND (c.dest = %(v2)s)
-        AND (d.date > toStartOfDay(now() - INTERVAL %(v3)s DAY))
-        ORDER BY rp.date, r.quantity DESC
+        stmt_city = """SELECT id FROM city WHERE dest = %(v1)s"""
+        stmt_date = """SELECT min(id), max(id) FROM dates WHERE date > (today() - %(v1)s)"""
+        city_query_task = create_task(client.query(stmt_city, parameters=city_param))
+        date_query_task = create_task(client.query(stmt_date, parameters=date_param))
+        city_result, date_result, dates = await gather(city_query_task, date_query_task, gen_dates(interval))
+        city_id = city_result.result_rows[0][0] if city_result.result_rows and city_result.result_rows[0] else None
+        date_min, date_max = date_result.result_rows[0] if date_result.result_rows else (None, None)
+        result = {"dates": dates, "queries": []}
+        if not any((city_id, date_min, date_max)):
+            return result
+
+        main_query_params = {
+            "v1": product_id,
+            "v2": city_id,
+            "v3": date_min,
+            "v4": date_max
+        }
+        main_stmt = f"""SELECT 
+            sd.query, 
+            sd.quantity, 
+            groupArray(
+                (sd.date, sd.place, sd.advert, sd.natural_place, sd.cpm)
+            ) AS date_info
+        FROM (
+            SELECT 
+                r.query as query, 
+                r.quantity as quantity, 
+                d.date as date, 
+                rp.place as place, 
+                rp.advert as advert, 
+                rp.natural_place as natural_place, 
+                rp.cpm as cpm 
+            FROM request_product_temp AS rp
+            JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
+            JOIN dates as d ON d.id = rp.date
+            WHERE (rp.city = %(v2)s)
+            AND (rp.date BETWEEN %(v3)s AND %(v4s))
+            AND (rp.product = %(v1)s)
+            ORDER BY rp.date, r.quantity DESC
         ) AS sd
         GROUP BY sd.query, sd.quantity
         ORDER BY sd.quantity DESC, sd.query;"""
-        async with TaskGroup() as tg:
-            query_result = tg.create_task(client.query(query, parameters=params))
-            dates = tg.create_task(gen_dates(interval))
-        dates = dates.result()
-        result = {"dates": dates, "queries": []}
+        main_query = await client.query(main_stmt, parameters=main_query_params)
         dates_dummy = {
             str(d): {
                 "place": None,
@@ -49,7 +76,7 @@ async def get_product_db_data(product_id, city, interval):
             }
             for d in dates
         }
-        for row in query_result.result().result_rows:
+        for row in main_query.result_rows:
             prev_place = 0
             prev_date = None
             row_res = {

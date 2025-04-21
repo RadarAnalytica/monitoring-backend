@@ -28,6 +28,8 @@ rng = [i for i in range(3, 80)]
 rng.sort(reverse=True)
 for d in rng:
     s = 0
-    transfer(s, 400000000, 10000000, 1, d)
+    if d == 65:
+        s = 210000000
+    transfer(s, 400000000, 1000000, 1, d)
     time.sleep(60)
 
