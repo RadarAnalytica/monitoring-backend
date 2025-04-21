@@ -32,19 +32,19 @@ services:
       db:
         condition: service_healthy
 
-#  backend_patch:
-#    build:
-#      dockerfile: Dockerfile
-#    container_name: backend_patch
-#    entrypoint: python transfer_to_temp.py
-#    env_file:
-#      - .env
-#    volumes:
-#      - ./logs_patch:/app_data/logs/searcher
-#      - ./searcher:/app
-#    depends_on:
-#      db:
-#        condition: service_healthy
+  backend_patch:
+    build:
+      dockerfile: Dockerfile
+    container_name: backend_patch
+    entrypoint: python transfer_to_temp.py
+    env_file:
+      - .env
+    volumes:
+      - ./logs_patch:/app_data/logs/searcher
+      - ./searcher:/app
+    depends_on:
+      db:
+        condition: service_healthy
 
   redis:
     container_name: ${REDIS_CONTAINER_NAME}
