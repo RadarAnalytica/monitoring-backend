@@ -30,6 +30,6 @@ for d in rng:
     s = 0
     if d == 65:
         s = 210000000
-    transfer(s, 400000000, 1000000, 1, d)
+    transfer(s, 400000000, 5000000, 1, d)
     time.sleep(60)
 
