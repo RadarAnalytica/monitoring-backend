@@ -20,7 +20,7 @@ def transfer(left, right, step, city, date):
         AND 
             date = {date}""")
         logger.info("SLEEPING")
-        time.sleep(90)
+        time.sleep(30)
         logger.info("WOKE UP")
     client.close()
 
@@ -31,5 +31,5 @@ for d in rng:
     if d == 65:
         s = 210000000
     transfer(s, 400000000, 5000000, 1, d)
-    time.sleep(60)
+    time.sleep(30)
 
