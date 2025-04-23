@@ -28,8 +28,8 @@ rng = [i for i in range(3, 59)]
 rng.sort(reverse=True)
 for d in rng:
     s = 0
-    if d == 58:
-        s = 175000000
+    if d == 36:
+        s = 335000000
     transfer(s, 400000000, 5000000, 1, d)
     time.sleep(30)
 
