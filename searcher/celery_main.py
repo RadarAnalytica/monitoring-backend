@@ -17,7 +17,9 @@ celery_app.conf.broker_url = os.environ.get(
 celery_app.conf.result_backend = os.environ.get(
     "CELERY_RESULT_BACKEND", f"redis://{REDIS_HOST}:{REDIS_PORT}"
 )
+celery_app.conf.result_expires = 15
 celery_app.conf.broker_connection_retry_on_startup = True
+celery_app.conf.task_default_expires = 300
 
 celery_app.conf.beat_schedule = {
     "parse_search_moscow": {
