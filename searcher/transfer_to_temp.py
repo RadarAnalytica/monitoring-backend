@@ -24,12 +24,12 @@ def transfer(left, right, step, city, date):
         logger.info("WOKE UP")
     client.close()
 
-rng = [i for i in range(3, 31)]
+rng = [i for i in range(3, 23)]
 rng.sort(reverse=True)
 for d in rng:
     s = 0
-    if d == 30:
-        s = 145000000
+    if d == 22:
+        s = 190000000
     transfer(s, 400000000, 5000000, 1, d)
     time.sleep(30)
 
