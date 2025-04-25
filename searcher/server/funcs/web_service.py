@@ -11,7 +11,8 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
         d.date,
         COUNT(DISTINCT rp.query),
         round(AVG(rp.place), 0),
-        arrayStringConcat(groupArray(2)(DISTINCT if(rp.advert = 'z', NULL, rp.advert)), '+'),
+        MAX(if(rp.advert = 'b', rp.advert, NULL'),
+        MAX(if(rp.advert = 'c', rp.advert, NULL'),
         round(MAX(coalesce(rf.avg_freq, 0.0)), 0),
         MAX(coalesce(rf_id.id_fr, 0)),
     FROM
@@ -99,9 +100,10 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
             str(row[0]): {
                 "queries_count": row[1],
                 "avg_place": row[2],
-                "advertisement": row[3],
-                "avg_frequency": row[4],
-                "id_frequency": row[5]
+                "ad_b": row[3],
+                "ad_c": row[4],
+                "avg_frequency": row[5],
+                "id_frequency": row[6]
             }
             for row in main_query.result_rows
         }
