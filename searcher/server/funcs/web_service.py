@@ -11,8 +11,8 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
         d.date,
         COUNT(DISTINCT rp.query),
         round(AVG(rp.place), 0),
-        MAX(if(rp.advert = 'b', rp.advert, NULL'),
-        MAX(if(rp.advert = 'c', rp.advert, NULL'),
+        MAX(if(rp.advert = 'b', rp.advert, NULL')),
+        MAX(if(rp.advert = 'c', rp.advert, NULL')),
         round(MAX(coalesce(rf.avg_freq, 0.0)), 0),
         MAX(coalesce(rf_id.id_fr, 0)),
     FROM
