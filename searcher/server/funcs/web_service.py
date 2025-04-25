@@ -70,7 +70,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
         AND date BETWEEN %(v4)s AND %(v5)s
         GROUP  BY date
         ORDER  BY date DESC 
-    ) as rf_id ON rf_id.date = rp.date
+    ) as rf_id ON rf_id.date = d.date
     WHERE
         rp.city = 1
         AND rp.date BETWEEN %(v2)s AND %(v3)s
