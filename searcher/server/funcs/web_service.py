@@ -38,7 +38,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                             request_product_temp
                         WHERE
                             city = 1
-                            AND DATE BETWEEN %(v2)s AND %(v3)s
+                            AND date BETWEEN %(v2)s AND %(v3)s
                             AND product = %(v1)s
                     )
                     AND rf1.date BETWEEN %(v4)s AND %(v5)s
