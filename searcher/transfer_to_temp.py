@@ -24,5 +24,5 @@ def transfer(left, right, step, city, date):
         logger.info("WOKE UP")
     client.close()
 
-transfer(15000000, 400000000, 5000000, 1, 65)
+transfer(20000000, 400000000, 5000000, 1, 65)
 
