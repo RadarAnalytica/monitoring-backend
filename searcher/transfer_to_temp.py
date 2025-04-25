@@ -20,9 +20,9 @@ def transfer(left, right, step, city, date):
         AND 
             date = {date}""")
         logger.info("SLEEPING")
-        time.sleep(10)
+        time.sleep(30)
         logger.info("WOKE UP")
     client.close()
 
-transfer(0, 400000000, 5000000, 1, 65)
+transfer(15000000, 400000000, 5000000, 1, 65)
 
