@@ -12,7 +12,7 @@ def transfer(left, right, step, city, date):
         client.command(f"""INSERT INTO 
             request_product_temp(product, city, date, query, place, advert, natural_place, cpm) 
         SELECT product, city, CAST(66 AS UInt16), query, place, advert, natural_place, cpm 
-        FROM request_product 
+        FROM request_product_temp
         WHERE 
             product BETWEEN {i} AND {i + step - 1} 
         AND 
