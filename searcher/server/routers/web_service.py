@@ -1,82 +1,28 @@
-from datetime import date
-from clickhouse_db.get_async_connection import get_async_connection
+from datetime import datetime, date
 
-async def get_product_request_data(product_id: int, date_from: date, date_to: date):
-    stmt_dates = """SELECT min(id), min(date), max(id), max(date) FROM dates WHERE date BETWEEN %(v1)s AND %(v2)s"""
-    dates_params = {
-        "v1": date_from,
-        "v2": date_to
-    }
-    stmt_main = """SELECT
-        d.date,
-        COUNT(DISTINCT rp.query),
-        round(AVG(rp.place), 0),
-        arrayStringConcat(groupArray(6)(DISTINCT if(rp.advert = 'z', NULL, rp.advert)), '+'),
-        round(MAX(rf.avg_freq), 0)
-    FROM
-        request_product_temp AS rp
-        JOIN dates AS d ON d.id = rp.date
-        LEFT OUTER JOIN (
-            SELECT
-                fdate,
-                round(AVG(sumfr), 0) AS avg_freq
-            FROM
-                (
-                    SELECT
-                        rf1.date AS fdate,
-                        p.preset AS prst,
-                        SUM(rf1.frequency) AS sumfr
-                    FROM
-                        request_frequency AS rf1
-                        JOIN preset AS p ON p.query = rf1.query_id
-                    WHERE
-                        p.query IN (
-                            SELECT
-                                DISTINCT query
-                            FROM
-                                request_product_temp
-                            WHERE
-                                city = 1
-                                AND DATE BETWEEN %(v2)s AND %(v3)s
-                                AND product = %(v1)s
-                        )
-                        AND rf1.date BETWEEN %(v4)s AND %(v5)s
-                    GROUP BY
-                        rf1.date,
-                        p.preset
-                    ORDER BY
-                        rf1.date
-                )
-            GROUP BY
-                fdate
-            ORDER BY
-                fdate
-        ) AS rf ON rf.fdate = d.date
-    WHERE
-        rp.city = 1
-        AND rp.date BETWEEN %(v2)s AND %(v3)s
-        AND rp.product = %(v1)s
-    GROUP BY
-        d.date
-    ORDER BY
-        d.date"""
-    result = dict()
-    async with get_async_connection() as client:
-        dates_query = await client.query(stmt_dates, parameters=dates_params)
-        min_date_id, min_date, max_date_id, max_date = dates_query.result_rows[0] if dates_query.result_rows else (None, None, None, None)
-        if not any((min_date_id, max_date_id, min_date, max_date)):
-            return result
-        main_params = {
-            "v1": product_id,
-            "v2": min_date_id,
-            "v3": max_date_id,
-            "v4": min_date,
-            "v5": max_date,
-        }
-        main_query = await client.query(stmt_main, parameters=main_params)
-        result = {
-            str(row[0]): {
-                
-            }
-        }
+from fastapi import APIRouter
+from fastapi.params import Query, Depends
+from starlette.responses import JSONResponse
+
+from settings import logger
+from server.auth_token.check_token import check_jwt_token
+from server.auth_token.token_scheme import oauth2_scheme
+from server.funcs.web_service import get_product_request_data
+
+web_service_router = APIRouter()
+
+
+
+@web_service_router.get("/wb_id_analysis")
+async def get_product_queries_v2(
+    product_id: int = Query(),
+    date_from: date = Query(),
+    date_to: date = Query(),
+    token: str = Depends(oauth2_scheme),
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    start = datetime.now()
+    result = await get_product_request_data(product_id=product_id, date_from=date_from, date_to=date_to)
+    logger.info(f"Время выполнения wb_id_analysis {(datetime.now() - start).total_seconds()}s")
     return result
