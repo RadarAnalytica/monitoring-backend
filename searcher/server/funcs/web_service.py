@@ -29,7 +29,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                     SUM(rf1.frequency) AS sumfr
                 FROM
                     request_frequency AS rf1
-                    JOIN preset AS p ON p.query = rf1.query_id
+                JOIN preset AS p ON p.query = rf1.query_id
                 WHERE
                     p.query IN (
                         SELECT
@@ -41,7 +41,8 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                             AND date BETWEEN %(v2)s AND %(v3)s
                             AND product = %(v1)s
                     )
-                    AND rf1.date BETWEEN %(v4)s AND %(v5)s
+                AND rf1.date BETWEEN %(v4)s AND %(v5)s
+                AND rf1.frequency > 0 
                 GROUP BY
                     rf1.date,
                     p.preset
