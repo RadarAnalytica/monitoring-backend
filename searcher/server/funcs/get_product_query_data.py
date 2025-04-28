@@ -114,6 +114,8 @@ async def get_product_db_data_latest(product_id, city):
         city_id = city_id[0][0] if city_id and city_id[0] else None
         if not city_id:
             return result
+        now = datetime.now()
+        d_q = "max(date) - 1" if now.hour <= 9 else "max(date)"
         params = {
             "v1": product_id,
             "v2": city_id,
@@ -122,7 +124,7 @@ async def get_product_db_data_latest(product_id, city):
         FROM request_product_temp AS rp
         JOIN request AS r ON r.id = rp.query 
         WHERE (rp.city = %(v2)s)
-        AND (rp.date = (SELECT max(date) FROM request_product_temp WHERE city = %(v2)s LIMIT 1))
+        AND (rp.date = (SELECT {d_q} FROM request_product_temp WHERE city = %(v2)s LIMIT 1))
         AND (rp.product = %(v1)s)
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query, parameters=params)
