@@ -76,10 +76,7 @@ async def get_report_data(
     return total, subject
 
 async def get_report_dataset():
-    today = date.today()
-    today_str = str(today)
-    stmt = r"""SELECT 
-        r.query, 
+    stmt = r"""SELECT r.query, 
         rfn.fs, 
         round(rfn.growth, 2), 
         round(rfn60.growth, 2), 
@@ -89,7 +86,7 @@ async def get_report_dataset():
         SELECT 
             rf1.query_id, 
             rf1.fs, 
-            ((rf1.fs * 100/ if(coalesce(rf2.fs, 0) = 0, 1, rf2.fs)) - 100) as growth 
+            ((rf1.fs * 100 / if(coalesce(rf2.fs, 0) = 0, 1, rf2.fs)) - 100) as growth 
         FROM (
             SELECT 
                 query_id, 
@@ -145,7 +142,7 @@ async def get_report_dataset():
         SELECT 
             rf5.query_id, 
             rf5.fs, 
-            ((rf5.fs * 100/ if(coalesce(rf6.fs, 0) = 0, 1, rf6.fs)) - 100) as growth \
+            ((rf5.fs * 100 / if(coalesce(rf6.fs, 0) = 0, 1, rf6.fs)) - 100) as growth
         FROM (
             SELECT 
                 query_id, 
