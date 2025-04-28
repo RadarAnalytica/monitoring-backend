@@ -114,9 +114,10 @@ async def get_product_db_data_latest(product_id, city):
         city_id = city_id[0][0] if city_id and city_id[0] else None
         if not city_id:
             return result
-        now = date.today()
+        now = datetime.now()
+        today = now.date() if now.hour > 9 else now.date() - timedelta(days=1)
         date_param = {
-            "v1": now
+            "v1": today
         }
         date_id_q = await client.query("""SELECT id FROM dates WHERE date = %(v1)s""", parameters=date_param)
         date_id = list(date_id_q.result_rows)
