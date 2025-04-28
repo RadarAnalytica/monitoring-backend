@@ -23,7 +23,7 @@ async def get_advert_download(
             media_type="application/vnd.ms-excel",
             headers={
                 "Content-Disposition": f"attachment; filename="
-                                       f"{quote(f'Топ 500 трендовых запросов в {MONTH_NAMES[today.month]} {today.year} г.', encoding='utf-8')}.xlsx"
+                                       f"{quote(f'Топ 500 трендовых запросов в {MONTH_NAMES[today.month]} {today.year}г', encoding='utf-8')}.xlsx"
             },
         )
     except Exception as e:
