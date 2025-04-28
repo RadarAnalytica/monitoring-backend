@@ -65,6 +65,25 @@ async def get_query_small_data(
     return _data
 
 
+def unnest_subjects_list(subjects_list: list):
+    result = dict()
+    for subject_data in subjects_list:
+        s_id = subject_data.get("id")
+        s_name = subject_data.get("name", "")
+        children = subject_data.get("childs", [])
+        result[s_id] = s_name
+        result.update(unnest_subjects_list(children))
+    return result
+
+
+async def get_today_subjects_dict(http_session):
+    url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
+    async with http_session.get(url) as resp:
+        result = await resp.json()
+    subjects_dict = unnest_subjects_list(result)
+    return subjects_dict
+
+
 async def get_report_data(
     http_session: ClientSession, query_string
 ):
@@ -181,17 +200,21 @@ async def get_report_dataset():
         result = list(q.result_rows)
     dataset = []
     async with ClientSession() as http_session:
-        for row in result:
+        queries = [row[0] for row in result]
+        tasks = [asyncio.create_task(get_report_data(http_session=http_session, query_string=query)) for query in queries]
+        t_and_p = await asyncio.gather(*tasks)
+        subjects_dict = await get_today_subjects_dict(http_session=http_session)
+        for row, tp_row in zip(result, t_and_p):
             query = row[0]
             frequency = row[1]
             growth_30 = row[2]
             growth_60 = row[3]
             growth_90 = row[4]
-            total, priority = await get_report_data(http_session=http_session, query_string=query)
+            total, priority = tp_row
             dataset.append(
                 (
                     query,
-                    priority,
+                    subjects_dict.get(priority, "Не определён"),
                     frequency,
                     total,
                     (frequency // total) if total else 0,
