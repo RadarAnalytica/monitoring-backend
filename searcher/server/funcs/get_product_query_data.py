@@ -1,6 +1,6 @@
 from asyncio import TaskGroup, create_task, gather
 
-from _datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from copy import deepcopy
 
 from clickhouse_db.get_async_connection import get_async_connection
@@ -55,7 +55,7 @@ async def get_product_db_data(product_id, city, interval):
                 rp.advert as advert, 
                 rp.natural_place as natural_place, 
                 rp.cpm as cpm 
-            FROM request_product_temp AS rp
+            FROM request_product AS rp
             JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
             JOIN dates as d ON d.id = rp.date
             WHERE (rp.city = %(v2)s)
@@ -114,17 +114,25 @@ async def get_product_db_data_latest(product_id, city):
         city_id = city_id[0][0] if city_id and city_id[0] else None
         if not city_id:
             return result
-        now = datetime.now()
-        d_q = "max(date) - 1" if now.hour <= 9 else "max(date)"
+        now = date.today()
+        date_param = {
+            "v1": now
+        }
+        date_id_q = await client.query("""SELECT id FROM dates WHERE date = %(v1)s""", parameters=date_param)
+        date_id = list(date_id_q.result_rows)
+        date_id = date_id[0][0] if date_id and date_id[0] else None
+        if not date_id:
+            return result
         params = {
             "v1": product_id,
             "v2": city_id,
+            "v3": date_id
         }
         query = f"""SELECT r.query, r.quantity, rp.place, rp.advert, rp.natural_place, rp.cpm 
-        FROM request_product_temp AS rp
+        FROM request_product AS rp
         JOIN request AS r ON r.id = rp.query 
         WHERE (rp.city = %(v2)s)
-        AND (rp.date = (SELECT {d_q} FROM request_product_temp WHERE city = %(v2)s LIMIT 1))
+        AND (rp.date = %(v3)s)
         AND (rp.product = %(v1)s)
         ORDER BY r.quantity DESC;"""
         query_result = await client.query(query, parameters=params)
@@ -153,11 +161,11 @@ async def get_product_db_data_competitors(product_id):
         query = f"""SELECT 
             rpt.product, 
             groupArray(rr.query) 
-        FROM request_product_temp AS rpt 
+        FROM request_product AS rpt 
         JOIN request AS rr on rr.id = rpt.query 
         WHERE rpt.city = 1 
         AND rpt.date = (
-            SELECT max(date) FROM request_product_temp WHERE city = 1 LIMIT 1
+            SELECT max(date) FROM request_product WHERE city = 1 LIMIT 1
         ) 
         AND rpt.query IN (
             SELECT qry FROM (
@@ -173,10 +181,10 @@ async def get_product_db_data_competitors(product_id):
                 JOIN request AS pr on pr.id = p.query 
                 WHERE p.query IN (
                     SELECT query 
-                    FROM request_product_temp 
+                    FROM request_product 
                     WHERE city = 1 
                     AND date = (
-                        SELECT max(date) FROM request_product_temp WHERE city = 1 LIMIT 1
+                        SELECT max(date) FROM request_product WHERE city = 1 LIMIT 1
                     ) 
                     AND product = %(v1)s  
                     AND place < 300

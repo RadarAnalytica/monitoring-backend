@@ -16,7 +16,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
         round(MAX(coalesce(rf.avg_freq, 0.0)), 0),
         MAX(coalesce(rf_id.id_fr, 0)),
     FROM
-        request_product_temp AS rp
+        request_product AS rp
     JOIN dates AS d ON d.id = rp.date
     LEFT OUTER JOIN (
         SELECT
@@ -36,7 +36,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                         SELECT
                             DISTINCT query
                         FROM
-                            request_product_temp
+                            request_product
                         WHERE
                             city = 1
                             AND date BETWEEN %(v2)s AND %(v3)s
