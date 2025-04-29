@@ -80,16 +80,16 @@ async def get_report_data(
 
 async def get_report_dataset():
     stmt = r"""SELECT r.query, 
-        rfn.fs, 
+        rfn.fs,
+        rfn.diff, 
         round(rfn.growth, 2), 
-        round(rfn60.growth, 2), 
-        round(rfn90.growth, 2) 
     FROM request as r 
     JOIN (
         SELECT 
             rf1.query_id, 
             rf1.fs, 
-            ((rf1.fs * 100 / if(coalesce(rf2.fs, 0) = 0, 1, rf2.fs)) - 100) as growth 
+            ((rf1.fs * 100 / if(coalesce(rf2.fs, 0) = 0, 1, rf2.fs)) - 100) as growth,
+            rf1.fs - rf2.fs as diff
         FROM (
             SELECT 
                 query_id, 
@@ -113,76 +113,19 @@ async def get_report_dataset():
         ORDER BY growth DESC
     ) as rfn 
     ON rfn.query_id = r.id 
-    JOIN (
-        SELECT 
-        rf3.query_id, 
-        rf3.fs, 
-        ((rf3.fs * 100 / if(coalesce(rf4.fs, 0) = 0, 1, rf4.fs)) - 100) as growth 
-        FROM (
-            SELECT 
-            query_id, 
-            sum(frequency) as fs 
-            FROM 
-                request_frequency 
-            WHERE 
-                date >= today() - 59 
-            GROUP BY 
-                query_id
-        ) as rf3 
-        JOIN (
-            SELECT 
-                query_id, 
-                sum(frequency) as fs 
-            FROM 
-                request_frequency 
-            WHERE 
-                date BETWEEN today() - 119 AND today() - 60 
-            GROUP BY query_id
-        ) as rf4 ON rf3.query_id = rf4.query_id 
-        ORDER BY growth DESC
-    ) as rfn60 ON rfn60.query_id = r.id 
-    JOIN (
-        SELECT 
-            rf5.query_id, 
-            rf5.fs, 
-            ((rf5.fs * 100 / if(coalesce(rf6.fs, 0) = 0, 1, rf6.fs)) - 100) as growth
-        FROM (
-            SELECT 
-                query_id, 
-                sum(frequency) as fs 
-            FROM 
-                request_frequency 
-            WHERE date >= today() - 89 GROUP BY query_id
-        ) as rf5 
-        JOIN (
-            SELECT 
-                query_id, 
-                sum(frequency) as fs 
-            FROM 
-                request_frequency 
-            WHERE 
-                date BETWEEN today() - 179 AND today() - 90 
-            GROUP BY query_id
-        ) as rf6 ON rf5.query_id = rf6.query_id 
-        ORDER BY 
-            growth DESC
-    ) as rfn90 ON rfn90.query_id = r.id 
     WHERE 
-        r.quantity > 10000 
+        rfn.fs > 10000 
     AND 
-        NOT match(r.query, '^[\s]*[0-9]+[\s]*$') 
+        match(r.query, '^[\s]*[0-9]{5,10}[\s]*$') 
     AND 
-        rfn.growth > 30
-    AND 
-        rfn60.growth > 30
-    AND 
-        rfn90.growth > 30
+        rfn.growth >= 100
     ORDER BY 
-        rfn.fs DESC LIMIT 500"""
+        rfn.fs"""
     async with get_async_connection() as client:
         q = await client.query(stmt)
         result = list(q.result_rows)
-    dataset = []
+    p_ids = [int(row[0]) for row in result]
+    valid_products = dict()
     async with ClientSession() as http_session:
         queries = [row[0] for row in result]
         tasks = [asyncio.create_task(get_report_data(http_session=http_session, query_string=query)) for query in queries]

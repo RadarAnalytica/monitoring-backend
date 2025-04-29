@@ -11,6 +11,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
+from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, TwoCellAnchor
+
 
 
 MONTH_NAMES = {
@@ -188,12 +190,7 @@ async def get_report_dataset():
         r.quantity > 10000 
     AND 
         NOT match(r.query, '^[\s]*[0-9]+[\s]*$') 
-    AND 
-        rfn.growth > 30
-    AND 
-        rfn60.growth > 30
-    AND 
-        rfn90.growth > 30
+
     ORDER BY 
         rfn.fs DESC LIMIT 500"""
     async with get_async_connection() as client:
@@ -234,22 +231,31 @@ def create_file_from_dataset(dataset: list[tuple]):
     ws = wb.active
     ws.title = "Sheet1"
 
-    ws.merge_cells('A1:H2')
-    ws['A1'] = f"Топ 500 запросов, которые росли в {MONTH_NAMES[today.month]} {today.year}г."
-    ws['A1'].font = Font(bold=True, color="FFFFFF", sz=15)  # Белый текст
-    ws['A1'].fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")  # Синий фон
+    img = Image(BASE_DIR / "static" / "icon.png")
+
+    img.height = 120
+    img.width = 120
+
+    ws.add_image(img, "A1")
+
+    ws.merge_cells('A2:H2')
+    ws['A2'] = f"Топ 500 запросов, которые росли в {MONTH_NAMES[today.month]} {today.year}г."
+    ws['A2'].font = Font(bold=True, color="FFFFFF", sz=15)  # Белый текст
+    ws['A2'].fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")  # Синий фон
+    ws['A2'].alignment = Alignment(horizontal="center", vertical="center")
+
+    ws.merge_cells('A1:H1')
+    font_cambria_italic_underline = Font(bold=True, color="000000", sz=15, underline="single")  # Белый текст
+    ws["A1"].hyperlink = "https://radar-analytica.ru/"
+    ws["A1"].value = 'Отчет сгенерирован с помощью сервиса Radar-Analytica. После регистрации будет доступен тестовый период - 3 дня.'
+    ws["A1"].style = "Hyperlink"
+    ws['A1'].fill = PatternFill(start_color="abcdef", end_color="abcdef", fill_type="solid")  # Синий фон
+    ws["A1"].font = font_cambria_italic_underline
     ws['A1'].alignment = Alignment(horizontal="center", vertical="center")
 
     ws.merge_cells('A3:D3')
-    font_cambria_italic_underline = Font(italic=True, underline="single", name="Cambria", size=11)
-    ws["A3"].hyperlink = "https://radar-analytica.ru/"
-    ws["A3"].value = 'Отчет сгенерирован с помощью сервиса Radar-Analytica'
-    ws["A3"].style = "Hyperlink"
-    ws["A3"].font = font_cambria_italic_underline
-
-    ws.merge_cells('E3:H3')
-    ws['E3'] = f"Дата начала отчёта: {month_start.strftime('%d.%m.%Y')} / Дата формирования отчёта: {today.strftime('%d.%m.%Y')}"
-    ws['E3'].font = Font(color="000000")
+    ws['A3'] = f"Дата начала отчёта: {month_start.strftime('%d.%m.%Y')} / Дата формирования отчёта: {today.strftime('%d.%m.%Y')}"
+    ws['A3'].font = Font(color="000000")
 
     ws["A4"].value = "Запрос"
     ws["B4"].value = "Приоритетный предмет"
@@ -287,15 +293,10 @@ def create_file_from_dataset(dataset: list[tuple]):
         'G': 25,  # Динамика 60 дней
         'H': 25  # Динамика 90 дней
     }
-    img = Image(BASE_DIR / "static" / "icon.png")
-
-    img.height = 80
-    img.width = 80
-
-    ws.add_image(img, "A1")
 
     ws.row_dimensions[4].height = 40
     ws.row_dimensions[1].height = 50
+    ws.row_dimensions[2].height = 50
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
 
