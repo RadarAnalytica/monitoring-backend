@@ -190,7 +190,12 @@ async def get_report_dataset():
         r.quantity > 10000 
     AND 
         NOT match(r.query, '^[\s]*[0-9]+[\s]*$') 
-
+    AND
+        rfn.growth >= 30
+    AND
+        rfn.growth >= 60
+    AND
+        rfn.growth >= 90
     ORDER BY 
         rfn.fs DESC LIMIT 500"""
     async with get_async_connection() as client:
