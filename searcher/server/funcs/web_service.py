@@ -86,7 +86,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                 WHERE city = 1 
                 AND date BETWEEN %(v2)s AND %(v3)s  
                 AND product = %(v1)s 
-                AND place >= 100
+                AND place <= 100
             ) 
         AND date BETWEEN %(v4)s AND %(v5)s
         GROUP BY date 
