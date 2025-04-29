@@ -193,9 +193,9 @@ async def get_report_dataset():
     AND
         rfn.growth >= 30
     AND
-        rfn.growth >= 60
+        rfn.growth >= 30
     AND
-        rfn.growth >= 90
+        rfn.growth >= 30
     ORDER BY 
         rfn.fs DESC LIMIT 500"""
     async with get_async_connection() as client:
