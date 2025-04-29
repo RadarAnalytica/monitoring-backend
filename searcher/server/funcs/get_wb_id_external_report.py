@@ -5,28 +5,11 @@ from json import JSONDecodeError
 
 from aiohttp import ClientSession, ContentTypeError, client_exceptions
 from clickhouse_db.get_async_connection import get_async_connection
-from settings import SEARCH_URL, BASE_DIR
+from settings import SEARCH_URL
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.drawing.image import Image
-
-
-MONTH_NAMES = {
-    1: "январе",
-    2: "феврале",
-    3: "марте",
-    4: "апреле",
-    5: "мае",
-    6: "июне",
-    7: "июле",
-    8: "августе",
-    9: "сентябре",
-    10: "октябре",
-    11: "ноябре",
-    12: "декабре"
-}
 
 
 async def get_query_small_data(
@@ -237,7 +220,7 @@ def create_file_from_dataset(dataset: list[tuple]):
     ws['A1'] = f"Топ 500 запросов, которые росли в {MONTH_NAMES[today.month]} {today.year}г."
     ws['A1'].font = Font(bold=True, color="FFFFFF", sz=15)  # Белый текст
     ws['A1'].fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")  # Синий фон
-    ws['A1'].alignment = Alignment(horizontal="center", vertical="center")
+    ws['A1'].alignment = Alignment(horizontal="center")
 
     ws.merge_cells('A3:D3')
     font_cambria_italic_underline = Font(italic=True, underline="single", name="Cambria", size=11)
@@ -249,6 +232,8 @@ def create_file_from_dataset(dataset: list[tuple]):
     ws.merge_cells('E3:H3')
     ws['E3'] = f"Дата начала отсчёта: {today.strftime('%d.%m.%Y')}"
     ws['E3'].font = Font(color="000000")
+
+    ws.append([])
 
     ws["A4"].value = "Запрос"
     ws["B4"].value = "Приоритетный предмет"
@@ -269,6 +254,7 @@ def create_file_from_dataset(dataset: list[tuple]):
         bottom=Side(style="thin")
     )
 
+    # Применяем стили к заголовкам
     for col in range(1, 9):
         cell = ws.cell(row=4, column=col)
         cell.fill = header_fill
@@ -286,15 +272,8 @@ def create_file_from_dataset(dataset: list[tuple]):
         'G': 25,  # Динамика 60 дней
         'H': 25  # Динамика 90 дней
     }
-    img = Image(BASE_DIR / "static" / "icon.png")
-
-    img.height = 80
-    img.width = 80
-
-    ws.add_image(img, "A1")
 
     ws.row_dimensions[4].height = 40
-    ws.row_dimensions[1].height = 50
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
 
@@ -313,16 +292,3 @@ async def get_report_download_bytes():
     dataset = await get_report_dataset()
     file = create_file_from_dataset(dataset=dataset)
     return file
-
-
-def test():
-    test_data = [
-        (1, 1, 1, 1, 1, 1, 1, 1)
-    ]
-    f = create_file_from_dataset(test_data)
-    with open("test.xlsx", "wb") as file:
-        file.write(f.read())
-
-
-if __name__ == "__main__":
-    test()
