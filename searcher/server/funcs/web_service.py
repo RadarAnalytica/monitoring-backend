@@ -15,6 +15,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
         MAX(if(rp.advert = 'c', rp.advert, NULL)),
         round(MAX(coalesce(rf.avg_freq, 0.0)), 0),
         MAX(coalesce(rf_id.id_fr, 0)),
+        MAX(coalesce(pts.pts_freq, 0))
     FROM
         request_product AS rp
     JOIN dates AS d ON d.id = rp.date
@@ -73,6 +74,24 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
         GROUP  BY date
         ORDER  BY date DESC 
     ) as rf_id ON rf_id.date = d.date
+    LEFT OUTER JOIN (
+        SELECT 
+            date, 
+            sum(frequency) as pts_freq
+        FROM request_frequency 
+        WHERE 
+            query_id IN (
+                SELECT DISTINCT query 
+                FROM request_product 
+                WHERE city = 1 
+                AND date BETWEEN %(v2)s AND %(v3)s  
+                AND product = %(v1)s 
+                AND place >= 100
+            ) 
+        AND date BETWEEN %(v4)s AND %(v5)s
+        GROUP BY date 
+        ORDER BY date
+    ) as pts ON pts.date = d.date
     WHERE
         rp.city = 1
         AND rp.date BETWEEN %(v2)s AND %(v3)s
@@ -103,7 +122,8 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                 "ad_b": row[3],
                 "ad_c": row[4],
                 "avg_frequency": row[5],
-                "id_frequency": row[6]
+                "id_frequency": row[6],
+                "total_shows": row[7]
             }
             for row in main_query.result_rows
         }
