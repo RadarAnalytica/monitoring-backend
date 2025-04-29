@@ -229,6 +229,7 @@ async def get_report_dataset():
 
 def create_file_from_dataset(dataset: list[tuple]):
     today = date.today()
+    month_start = today.replace(day=1)
     wb = Workbook()
     ws = wb.active
     ws.title = "Sheet1"
@@ -247,7 +248,7 @@ def create_file_from_dataset(dataset: list[tuple]):
     ws["A3"].font = font_cambria_italic_underline
 
     ws.merge_cells('E3:H3')
-    ws['E3'] = f"Дата начала отсчёта: {today.strftime('%d.%m.%Y')}"
+    ws['E3'] = f"Дата начала отсчёта: {month_start.strftime('%d.%m.%Y')}"
     ws['E3'].font = Font(color="000000")
 
     ws["A4"].value = "Запрос"
