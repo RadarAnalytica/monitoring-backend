@@ -20,7 +20,7 @@ async def get_valid_products(products_list: list[int]):
         async with ClientSession() as session:
             async with session.post(
                 url="https://radarmarket.ru/api/monitoring/top-revenue-products",
-                data=dumps(products_list)
+                json=dumps(products_list),
             ) as resp:
                 result = await resp.json()
     except:
@@ -216,5 +216,10 @@ def test():
         file.write(f.read())
 
 
+async def test2():
+    await get_valid_products([284374567])
+
+
+
 if __name__ == "__main__":
-    test()
+    asyncio.run(test2())
