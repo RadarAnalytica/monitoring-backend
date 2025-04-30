@@ -7,7 +7,6 @@ from aiohttp import ClientSession, ContentTypeError, client_exceptions
 from clickhouse_db.get_async_connection import get_async_connection
 from server.utils.month_names import MONTH_NAMES
 from server.utils.xl_header import make_radar_header
-from settings import SEARCH_URL
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -16,15 +15,12 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 async def get_valid_products(products_list: list[int]):
     result = dict()
-    try:
-        async with ClientSession() as session:
-            async with session.post(
-                url="https://radarmarket.ru/api/monitoring/top-revenue-products",
-                json=dumps(products_list),
-            ) as resp:
-                result = await resp.json()
-    except:
-        pass
+    async with ClientSession() as session:
+        async with session.post(
+            url="https://radarmarket.ru/api/monitoring/top-revenue-products",
+            json=products_list,
+        ) as resp:
+            result = await resp.json()
     return result
 
 
@@ -222,4 +218,4 @@ async def test2():
 
 
 if __name__ == "__main__":
-    asyncio.run(test2())
+    print(asyncio.run(test2()))
