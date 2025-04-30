@@ -66,7 +66,7 @@ async def get_report_dataset():
     AND 
         rfn.growth >= 100
     ORDER BY 
-        rfn.fs"""
+        rfn.fs DESC"""
     async with get_async_connection() as client:
         q = await client.query(stmt)
         result = list(q.result_rows)
