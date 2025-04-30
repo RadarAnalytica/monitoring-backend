@@ -157,15 +157,15 @@ async def get_report_dataset():
         frequency = row[1] or 0
         frequency_diff = row[2] or 0
         frequency_growth = row[3] or 0
-        revenue = valid_product.get("revenue")
-        revenue_diff = valid_product.get("revenue_diff")
-        revenue_growth = valid_product.get("revenue_growth")
-        orders = valid_product.get("orders")
-        orders_diff = valid_product.get("orders_diff")
-        orders_growth = valid_product.get("orders_growth")
-        price = valid_product.get("price")
-        price_diff = valid_product.get("price_diff")
-        price_growth = valid_product.get("price_growth")
+        revenue = valid_product.get("revenue", 0)
+        revenue_diff = valid_product.get("revenue_diff", 0)
+        revenue_growth = valid_product.get("revenue_growth", 0)
+        orders = valid_product.get("orders", 0)
+        orders_diff = valid_product.get("orders_diff", 0)
+        orders_growth = valid_product.get("orders_growth", 0)
+        price = valid_product.get("price", 0)
+        price_diff = valid_product.get("price_diff", 0)
+        price_growth = valid_product.get("price_growth", 0)
         dataset.append((
             p_id,
             name,
