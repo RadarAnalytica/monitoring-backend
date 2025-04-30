@@ -20,9 +20,7 @@ async def get_valid_products(products_list: list[int]):
         async with ClientSession() as session:
             async with session.post(
                 url="https://radarmarket.ru/api/monitoring/top-revenue-products",
-                json={
-                    "product_ids": products_list
-                }
+                data=products_list
             ) as resp:
                 result = await resp.json()
     except:
