@@ -5,30 +5,14 @@ from json import JSONDecodeError
 
 from aiohttp import ClientSession, ContentTypeError, client_exceptions
 from clickhouse_db.get_async_connection import get_async_connection
-from settings import SEARCH_URL, BASE_DIR
+from server.utils.month_names import MONTH_NAMES
+from server.utils.xl_header import make_radar_header
+from settings import SEARCH_URL
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.drawing.image import Image
-from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, TwoCellAnchor
 
-
-
-MONTH_NAMES = {
-    1: "январе",
-    2: "феврале",
-    3: "марте",
-    4: "апреле",
-    5: "мае",
-    6: "июне",
-    7: "июле",
-    8: "августе",
-    9: "сентябре",
-    10: "октябре",
-    11: "ноябре",
-    12: "декабре"
-}
 
 
 async def get_query_small_data(
@@ -231,36 +215,13 @@ async def get_report_dataset():
 
 def create_file_from_dataset(dataset: list[tuple]):
     today = date.today()
-    month_start = today.replace(day=1)
     wb = Workbook()
     ws = wb.active
-    ws.title = "Sheet1"
-
-    img = Image(BASE_DIR / "static" / "icon.png")
-
-    img.height = 120
-    img.width = 120
-
-    ws.add_image(img, "A1")
-
-    ws.merge_cells('A2:H2')
-    ws['A2'] = f"Топ 500 запросов, которые росли в {MONTH_NAMES[today.month]} {today.year}г."
-    ws['A2'].font = Font(bold=True, color="FFFFFF", sz=15)  # Белый текст
-    ws['A2'].fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")  # Синий фон
-    ws['A2'].alignment = Alignment(horizontal="center", vertical="center")
-
-    ws.merge_cells('A1:H1')
-    font_cambria_italic_underline = Font(bold=True, color="000000", sz=15, underline="single")  # Белый текст
-    ws["A1"].hyperlink = "https://radar-analytica.ru/"
-    ws["A1"].value = 'Отчет сгенерирован с помощью сервиса Radar-Analytica. После регистрации будет доступен тестовый период - 3 дня.'
-    ws["A1"].style = "Hyperlink"
-    ws['A1'].fill = PatternFill(start_color="abcdef", end_color="abcdef", fill_type="solid")  # Синий фон
-    ws["A1"].font = font_cambria_italic_underline
-    ws['A1'].alignment = Alignment(horizontal="center", vertical="center")
-
-    ws.merge_cells('A3:D3')
-    ws['A3'] = f"Дата начала отчёта: {month_start.strftime('%d.%m.%Y')} / Дата формирования отчёта: {today.strftime('%d.%m.%Y')}"
-    ws['A3'].font = Font(color="000000")
+    make_radar_header(
+        ws=ws,
+        sheet_title="Топ 500",
+        name=f"Топ 500 запросов, которые росли в {MONTH_NAMES[today.month]} {today.year}г.",
+    )
 
     ws["A4"].value = "Запрос"
     ws["B4"].value = "Приоритетный предмет"
@@ -300,8 +261,6 @@ def create_file_from_dataset(dataset: list[tuple]):
     }
 
     ws.row_dimensions[4].height = 40
-    ws.row_dimensions[1].height = 50
-    ws.row_dimensions[2].height = 50
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
 

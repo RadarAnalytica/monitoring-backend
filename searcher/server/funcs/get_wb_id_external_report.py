@@ -5,6 +5,8 @@ from json import JSONDecodeError
 
 from aiohttp import ClientSession, ContentTypeError, client_exceptions
 from clickhouse_db.get_async_connection import get_async_connection
+from server.utils.month_names import MONTH_NAMES
+from server.utils.xl_header import make_radar_header
 from settings import SEARCH_URL
 
 from openpyxl import Workbook
@@ -68,6 +70,22 @@ async def get_today_subjects_dict(http_session):
     return subjects_dict
 
 
+async def get_valid_products(products_list: list[int]):
+    result = dict()
+    try:
+        async with ClientSession() as session:
+            async with session.post(
+                url="https://radarmarket.ru/api/monitoring-reports/products-external",
+                json={
+                    "products": products_list
+                }
+            ) as resp:
+                result = await resp.json()
+    except:
+        pass
+    return result
+
+
 async def get_report_data(
     http_session: ClientSession, query_string
 ):
@@ -81,15 +99,15 @@ async def get_report_data(
 async def get_report_dataset():
     stmt = r"""SELECT r.query, 
         rfn.fs,
-        rfn.diff, 
-        round(rfn.growth, 2), 
+        rfn.diff,
+        round(rfn.growth, 2)
     FROM request as r 
     JOIN (
         SELECT 
             rf1.query_id, 
             rf1.fs, 
             ((rf1.fs * 100 / if(coalesce(rf2.fs, 0) = 0, 1, rf2.fs)) - 100) as growth,
-            rf1.fs - rf2.fs as diff
+            rf1.fs - coalesce(rf2.fs, 0) as diff
         FROM (
             SELECT 
                 query_id, 
@@ -97,7 +115,7 @@ async def get_report_dataset():
             FROM 
                 request_frequency 
             WHERE 
-                date >= today() - 29 
+                date BETWEEN today() - 30 and yesterday() 
             GROUP BY query_id
         ) as rf1 
         JOIN (
@@ -106,7 +124,7 @@ async def get_report_dataset():
                 sum(frequency) as fs 
             FROM request_frequency 
             WHERE 
-                date BETWEEN today() - 59 AND today() - 30 
+                date BETWEEN today() - 60 AND today() - 31 
             GROUP BY query_id
         ) as rf2 
         ON rf1.query_id = rf2.query_id 
@@ -125,31 +143,48 @@ async def get_report_dataset():
         q = await client.query(stmt)
         result = list(q.result_rows)
     p_ids = [int(row[0]) for row in result]
-    valid_products = dict()
-    async with ClientSession() as http_session:
-        queries = [row[0] for row in result]
-        tasks = [asyncio.create_task(get_report_data(http_session=http_session, query_string=query)) for query in queries]
-        t_and_p = await asyncio.gather(*tasks)
-        subjects_dict = await get_today_subjects_dict(http_session=http_session)
-        for row, tp_row in zip(result, t_and_p):
-            query = row[0]
-            frequency = row[1]
-            growth_30 = row[2]
-            growth_60 = row[3]
-            growth_90 = row[4]
-            total, priority = tp_row
-            dataset.append(
-                (
-                    query,
-                    subjects_dict.get(priority, "Не определён"),
-                    frequency,
-                    total,
-                    (frequency // total) if total else 0,
-                    growth_30,
-                    growth_60,
-                    growth_90
-                )
-            )
+    valid_products = await get_valid_products(products_list=p_ids)
+    dataset = []
+    for row in result:
+        p_id = row[0].strip()
+        valid_product = valid_products.get(p_id)
+        if not valid_product:
+            continue
+        name = valid_product.get("name")
+        brand = valid_product.get("brand")
+        supplier = valid_product.get("supplier")
+        subject = valid_product.get("subject")
+        frequency = row[1] or 0
+        frequency_diff = row[2] or 0
+        frequency_growth = row[3] or 0
+        revenue = valid_product.get("revenue")
+        revenue_diff = valid_product.get("revenue_diff")
+        revenue_growth = valid_product.get("revenue_growth")
+        orders = valid_product.get("orders")
+        orders_diff = valid_product.get("orders_diff")
+        orders_growth = valid_product.get("orders_growth")
+        price = valid_product.get("price")
+        price_diff = valid_product.get("price_diff")
+        price_growth = valid_product.get("price_growth")
+        dataset.append((
+            p_id,
+            name,
+            brand,
+            supplier,
+            subject,
+            frequency,
+            frequency_diff,
+            round(frequency_growth, 2),
+            round(revenue, 2),
+            round(revenue_diff, 2),
+            round(revenue_growth, 2),
+            orders,
+            orders_diff,
+            round(orders_growth, 2),
+            round(price, 2),
+            round(price_diff, 2),
+            round(price_growth, 2),
+        ))
     return dataset
 
 
@@ -157,35 +192,29 @@ def create_file_from_dataset(dataset: list[tuple]):
     today = date.today()
     wb = Workbook()
     ws = wb.active
-    ws.title = "Sheet1"
+    make_radar_header(
+        ws=ws,
+        sheet_title="Топ 50",
+        name=f"Топ 50 товаров, которые выросли с внешним трафиком в {MONTH_NAMES[today.month]} {today.year}г.",
+    )
 
-    ws.merge_cells('A1:H2')
-    ws['A1'] = f"Топ 500 запросов, которые росли в {MONTH_NAMES[today.month]} {today.year}г."
-    ws['A1'].font = Font(bold=True, color="FFFFFF", sz=15)  # Белый текст
-    ws['A1'].fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")  # Синий фон
-    ws['A1'].alignment = Alignment(horizontal="center")
-
-    ws.merge_cells('A3:D3')
-    font_cambria_italic_underline = Font(italic=True, underline="single", name="Cambria", size=11)
-    ws["A3"].hyperlink = "https://radar-analytica.ru/"
-    ws["A3"].value = 'Отчет сгенерирован с помощью сервиса Radar-Analytica'
-    ws["A3"].style = "Hyperlink"
-    ws["A3"].font = font_cambria_italic_underline
-
-    ws.merge_cells('E3:H3')
-    ws['E3'] = f"Дата начала отсчёта: {today.strftime('%d.%m.%Y')}"
-    ws['E3'].font = Font(color="000000")
-
-    ws.append([])
-
-    ws["A4"].value = "Запрос"
-    ws["B4"].value = "Приоритетный предмет"
-    ws["C4"].value = "Частотность за 30 дней"
-    ws["D4"].value = "Количество артикулов по запросу"
-    ws["E4"].value = "Частотность на 1 артикул"
-    ws["F4"].value = "Динамика за 30 дней, %"
-    ws["G4"].value = "Динамика за 60 дней, %"
-    ws["H4"].value = "Динамика за 90 дней, %"
+    ws["A4"].value = "Артикул"
+    ws["B4"].value = "Наименование товара"
+    ws["C4"].value = "Бренд"
+    ws["D4"].value = "Поставщик"
+    ws["E4"].value = "Предмет"
+    ws["F4"].value = "Частота запросов"
+    ws["G4"].value = "Изменение частоты запросов"
+    ws["H4"].value = "% изменения частоты запросов"
+    ws["I4"].value = "Выручка"
+    ws["J4"].value = "Изменение выручки"
+    ws["K4"].value = "% изменения выручки"
+    ws["L4"].value = "Заказы"
+    ws["M4"].value = "Изменение кол-ва заказов"
+    ws["N4"].value = "% изменения кол-ва заказов"
+    ws["O4"].value = "Цена"
+    ws["P4"].value = "Изменение цены"
+    ws["Q4"].value = "% изменения цены"
 
     header_fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
@@ -198,7 +227,7 @@ def create_file_from_dataset(dataset: list[tuple]):
     )
 
     # Применяем стили к заголовкам
-    for col in range(1, 9):
+    for col in range(1, 18):
         cell = ws.cell(row=4, column=col)
         cell.fill = header_fill
         cell.font = header_font
@@ -206,21 +235,30 @@ def create_file_from_dataset(dataset: list[tuple]):
         cell.border = thin_border
 
     column_widths = {
-        'A': 35,  # Запрос
-        'B': 25,  # Приоритетный предмет
-        'C': 25,  # Частотность за 30 дней
-        'D': 25,  # Количество артикулов
-        'E': 25,  # Частотность на 1 артикул
-        'F': 25,  # Динамика 30 дней
-        'G': 25,  # Динамика 60 дней
-        'H': 25  # Динамика 90 дней
+        "A": 15, # "Артикул"
+        "B": 40, # "Наименование товара"
+        "C": 20, # "Бренд"
+        "D": 25, # "Поставщик"
+        "E": 20, # "Предмет"
+        "F": 20, # "Частота запросов"
+        "G": 20, # "Изменение частоты запросов"
+        "H": 20, # "% изменения частоты запросов"
+        "I": 20, # "Выручка"
+        "J": 20, # "Изменение выручки"
+        "K": 20, # "% изменения выручки"
+        "L": 20, # "Заказы"
+        "M": 20, # "Изменение кол-ва заказов"
+        "N": 20, # "% изменения кол-ва заказов"
+        "O": 20, # "Цена"
+        "P": 20, # "Изменение цены"
+        "Q": 20, # "% изменения цены"
     }
 
     ws.row_dimensions[4].height = 40
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
 
-    ws.auto_filter.ref = f"A4:{get_column_letter(8)}4"  # Фильтры на заголовках
+    ws.auto_filter.ref = f"A4:Q4"
     for row in dataset:
         ws.append(row)
 
@@ -231,7 +269,20 @@ def create_file_from_dataset(dataset: list[tuple]):
     return excel_stream
 
 
-async def get_report_download_bytes():
+async def get_external_report_download_bytes():
     dataset = await get_report_dataset()
     file = create_file_from_dataset(dataset=dataset)
     return file
+
+
+def test():
+    test_data = [
+        tuple(i for i in range(17))
+    ]
+    f = create_file_from_dataset(test_data)
+    with open("test.xlsx", "wb") as file:
+        file.write(f.read())
+
+
+if __name__ == "__main__":
+    test()
