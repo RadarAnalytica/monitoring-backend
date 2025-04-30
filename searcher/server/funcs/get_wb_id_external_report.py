@@ -11,63 +11,7 @@ from settings import SEARCH_URL
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 
-
-async def get_query_small_data(
-    http_session: ClientSession, query_string, dest=-1257786, limit=3, page=1, rqa=5, timeout=5
-):
-    _data = {"data": {"products": []}}
-    counter = 0
-    while len(_data.get("data", dict()).get("products", [])) < 2 and counter < rqa:
-        counter += 1
-        try:
-            async with http_session.get(
-                url=SEARCH_URL,
-                params={
-                    "resultset": "catalog",
-                    "query": query_string,
-                    "limit": limit,
-                    "dest": dest,
-                    "page": page,
-                },
-                timeout=timeout,
-            ) as response:
-                if response.ok:
-                    try:
-                        _data = await response.json(content_type="text/plain")
-                    except (ContentTypeError, JSONDecodeError):
-                        return _data
-                else:
-                    # logger.critical("response not ok")
-                    continue
-        except (TypeError, asyncio.TimeoutError) as e:
-            # logger.critical(f"ОШИБКА, {type(e)}")
-            continue
-        except client_exceptions.ServerDisconnectedError:
-            counter -= 1
-            continue
-
-    return _data
-
-
-def unnest_subjects_list(subjects_list: list):
-    result = dict()
-    for subject_data in subjects_list:
-        s_id = subject_data.get("id")
-        s_name = subject_data.get("name", "")
-        children = subject_data.get("childs", [])
-        result[s_id] = s_name
-        result.update(unnest_subjects_list(children))
-    return result
-
-
-async def get_today_subjects_dict(http_session):
-    url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
-    async with http_session.get(url) as resp:
-        result = await resp.json()
-    subjects_dict = unnest_subjects_list(result)
-    return subjects_dict
 
 
 async def get_valid_products(products_list: list[int]):
@@ -85,16 +29,6 @@ async def get_valid_products(products_list: list[int]):
         pass
     return result
 
-
-async def get_report_data(
-    http_session: ClientSession, query_string
-):
-    data = await get_query_small_data(http_session=http_session, query_string=query_string)
-    products: list = data.get("data", dict()).get("products", list())
-    total = data.get("data", dict()).get("total")
-    first_product = products[0]
-    subject = first_product.get("subjectId", 0)
-    return total, subject
 
 async def get_report_dataset():
     stmt = r"""SELECT r.query, 
