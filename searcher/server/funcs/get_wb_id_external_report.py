@@ -97,7 +97,7 @@ async def get_report_dataset():
         dataset.append((
             p_id,
             name,
-            brand,
+            brand or "Бренд не указан",
             supplier,
             subject,
             frequency,
@@ -164,10 +164,10 @@ def create_file_from_dataset(dataset: list[tuple]):
 
     column_widths = {
         "A": 15, # "Артикул"
-        "B": 40, # "Наименование товара"
+        "B": 80, # "Наименование товара"
         "C": 20, # "Бренд"
-        "D": 25, # "Поставщик"
-        "E": 20, # "Предмет"
+        "D": 30, # "Поставщик"
+        "E": 25, # "Предмет"
         "F": 20, # "Частота запросов"
         "G": 20, # "Изменение частоты запросов"
         "H": 20, # "% изменения частоты запросов"
