@@ -1,7 +1,7 @@
 import asyncio
 from datetime import date
 from io import BytesIO
-from json import JSONDecodeError
+from json import dumps
 
 from aiohttp import ClientSession, ContentTypeError, client_exceptions
 from clickhouse_db.get_async_connection import get_async_connection
@@ -20,7 +20,7 @@ async def get_valid_products(products_list: list[int]):
         async with ClientSession() as session:
             async with session.post(
                 url="https://radarmarket.ru/api/monitoring/top-revenue-products",
-                data=products_list
+                data=dumps(products_list)
             ) as resp:
                 result = await resp.json()
     except:
