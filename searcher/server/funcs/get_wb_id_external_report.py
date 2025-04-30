@@ -19,7 +19,7 @@ async def get_valid_products(products_list: list[int]):
     try:
         async with ClientSession() as session:
             async with session.post(
-                url="https://radarmarket.ru/api/monitoring-reports/products-external",
+                url="https://radarmarket.ru/api/admin/wb_id_trends",
                 json={
                     "products": products_list
                 }
