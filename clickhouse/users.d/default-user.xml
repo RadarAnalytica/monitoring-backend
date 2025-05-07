@@ -15,14 +15,5 @@
       <access_management>0</access_management>
     </radar>
 
-    <radar_read_only>
-      <profile>readonly</profile>
-      <networks>
-        <ip>::/0</ip>
-      </networks>
-      <password from_env="READ_ONLY_PASSWORD"/>
-      <quota>default</quota>
-    </radar_read_only>
-
   </users>
 </clickhouse>

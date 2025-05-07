@@ -97,6 +97,16 @@
             </grants>
             -->
         </default>
+
+        <radar_read_only>
+          <profile>readonly</profile>
+          <networks>
+            <ip>::/0</ip>
+            <ip>185.250.46.103</ip>
+          </networks>
+          <password from_env="READ_ONLY_PASSWORD"/>
+          <quota>default</quota>
+        </radar_read_only>
     </users>
 
     <!-- Quotas. -->
