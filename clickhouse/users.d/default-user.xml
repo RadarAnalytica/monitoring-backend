@@ -10,9 +10,19 @@
       <networks>
         <ip>::/0</ip>
       </networks>
-      <password><![CDATA[radar!oNFi+XFw6kB4Ykbd]]></password>
+      <password from_env="CLICKHOUSE_PASSWORD"/>
       <quota>default</quota>
       <access_management>0</access_management>
     </radar>
+
+    <radar_read_only>
+      <profile>readonly</profile>
+      <networks>
+        <ip>::/0</ip>
+      </networks>
+      <password from_env="READ_ONLY_PASSWORD"/>
+      <quota>default</quota>
+    </radar_read_only>
+
   </users>
 </clickhouse>
