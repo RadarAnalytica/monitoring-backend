@@ -930,6 +930,16 @@
                 </replica>
             </shard>
         </default>
+        <widget>
+            <shard>
+                <replica>
+                    <host>185.250.46.103</host>
+                    <port>9000</port>
+                    <user>radar</user>
+                    <password><![CDATA[radar!oNFi+XFw6kB4Ykbd]]></password>
+                </replica>
+            </shard>
+        </widget>
     </remote_servers>
 
     <!-- The list of hosts allowed to use in URL-related storage engines and table functions.
