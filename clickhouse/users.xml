@@ -100,6 +100,7 @@
 
         <radar_read_only>
           <profile>readonly</profile>
+          <readonly>1</readonly>
           <networks>
             <ip>::/0</ip>
             <ip>185.250.46.103</ip>
