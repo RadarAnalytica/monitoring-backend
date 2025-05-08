@@ -72,13 +72,30 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
                 if not p.get("id"):
                     continue
                 log = p.get("log", {})
+                brand_id = abs(p.get("brandId", 0))
+                subject_id = abs(p.get("subjectId", 0))
+                supplier_id = abs(p.get("supplierId", 0))
                 natural_place = log.get("position", 0)
                 if natural_place > 65535:
                     natural_place = 65535
                 cpm = log.get("cpm", 0)
                 if cpm > 65535:
                     cpm = 65535
-                request_products.append((p.get("id"), city[0], date[0], r[0], i, log.get("tp", "z"), natural_place, cpm))
+                request_products.append(
+                    (
+                        p.get("id"),
+                        city[0],
+                        date[0],
+                        r[0],
+                        i,
+                        log.get("tp", "z"),
+                        natural_place,
+                        cpm,
+                        brand_id,
+                        subject_id,
+                        supplier_id
+                    )
+                )
             if preset_queue:
                 preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
                 try:
@@ -115,7 +132,19 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                 save_to_db(
                     queue=db_queue,
                     table="request_product",
-                    fields=["product", "city", "date", "query", "place", "advert", "natural_place", "cpm"],
+                    fields=[
+                        "product",
+                        "city",
+                        "date",
+                        "query",
+                        "place",
+                        "advert",
+                        "natural_place",
+                        "cpm",
+                        "brand_id",
+                        "subject_id",
+                        "supplier_id"
+                    ],
                     client=client,
                     batch_no=request_batch_no
                 )

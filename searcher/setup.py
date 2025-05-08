@@ -52,7 +52,10 @@ async def setup_database():
             place UInt16 Codec(LZ4HC),
             advert FixedString(1) Codec(LZ4HC),
             natural_place UInt16 Codec (LZ4HC),
-            cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
+            cpm UInt16 DEFAULT 0 CODEC(LZ4HC),
+            brand_id UInt32 DEFAULT 0 CODEC(LZ4HC),
+            subject_id UInt32 DEFAULT 0 CODEC(LZ4HC),
+            supplier_id UInt32 DEFAULT 0 CODEC(LZ4HC)
         ) ENGINE = MergeTree()
         PRIMARY KEY (city, date, product, query)
         PARTITION BY (city, date) 
@@ -67,7 +70,10 @@ async def setup_database():
             place UInt16 Codec(LZ4HC),
             advert FixedString(1) Codec(LZ4HC),
             natural_place UInt16 Codec (LZ4HC),
-            cpm UInt16 DEFAULT 0 CODEC(LZ4HC)
+            cpm UInt16 DEFAULT 0 CODEC(LZ4HC),
+            brand_id UInt32 DEFAULT 0 CODEC(LZ4HC),
+            subject_id UInt32 DEFAULT 0 CODEC(LZ4HC),
+            supplier_id UInt32 DEFAULT 0 CODEC(LZ4HC)
         ) ENGINE = MergeTree()
         PRIMARY KEY (city, date, product, query)
         PARTITION BY (city, date) 
