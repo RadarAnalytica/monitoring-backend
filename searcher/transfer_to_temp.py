@@ -92,7 +92,7 @@ print(dates[0], "-", dates[-1])
 
 for i_ in dates:
     left = 0
-    right = 450000000
+    right = 410000000
     if i_ == 99:
         left = 379052923
     transfer(left, right, 5000000, 1, i_)
