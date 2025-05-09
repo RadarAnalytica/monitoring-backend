@@ -43,9 +43,9 @@ async def get_product_db_data(product_id, city, interval):
             "v6": date_max,
         }
         main_stmt = f"""WITH queries AS (
-            SELECT DISTINCT query FROM request_product WHERE (rp.city = %(v2)s)
-            AND (rp.date BETWEEN %(v3)s AND %(v4)s)
-            AND (rp.product = %(v1)s)
+            SELECT DISTINCT query FROM request_product WHERE (city = %(v2)s)
+            AND (date BETWEEN %(v3)s AND %(v4)s)
+            AND (product = %(v1)s)
         ) 
         SELECT 
             sd.query, 
