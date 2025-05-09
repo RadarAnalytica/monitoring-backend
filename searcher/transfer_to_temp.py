@@ -86,14 +86,15 @@ FROM
     client.close()
 
 
-left = 1
-right = 108
+dates = list(range(1, 109))
+dates.sort(reverse=True)
+print(dates[0], "-", dates[-1])
 
-for i_ in range(left, right+1):
+for i_ in dates:
     left = 0
     right = 450000000
-    if i_ == 1:
-        left = 100000000
+    if i_ == 2:
+        left = 150000000
     transfer(left, right, 20000000, 1, i_)
     time.sleep(5)
 
