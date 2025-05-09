@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 
 from fastapi import APIRouter, Path, Body, Query
 from fastapi.params import Body, Query, Depends
@@ -41,7 +41,7 @@ async def request_monitor_web_service(
     interval: int = Query(),
     page: Optional[int] = Query(default=None, ge=1, le=1000),
     limit: Optional[int] = Query(default=None, ge=1, le=100),
-    asc: Optional[int] = Query(default=None, ge=0, le=1),
+    sorting: Optional[Literal["asc", "desc"]] = Query(default="desc"),
     token: str = Depends(oauth2_scheme),
 ):
     if not check_jwt_token(token):
@@ -52,10 +52,7 @@ async def request_monitor_web_service(
         page = 1
     if limit not in [1, 5, 25, 50, 100]:
         return JSONResponse(status_code=422, content="Limit must be in [1, 5, 25, 50, 100]")
-    if not asc:
-        asc = False
-    else:
-        asc = True
+    asc = sorting == "asc"
     start = datetime.now()
     result = await get_product_db_data_web_service(product_id, city, interval, limit=limit, page=page, asc=asc)
     logger.info(f"Время выполнения v2 {(datetime.now() - start).total_seconds()}s")
