@@ -9,18 +9,18 @@ from settings import logger
 
 
 async def gen_dates(interval):
-    now = datetime.now().date()
-    dates = [now - timedelta(days=i) for i in range(interval + 1)][-1::-1]
+    now = date.today()
+    dates = [now - timedelta(days=i) for i in range(interval)]
+    dates.sort(reverse=True)
     return dates
 
 
 async def get_product_db_data(product_id, city, interval):
-    interval = interval - 1
     city_param = {
         "v1": city
     }
     date_param = {
-        "v1": interval
+        "v1": interval - 1
     }
     async with get_async_connection() as client:
         stmt_city = """SELECT id FROM city WHERE dest = %(v1)s"""
