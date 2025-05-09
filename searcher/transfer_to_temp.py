@@ -13,7 +13,7 @@ def transfer(l, r, step, city, date):
     update_request_product(
         product,
         city,
-        DATE,
+        date,
         query,
         place,
         advert,
@@ -40,7 +40,7 @@ FROM
         SELECT
             product,
             city,
-            DATE,
+            date,
             query,
             place,
             advert,
@@ -50,7 +50,7 @@ FROM
             request_product
         WHERE
             city = {city}
-            AND DATE = {date}
+            AND date = {date}
             AND product BETWEEN {i} AND {i + step - 1}
     ) AS rp
     LEFT OUTER JOIN (
