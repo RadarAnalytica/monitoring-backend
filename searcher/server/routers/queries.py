@@ -40,7 +40,7 @@ async def request_monitor_web_service(
     city: int = Query(),
     interval: int = Query(),
     page: Optional[int] = Query(default=None, ge=1, le=1000),
-    limit: Optional[int] = Query(default=None, ge=1, le=100),
+    limit: Optional[int] = Query(default=None, ge=5, le=100),
     sorting: Optional[Literal["asc", "desc"]] = Query(default="desc"),
     token: str = Depends(oauth2_scheme),
 ):
@@ -50,7 +50,7 @@ async def request_monitor_web_service(
         limit = 25
     if not page:
         page = 1
-    if limit not in [1, 5, 25, 50, 100]:
+    if limit not in [5, 10, 25, 50, 100]:
         return JSONResponse(status_code=422, content="Limit must be in [1, 5, 25, 50, 100]")
     asc = sorting == "asc"
     start = datetime.now()
