@@ -379,7 +379,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         ) 
         SELECT 
             sd.query, 
-            sd.quantity, 
+            SUM(sd.quantity) as sum_q, 
             groupArray(
                 (sd.date, sd.place)
             ) AS date_info
@@ -406,8 +406,9 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             AND (rp.product = %(v1)s)
             ORDER BY quantity DESC, rp.date
         ) AS sd
-        GROUP BY sd.query, sd.quantity
-        ORDER BY sd.quantity {'DESC' if not asc else 'ASC'}, sd.query LIMIT {limit} OFFSET {(page - 1) * limit};"""
+        GROUP BY sd.query
+        HAVING SUM(sd.quantity) > 0
+        ORDER BY sum_q {'DESC' if not asc else 'ASC'}, sd.query LIMIT {limit} OFFSET {(page - 1) * limit};"""
         main_query = await client.query(main_stmt, parameters=main_query_params)
         for row in main_query.result_rows:
             prev_place = 0
