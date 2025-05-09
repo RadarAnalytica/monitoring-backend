@@ -81,7 +81,7 @@ FROM
             wb_id BETWEEN {i} AND {i + step - 1}
     ) AS spp ON spp.wb_id = rp.product""")
         logger.info("SLEEPING")
-        time.sleep(10)
+        time.sleep(5)
         logger.info("WOKE UP")
     client.close()
 
@@ -94,7 +94,7 @@ for i_ in dates:
     left = 0
     right = 450000000
     if i_ == 99:
-        left = 339052922
-    transfer(left, right, 10000000, 1, i_)
+        left = 379052923
+    transfer(left, right, 5000000, 1, i_)
     time.sleep(5)
 
