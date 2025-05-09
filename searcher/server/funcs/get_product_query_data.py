@@ -344,7 +344,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         city_id = city_result.result_rows[0][0] if city_result.result_rows and city_result.result_rows[0] else None
         date_id_min, date_min, date_id_max, date_max = date_result.result_rows[0] if date_result.result_rows else (None, None)
         dates = {str(d) for d in dates}
-        result = {"meta":{"page": page, "pages": 0, "limit": limit}, "details": []}
+        result = {"meta":{"page": page, "pages": 0, "limit": limit}, "queries": []}
         if not any((city_id, date_id_min, date_id_max)):
             return result
         total_queries_stmt = f"""SELECT COUNT(DISTINCT query) FROM request_product WHERE (city = %(v2)s)
