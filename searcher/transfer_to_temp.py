@@ -4,25 +4,96 @@ import clickhouse_connect
 from settings import CLICKHOUSE_CONFING, logger
 
 
-def transfer(left, right, step, city, date):
+def transfer(l, r, step, city, date):
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
     logger.info(f"CITY {city}, DATE {date}")
-    for i in range(left, right, step):
+    for i in range(l, r, step):
         logger.info(f"Batch {i}")
-        client.command(f"""INSERT INTO 
-            request_product_temp(product, city, date, query, place, advert, natural_place, cpm) 
-        SELECT product, city, CAST(66 AS UInt16), query, place, advert, natural_place, cpm 
-        FROM request_product_temp
-        WHERE 
-            product BETWEEN {i} AND {i + step - 1} 
-        AND 
-            city = {city} 
-        AND 
-            date = {date}""")
+        client.command(f"""INSERT INTO
+    update_request_product(
+        product,
+        city,
+        DATE,
+        query,
+        place,
+        advert,
+        natural_place,
+        cpm,
+        brand_id,
+        subject_id,
+        supplier_id
+    )
+SELECT
+    rp.product,
+    rp.city,
+    rp.date,
+    rp.query,
+    rp.place,
+    rp.advert,
+    rp.natural_place,
+    rp.cpm,
+    bp.id,
+    sp.id,
+    spp.id
+FROM
+    (
+        SELECT
+            product,
+            city,
+            DATE,
+            query,
+            place,
+            advert,
+            natural_place,
+            cpm
+        FROM
+            request_product
+        WHERE
+            city = {city}
+            AND DATE = {date}
+            AND product BETWEEN {i} AND {i + step - 1}
+    ) AS rp
+    LEFT OUTER JOIN (
+        SELECT
+            id,
+            product_id
+        FROM
+            brand_product
+        WHERE
+            product_id BETWEEN {i} AND {i + step - 1}
+    ) AS bp ON bp.product_id = rp.product
+    LEFT OUTER JOIN (
+        SELECT
+            id,
+            wb_id
+        FROM
+            subject_product
+        WHERE
+            wb_id BETWEEN {i} AND {i + step - 1}
+    ) AS sp ON sp.wb_id = rp.product
+    LEFT OUTER JOIN (
+        SELECT
+            id,
+            wb_id
+        FROM
+            supplier_product
+        WHERE
+            wb_id BETWEEN {i} AND {i + step - 1}
+    ) AS spp ON spp.wb_id = rp.product""")
         logger.info("SLEEPING")
-        time.sleep(30)
+        time.sleep(10)
         logger.info("WOKE UP")
     client.close()
 
-transfer(20000000, 400000000, 5000000, 1, 65)
+
+left = 1
+right = 108
+
+for i_ in range(left, right+1):
+    left = 0
+    right = 450000000
+    if i_ == 1:
+        left = 20000000
+    transfer(left, right, 10000000, 1, i_)
+    time.sleep(5)
 

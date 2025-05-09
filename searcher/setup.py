@@ -106,3 +106,5 @@ async def setup_database():
     client.close()
 
 asyncio.run(setup_database())
+
+product, city, date, query, place, advert, natural_place, cpm
