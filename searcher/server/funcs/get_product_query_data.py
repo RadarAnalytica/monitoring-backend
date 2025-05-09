@@ -10,7 +10,7 @@ from settings import logger
 
 async def gen_dates(interval):
     now = datetime.now().date()
-    dates = [now - timedelta(days=i) for i in range(interval)][-1::-1]
+    dates = [now - timedelta(days=i) for i in range(interval + 1)][-1::-1]
     return dates
 
 
