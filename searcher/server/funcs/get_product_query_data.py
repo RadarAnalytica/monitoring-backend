@@ -20,7 +20,7 @@ async def get_product_db_data(product_id, city, interval):
         "v1": city
     }
     date_param = {
-        "v1": interval - 1
+        "v1": interval
     }
     async with get_async_connection() as client:
         stmt_city = """SELECT id FROM city WHERE dest = %(v1)s"""
@@ -328,6 +328,120 @@ async def get_ex_ad_page(product_ids_strs: list[str]):
     return result
 
 
+async def get_product_db_data_web_service(product_id, city, interval, page=1, limit=25, asc=False):
+    city_param = {
+        "v1": city
+    }
+    date_param = {
+        "v1": interval
+    }
+    async with get_async_connection() as client:
+        stmt_city = """SELECT id FROM city WHERE dest = %(v1)s"""
+        stmt_date = """SELECT min(id), min(date), max(id), max(date) FROM dates WHERE date > (today() - %(v1)s)"""
+        city_query_task = create_task(client.query(stmt_city, parameters=city_param))
+        date_query_task = create_task(client.query(stmt_date, parameters=date_param))
+        city_result, date_result, dates = await gather(city_query_task, date_query_task, gen_dates(interval))
+        city_id = city_result.result_rows[0][0] if city_result.result_rows and city_result.result_rows[0] else None
+        date_id_min, date_min, date_id_max, date_max = date_result.result_rows[0] if date_result.result_rows else (None, None)
+        dates = {str(d) for d in dates}
+        result = {"meta":{"page": page, "pages": 0, "limit": limit}, "details": []}
+        if not any((city_id, date_id_min, date_id_max)):
+            return result
+        total_queries_stmt = f"""SELECT COUNT(DISTINCT query) FROM request_product WHERE (city = %(v2)s)
+                            AND (date BETWEEN %(v3)s AND %(v4)s)
+                            AND (product = %(v1)s)"""
+        total_queries_params = {
+            "v1": product_id,
+            "v2": city_id,
+            "v3": date_id_min,
+            "v4": date_id_max,
+        }
+        total_queries_query = await client.query(total_queries_stmt, parameters=total_queries_params)
+        total_queries = list(total_queries_query.result_rows)[0][0]
+        if not total_queries:
+            return result
+        pages = (total_queries // limit + (1 if total_queries % limit else 0)) if limit else 0
+        if not pages or page > pages:
+            return result
+        main_query_params = {
+            "v1": product_id,
+            "v2": city_id,
+            "v3": date_id_min,
+            "v4": date_id_max,
+            "v5": date_min,
+            "v6": date_max,
+        }
+        main_stmt = f"""WITH queries AS (
+            SELECT DISTINCT query FROM request_product WHERE (city = %(v2)s)
+            AND (date BETWEEN %(v3)s AND %(v4)s)
+            AND (product = %(v1)s)
+        ) 
+        SELECT 
+            sd.query, 
+            sd.quantity, 
+            groupArray(
+                (sd.date, sd.place)
+            ) AS date_info
+        FROM (
+            SELECT 
+                r.query as query, 
+                rf.sum_fr as quantity, 
+                d.date as date, 
+                rp.place as place
+            FROM request_product AS rp
+            JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
+            JOIN dates as d ON d.id = rp.date
+            JOIN (
+                SELECT 
+                    query_id, 
+                    sum(frequency) as sum_fr
+                FROM request_frequency 
+                WHERE query_id IN queries 
+                AND date BETWEEN %(v5)s AND %(v6)s
+                GROUP BY query_id
+            ) as rf ON rf.query_id = rp.query
+            WHERE (rp.city = %(v2)s)
+            AND (rp.date BETWEEN %(v3)s AND %(v4)s)
+            AND (rp.product = %(v1)s)
+            ORDER BY quantity DESC, rp.date
+        ) AS sd
+        GROUP BY sd.query, sd.quantity
+        ORDER BY sd.quantity {'DESC' if not asc else 'ASC'}, sd.query LIMIT {limit} OFFSET {(page - 1) * limit};"""
+        main_query = await client.query(main_stmt, parameters=main_query_params)
+        for row in main_query.result_rows:
+            prev_place = 0
+            prev_date = None
+            row_res = {
+                "request_string": row[0],
+                "request_quantity": row[1],
+                "details": []
+            }
+            for date_row in row[2]:
+                d_str = str(date_row[0])
+                if d_str not in dates:
+                    prev_place = date_row[1]
+                    continue
+                if prev_date and (date_row[0] - prev_date).days > 1:
+                    temp_date = prev_date
+                    while temp_date < date_row[0]:
+                        temp_date += timedelta(days=1)
+                        row_res["details"].append(
+                            {
+                                "date": str(temp_date),
+                                "place": 0,
+                                "compare_flag": None
+                            }
+                        )
+                    prev_place = 0
+                row_res["details"].append({
+                    "date": d_str,
+                    "place": date_row[1],
+                    "compare_flag": (date_row[1] < prev_place if prev_place != 0 else True) if date_row != prev_place else None
+                })
+                prev_place = date_row[1]
+                prev_date = date_row[0]
+            result["queries"].append(row_res)
+    return result
 
 
 

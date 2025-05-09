@@ -13,7 +13,7 @@ from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
 from server.funcs.get_keywords_data import get_keywords_payload
 from server.funcs.get_product_query_data import get_product_db_data, get_product_db_data_latest, get_ex_ad, \
-    get_ex_ad_query, get_ex_ad_page, get_product_db_data_competitors
+    get_ex_ad_query, get_ex_ad_page, get_product_db_data_competitors, get_product_db_data_web_service
 
 query_router = APIRouter()
 
@@ -30,6 +30,34 @@ async def get_product_queries_v2(
         return JSONResponse(status_code=403, content="Unauthorized")
     start = datetime.now()
     result = await get_product_db_data(product_id, city, interval)
+    logger.info(f"Время выполнения v2 {(datetime.now() - start).total_seconds()}s")
+    return result
+
+
+@query_router.get("/request_monitor_web_service")
+async def request_monitor_web_service(
+    product_id: int = Query(),
+    city: int = Query(),
+    interval: int = Query(),
+    page: Optional[int] = Query(default=None, ge=1, le=1000),
+    limit: Optional[int] = Query(default=None, ge=1, le=100),
+    asc: Optional[int] = Query(default=None, ge=0, le=1),
+    token: str = Depends(oauth2_scheme),
+):
+    if not check_jwt_token(token):
+        return JSONResponse(status_code=403, content="Unauthorized")
+    if not limit:
+        limit = 25
+    if not page:
+        page = 1
+    if limit not in [1, 5, 25, 50, 100]:
+        return JSONResponse(status_code=422, content="Limit must be in [1, 5, 25, 50, 100]")
+    if not asc:
+        asc = False
+    else:
+        asc = True
+    start = datetime.now()
+    result = await get_product_db_data_web_service(product_id, city, interval, limit=limit, page=page, asc=asc)
     logger.info(f"Время выполнения v2 {(datetime.now() - start).total_seconds()}s")
     return result
 
