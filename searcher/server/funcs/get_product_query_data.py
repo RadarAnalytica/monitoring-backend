@@ -361,6 +361,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         if not total_queries:
             return result
         pages = (total_queries // limit + (1 if total_queries % limit else 0)) if limit else 0
+        result["meta"]["pages"] = pages
         if not pages or page > pages:
             return result
         main_query_params = {
