@@ -92,8 +92,6 @@ right = 108
 for i_ in range(left, right+1):
     left = 0
     right = 450000000
-    if i_ == 1:
-        left = 20000000
-    transfer(left, right, 10000000, 1, i_)
+    transfer(left, right, 50000000, 1, i_)
     time.sleep(5)
 
