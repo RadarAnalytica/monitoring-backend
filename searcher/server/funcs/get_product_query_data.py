@@ -437,7 +437,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 row_res["details"].append({
                     "date": d_str,
                     "place": date_row[1],
-                    "compare_flag": (date_row[1] < prev_place if prev_place != 0 else True) if date_row != prev_place else None
+                    "compare_flag": (date_row[1] < prev_place if prev_place != 0 else True) if date_row[1] != prev_place else None
                 })
                 prev_place = date_row[1]
                 prev_date = date_row[0]
