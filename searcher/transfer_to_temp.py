@@ -86,7 +86,7 @@ FROM
     client.close()
 
 
-dates = list(range(1, 89))
+dates = list(range(1, 87))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
