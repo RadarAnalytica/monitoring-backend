@@ -91,7 +91,7 @@ dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
 for i_ in dates:
-    left = 0
+    left = 1
     right = 410000000
     if i_ == 86:
         left = 240000000
