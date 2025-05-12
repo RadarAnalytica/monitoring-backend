@@ -338,7 +338,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
     print(f"INTERVAL:{interval}")
     async with get_async_connection() as client:
         stmt_city = """SELECT id FROM city WHERE dest = %(v1)s"""
-        stmt_date = """SELECT min(id), min(date), max(id), max(date) FROM dates WHERE date > (today() - %(v1)s)"""
+        stmt_date = """SELECT min(id), min(date), max(id), max(date) FROM dates WHERE date >= (today() - %(v1)s)"""
         city_query_task = create_task(client.query(stmt_city, parameters=city_param))
         date_query_task = create_task(client.query(stmt_date, parameters=date_param))
         city_result, date_result, dates = await gather(city_query_task, date_query_task, gen_dates(interval))
