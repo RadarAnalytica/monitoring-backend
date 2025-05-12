@@ -404,8 +404,8 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             WHERE (rp.city = %(v2)s)
             AND (rp.date BETWEEN %(v3)s AND %(v4)s)
             AND (rp.product = %(v1)s)
-            ORDER BY quantity DESC, rp.date
             GROUP BY query, quantity, date
+            ORDER BY quantity DESC, rp.date
         ) AS sd
         GROUP BY sd.query
         HAVING SUM(sd.quantity) > 0
