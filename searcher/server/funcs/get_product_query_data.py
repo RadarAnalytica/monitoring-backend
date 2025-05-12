@@ -416,7 +416,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         main_query = await client.query(main_stmt, parameters=main_query_params)
         for row in main_query.result_rows:
             prev_place = 0
-            prev_date = min(dates)
+            prev_date = date_min
             row_res = {
                 "request_string": row[0],
                 "request_quantity": row[1],
@@ -428,7 +428,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 if date_row[0] not in dates:
                     prev_place = date_row[1]
                     continue
-                if prev_date and (date_row[0] - prev_date).days > 1:
+                if (date_row[0] - prev_date).days > 1:
                     temp_date = prev_date
                     while temp_date < date_row[0]:
                         temp_date += timedelta(days=1)
