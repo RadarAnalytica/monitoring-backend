@@ -86,13 +86,35 @@ FROM
     client.close()
 
 
-dates = list(range(1, 60))
+dates = list(range(1, 54))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
 for i_ in dates:
     left = 1
     right = 410000000
+    if i_ == 53:
+        left = 270000001
     transfer(left, right, 5000000, 1, i_)
     time.sleep(5)
 
+
+# var = f"мосун"
+# stmt = f".*{var}.*"
+# x = f"""SELECT *,
+#        greatest(
+#            match(lower(trademark), '{stmt}'),
+#            match(lower(name), '{stmt}'),
+#            match(lower(full_name), '{stmt}')
+#        ) AS best_match
+# FROM supplier_meta
+# WHERE greatest(
+#              match(lower(trademark), '{stmt}'),
+#              match(lower(name), '{stmt}'),
+#              match(lower(full_name), '{stmt}')
+#          ) > 0
+# ORDER BY best_match DESC
+# LIMIT 10;"""
+
+
+print(x)
