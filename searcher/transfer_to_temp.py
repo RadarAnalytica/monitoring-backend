@@ -117,4 +117,4 @@ for i_ in dates:
 # LIMIT 10;"""
 
 
-print(x)
+# print(x)
