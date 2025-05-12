@@ -425,7 +425,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             date_row = None
             for date_row in row[2]:
                 d_str = str(date_row[0])
-                print(d_str)
+                print(row[0], d_str, date_row[1])
                 if date_row[0] not in dates:
                     prev_place = date_row[1]
                     continue
