@@ -425,6 +425,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             date_row = None
             for date_row in row[2]:
                 d_str = str(date_row[0])
+                print(d_str)
                 if date_row[0] not in dates:
                     prev_place = date_row[1]
                     continue
@@ -447,8 +448,9 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 })
                 prev_place = date_row[1]
                 prev_date = date_row[0]
+            print()
             if date_row and date_row[0] < max(dates):
-                temp_date = prev_date
+                temp_date = date_row[0]
                 md = max(dates)
                 while temp_date < md:
                     temp_date += timedelta(days=1)
