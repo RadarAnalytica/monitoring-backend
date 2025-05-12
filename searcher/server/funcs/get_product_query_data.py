@@ -335,6 +335,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
     date_param = {
         "v1": interval
     }
+    print(f"INTERVAL:{interval}")
     async with get_async_connection() as client:
         stmt_city = """SELECT id FROM city WHERE dest = %(v1)s"""
         stmt_date = """SELECT min(id), min(date), max(id), max(date) FROM dates WHERE date > (today() - %(v1)s)"""
@@ -344,6 +345,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         city_id = city_result.result_rows[0][0] if city_result.result_rows and city_result.result_rows[0] else None
         date_id_min, date_min, date_id_max, date_max = date_result.result_rows[0] if date_result.result_rows else (None, None)
         dates = {d for d in dates}
+        print(min(dates), max(dates))
         result = {"meta":{"page": page, "pages": 0, "limit": limit}, "queries": []}
         if not any((city_id, date_id_min, date_id_max)):
             return result
@@ -420,6 +422,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 "request_quantity": row[1],
                 "details": []
             }
+            date_row = None
             for date_row in row[2]:
                 d_str = str(date_row[0])
                 if date_row[0] not in dates:
@@ -444,7 +447,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 })
                 prev_place = date_row[1]
                 prev_date = date_row[0]
-            if prev_date < max(dates):
+            if date_row and date_row[0] < max(dates):
                 temp_date = prev_date
                 md = max(dates)
                 while temp_date < md:
