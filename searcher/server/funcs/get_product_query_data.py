@@ -420,6 +420,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 "request_quantity": row[1],
                 "details": []
             }
+            date_row = None
             for date_row in row[2]:
                 d_str = str(date_row[0])
                 if date_row[0] not in dates:
@@ -444,6 +445,18 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 })
                 prev_place = date_row[1]
                 prev_date = date_row[0]
+            if date_row and date_row[0] < max(dates):
+                temp_date = date_row[0]
+                md = max(dates)
+                while temp_date < md:
+                    temp_date += timedelta(days=1)
+                    row_res["details"].append(
+                        {
+                            "date": str(temp_date),
+                            "quantity": 0,
+                            "compare_flag": None
+                        }
+                    )
             result["queries"].append(row_res)
     return result
 
