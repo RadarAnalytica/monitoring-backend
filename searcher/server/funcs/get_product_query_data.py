@@ -404,6 +404,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             WHERE (rp.city = %(v2)s)
             AND (rp.date BETWEEN %(v3)s AND %(v4)s)
             AND (rp.product = %(v1)s)
+            AND (place > 0)
             GROUP BY query, quantity, date
             ORDER BY quantity DESC, date
         ) AS sd
@@ -413,7 +414,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         main_query = await client.query(main_stmt, parameters=main_query_params)
         for row in main_query.result_rows:
             prev_place = 0
-            prev_date = None
+            prev_date = min(dates)
             row_res = {
                 "request_string": row[0],
                 "request_quantity": row[1],

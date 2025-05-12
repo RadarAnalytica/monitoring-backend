@@ -17,7 +17,7 @@ async def get_cities_data(city_id):
 
 async def get_requests_data():
     async with get_async_connection() as client:
-        await client.command("optimize table request;")
+        await client.command("optimize table request final;")
         await asyncio.sleep(5)
         query = f"""SELECT id, query
                 FROM request 
