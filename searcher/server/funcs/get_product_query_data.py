@@ -432,7 +432,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 if (date_row[0] - prev_date).days > 1:
                     temp_date = prev_date
                     md = date_row[0] - timedelta(days=1)
-                    while temp_date < date_row[0]:
+                    while temp_date < md:
                         temp_date += timedelta(days=1)
                         row_res["details"].append(
                             {
