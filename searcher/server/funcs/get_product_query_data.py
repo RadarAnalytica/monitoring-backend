@@ -404,7 +404,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             WHERE (rp.city = %(v2)s)
             AND (rp.date BETWEEN %(v3)s AND %(v4)s)
             AND (rp.product = %(v1)s)
-            AND (place > 0)
+            AND (rp.place > 0)
             GROUP BY query, quantity, date
             ORDER BY quantity DESC, date
         ) AS sd
