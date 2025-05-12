@@ -343,7 +343,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
         city_result, date_result, dates = await gather(city_query_task, date_query_task, gen_dates(interval))
         city_id = city_result.result_rows[0][0] if city_result.result_rows and city_result.result_rows[0] else None
         date_id_min, date_min, date_id_max, date_max = date_result.result_rows[0] if date_result.result_rows else (None, None)
-        dates = {str(d) for d in dates}
+        dates = {d for d in dates}
         result = {"meta":{"page": page, "pages": 0, "limit": limit}, "queries": []}
         if not any((city_id, date_id_min, date_id_max)):
             return result
@@ -422,7 +422,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             }
             for date_row in row[2]:
                 d_str = str(date_row[0])
-                if d_str not in dates:
+                if date_row[0] not in dates:
                     prev_place = date_row[1]
                     continue
                 if prev_date and (date_row[0] - prev_date).days > 1:
