@@ -388,7 +388,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
                 r.query as query, 
                 rf.sum_fr as quantity, 
                 d.date as date, 
-                min(rp.place as place)
+                min(rp.place) as place
             FROM request_product AS rp
             JOIN (SELECT id, query, quantity FROM request FINAL) AS r ON r.id = rp.query
             JOIN dates as d ON d.id = rp.date
@@ -405,7 +405,7 @@ async def get_product_db_data_web_service(product_id, city, interval, page=1, li
             AND (rp.date BETWEEN %(v3)s AND %(v4)s)
             AND (rp.product = %(v1)s)
             GROUP BY query, quantity, date
-            ORDER BY quantity DESC, rp.date
+            ORDER BY quantity DESC, date
         ) AS sd
         GROUP BY sd.query
         HAVING SUM(sd.quantity) > 0
