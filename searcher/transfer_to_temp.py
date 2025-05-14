@@ -86,15 +86,15 @@ FROM
     client.close()
 
 
-dates = list(range(1, 54))
+dates = list(range(1, 49))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
 for i_ in dates:
     left = 1
     right = 410000000
-    if i_ == 53:
-        left = 270000001
+    if i_ == 48:
+        left = 19874837
     transfer(left, right, 5000000, 1, i_)
     time.sleep(5)
 
