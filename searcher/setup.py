@@ -87,6 +87,14 @@ async def setup_database():
                       ) ENGINE = ReplacingMergeTree(updated)
                       PRIMARY KEY (preset, query, norm_query)
                       ORDER BY (preset, query, norm_query);''')
+    client.command('''CREATE TABLE IF NOT EXISTS query_history(
+                              query UInt32 CODEC(LZ4HC),
+                              date Date DEFAULT today() CODEC(LZ4HC),
+                              total_products UInt32 CODEC(LZ4HC),
+                              updated DateTime DEFAULT now() CODEC(LZ4HC)
+                          ) ENGINE = ReplacingMergeTree(updated)
+                          PRIMARY KEY (query, date)
+                          ORDER BY (query, date);''')
     client.command('''CREATE TABLE IF NOT EXISTS request_frequency(
             query_id UInt32 CODEC(LZ4HC),
             date Date CODEC(LZ4HC),
@@ -107,4 +115,3 @@ async def setup_database():
 
 asyncio.run(setup_database())
 
-product, city, date, query, place, advert, natural_place, cpm

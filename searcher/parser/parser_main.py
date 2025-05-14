@@ -1,5 +1,5 @@
 import asyncio
-
+from datetime import date as Date
 from aiohttp import ClientSession
 
 from clickhouse_db.get_async_connection import get_async_connection
@@ -10,7 +10,7 @@ from parser.save_to_db_worker import save_to_db
 
 
 async def get_r_data_q(
-    http_queue: asyncio.Queue, db_queue, city, date, http_session, preset_queue=None
+    http_queue: asyncio.Queue, db_queue, city, date, http_session, preset_queue=None, query_history_queue=None, today_date=None
 ):
     while True:
         r = await http_queue.get()
@@ -23,7 +23,9 @@ async def get_r_data_q(
             date=date,
             http_session=http_session,
             db_queue=db_queue,
-            preset_queue=preset_queue
+            preset_queue=preset_queue,
+            query_history_queue=query_history_queue,
+            today_date=today_date,
         )
 
 
@@ -44,7 +46,7 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
     return x
 
 
-async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=None):
+async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=None, query_history_queue=None, today_date=None):
     count = 0
     while count <= 3:
         try:
@@ -54,13 +56,13 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
                     try_except_query_data(
                         query_string=r[1],
                         dest=city[1],
-                        limit=250,
+                        limit=300,
                         page=i,
                         rqa=3,
                         http_session=http_session,
                     )
                 )
-                for i in range(1, 4)
+                for i in range(1, 5)
             ]
             result = await asyncio.gather(*tasks)
             for res in result:
@@ -108,6 +110,10 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
                     await preset_queue.put(
                         [(preset, norm_query, r[0])]
                     )
+            if query_history_queue:
+                total = result[0].get("data", dict()).get("total", 0)
+                if total:
+                    await query_history_queue.put(r[0], today_date, total)
             await db_queue.put(request_products)
             return
         except Exception as e:
@@ -117,11 +123,14 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
 
 async def get_city_result(city, date, requests, request_batch_no, get_preset=False):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
+    today_date = Date.today()
     await send_log_message(f"Начался сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}")
     requests_list = [r for r in requests if not r[1].isdigit()]
     del requests
     preset_queue = None
+    query_history_queue = None
     if get_preset:
+        query_history_queue = asyncio.Queue(2)
         preset_queue = asyncio.Queue(2)
     db_queue = asyncio.Queue(2)
     http_queue = asyncio.Queue(3)
@@ -158,6 +167,14 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         client=client
                     )
                 )
+                query_history_worker = asyncio.create_task(
+                    save_to_db(
+                        queue=query_history_queue,
+                        table="query_history",
+                        fields=["query", "date", "total_products"],
+                        client=client
+                    )
+                )
             requests_tasks = [
                 asyncio.create_task(
                     get_r_data_q(
@@ -167,9 +184,11 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         db_queue=db_queue,
                         http_queue=http_queue,
                         preset_queue=preset_queue,
+                        query_history_queue=query_history_queue,
+                        today_date=today_date
                     )
                 )
-                for _ in range(6)
+                for _ in range(5)
             ]
             counter = 0
             while requests_list:
@@ -187,6 +206,8 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
             if get_preset:
                 await preset_queue.put(None)
                 await asyncio.gather(preset_worker)
+                await query_history_queue.put(None)
+                await asyncio.gather(query_history_worker)
     await send_log_message(f"Завершен сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}")
     return
 
