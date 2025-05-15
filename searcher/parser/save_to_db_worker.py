@@ -10,7 +10,7 @@ async def save_to_db(queue: asyncio.Queue, table, fields, client: AsyncClient, b
     while True:
         items = []
         item = []
-        while len(items) < 10000:
+        while len(items) < 8000:
             item = await queue.get()
             if item is None:
                 break
