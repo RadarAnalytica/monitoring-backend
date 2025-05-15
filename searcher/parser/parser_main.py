@@ -113,7 +113,9 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
             if query_history_queue:
                 total = result[0].get("data", dict()).get("total", 0)
                 if total:
-                    await query_history_queue.put(r[0], today_date, total)
+                    await query_history_queue.put(
+                        [(r[0], today_date, total)]
+                    )
             await db_queue.put(request_products)
             return
         except Exception as e:
