@@ -237,6 +237,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
     result = {
         "preset": str(preset_id or query),
         "queries": dict(),
+        "dates": [],
         "total_pages": 0,
         "current_page": 0
     }
@@ -282,7 +283,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
             return result
         params = {
             "v1": presets,
-            "v2": (page - 1) * 100
+            "v2": (page - 1) * page_size
         }
         stmt = """SELECT query_id
         FROM (
