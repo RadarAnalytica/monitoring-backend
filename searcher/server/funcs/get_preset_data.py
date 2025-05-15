@@ -235,7 +235,7 @@ async def get_query_frequency_all_time_db(query: str):
 
 async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int = None, page=1, page_size=100):
     result = {
-        "preset": preset_id or query,
+        "preset": str(preset_id or query),
         "queries": dict(),
         "total_pages": 0,
         "current_page": 0
@@ -318,7 +318,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
         all_dates = set()
         for row in q_f.result_rows:
             query = row[0]
-            result["queries"][query] = list()
+            result["queries"][str(query)] = list()
             query_frequency = row[1]
             for sub_row in query_frequency:
                 query_year = sub_row[0]
