@@ -12,7 +12,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 
-
 async def get_valid_products(products_list: list[int]):
     result = dict()
     async with ClientSession() as session:
@@ -94,25 +93,27 @@ async def get_report_dataset():
         price = valid_product.get("price", 0)
         price_diff = valid_product.get("price_diff", 0)
         price_growth = valid_product.get("price_growth", 0)
-        dataset.append((
-            p_id,
-            name,
-            brand or "Бренд не указан",
-            supplier,
-            subject,
-            frequency,
-            frequency_diff,
-            round(frequency_growth, 2),
-            round(revenue, 2),
-            round(revenue_diff, 2),
-            round(revenue_growth, 2),
-            orders,
-            orders_diff,
-            round(orders_growth, 2),
-            round(price, 2),
-            round(price_diff, 2),
-            round(price_growth, 2),
-        ))
+        dataset.append(
+            (
+                p_id,
+                name,
+                brand or "Бренд не указан",
+                supplier,
+                subject,
+                frequency,
+                frequency_diff,
+                round(frequency_growth, 2),
+                round(revenue, 2),
+                round(revenue_diff, 2),
+                round(revenue_growth, 2),
+                orders,
+                orders_diff,
+                round(orders_growth, 2),
+                round(price, 2),
+                round(price_diff, 2),
+                round(price_growth, 2),
+            )
+        )
     return dataset
 
 
@@ -144,14 +145,16 @@ def create_file_from_dataset(dataset: list[tuple]):
     ws["P4"].value = "Изменение цены"
     ws["Q4"].value = "% изменения цены"
 
-    header_fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="a653ec", end_color="a653ec", fill_type="solid"
+    )
     header_font = Font(bold=True, color="FFFFFF")
     header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     thin_border = Border(
         left=Side(style="thin"),
         right=Side(style="thin"),
         top=Side(style="thin"),
-        bottom=Side(style="thin")
+        bottom=Side(style="thin"),
     )
 
     # Применяем стили к заголовкам
@@ -163,23 +166,23 @@ def create_file_from_dataset(dataset: list[tuple]):
         cell.border = thin_border
 
     column_widths = {
-        "A": 15, # "Артикул"
-        "B": 80, # "Наименование товара"
-        "C": 20, # "Бренд"
-        "D": 30, # "Поставщик"
-        "E": 25, # "Предмет"
-        "F": 20, # "Частота запросов"
-        "G": 20, # "Изменение частоты запросов"
-        "H": 20, # "% изменения частоты запросов"
-        "I": 20, # "Выручка"
-        "J": 20, # "Изменение выручки"
-        "K": 20, # "% изменения выручки"
-        "L": 20, # "Заказы"
-        "M": 20, # "Изменение кол-ва заказов"
-        "N": 20, # "% изменения кол-ва заказов"
-        "O": 20, # "Цена"
-        "P": 20, # "Изменение цены"
-        "Q": 20, # "% изменения цены"
+        "A": 15,  # "Артикул"
+        "B": 80,  # "Наименование товара"
+        "C": 20,  # "Бренд"
+        "D": 30,  # "Поставщик"
+        "E": 25,  # "Предмет"
+        "F": 20,  # "Частота запросов"
+        "G": 20,  # "Изменение частоты запросов"
+        "H": 20,  # "% изменения частоты запросов"
+        "I": 20,  # "Выручка"
+        "J": 20,  # "Изменение выручки"
+        "K": 20,  # "% изменения выручки"
+        "L": 20,  # "Заказы"
+        "M": 20,  # "Изменение кол-ва заказов"
+        "N": 20,  # "% изменения кол-ва заказов"
+        "O": 20,  # "Цена"
+        "P": 20,  # "Изменение цены"
+        "Q": 20,  # "% изменения цены"
     }
 
     ws.row_dimensions[4].height = 40
@@ -204,9 +207,7 @@ async def get_external_report_download_bytes():
 
 
 def test():
-    test_data = [
-        tuple(i for i in range(17))
-    ]
+    test_data = [tuple(i for i in range(17))]
     f = create_file_from_dataset(test_data)
     with open("test.xlsx", "wb") as file:
         file.write(f.read())
@@ -214,7 +215,6 @@ def test():
 
 async def test2():
     await get_valid_products([284374567])
-
 
 
 if __name__ == "__main__":

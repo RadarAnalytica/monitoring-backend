@@ -14,9 +14,14 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 
-
 async def get_query_small_data(
-    http_session: ClientSession, query_string, dest=-1257786, limit=3, page=1, rqa=5, timeout=5
+    http_session: ClientSession,
+    query_string,
+    dest=-1257786,
+    limit=3,
+    page=1,
+    rqa=5,
+    timeout=5,
 ):
     _data = {"data": {"products": []}}
     counter = 0
@@ -71,15 +76,16 @@ async def get_today_subjects_dict(http_session):
     return subjects_dict
 
 
-async def get_report_data(
-    http_session: ClientSession, query_string
-):
-    data = await get_query_small_data(http_session=http_session, query_string=query_string)
+async def get_report_data(http_session: ClientSession, query_string):
+    data = await get_query_small_data(
+        http_session=http_session, query_string=query_string
+    )
     products: list = data.get("data", dict()).get("products", list())
     total = data.get("data", dict()).get("total")
     first_product = products[0]
     subject = first_product.get("subjectId", 0)
     return total, subject
+
 
 async def get_report_dataset():
     stmt = r"""SELECT r.query, 
@@ -188,7 +194,12 @@ async def get_report_dataset():
     dataset = []
     async with ClientSession() as http_session:
         queries = [row[0] for row in result]
-        tasks = [asyncio.create_task(get_report_data(http_session=http_session, query_string=query)) for query in queries]
+        tasks = [
+            asyncio.create_task(
+                get_report_data(http_session=http_session, query_string=query)
+            )
+            for query in queries
+        ]
         t_and_p = await asyncio.gather(*tasks)
         subjects_dict = await get_today_subjects_dict(http_session=http_session)
         for row, tp_row in zip(result, t_and_p):
@@ -207,7 +218,7 @@ async def get_report_dataset():
                     (frequency // total) if total else 0,
                     growth_30,
                     growth_60,
-                    growth_90
+                    growth_90,
                 )
             )
     return dataset
@@ -232,14 +243,16 @@ def create_file_from_dataset(dataset: list[tuple]):
     ws["G4"].value = "Динамика за 60 дней, %"
     ws["H4"].value = "Динамика за 90 дней, %"
 
-    header_fill = PatternFill(start_color="a653ec", end_color="a653ec", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="a653ec", end_color="a653ec", fill_type="solid"
+    )
     header_font = Font(bold=True, color="FFFFFF")
     header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     thin_border = Border(
         left=Side(style="thin"),
         right=Side(style="thin"),
         top=Side(style="thin"),
-        bottom=Side(style="thin")
+        bottom=Side(style="thin"),
     )
 
     for col in range(1, 9):
@@ -250,14 +263,14 @@ def create_file_from_dataset(dataset: list[tuple]):
         cell.border = thin_border
 
     column_widths = {
-        'A': 35,  # Запрос
-        'B': 25,  # Приоритетный предмет
-        'C': 25,  # Частотность за 30 дней
-        'D': 25,  # Количество артикулов
-        'E': 25,  # Частотность на 1 артикул
-        'F': 25,  # Динамика 30 дней
-        'G': 25,  # Динамика 60 дней
-        'H': 25  # Динамика 90 дней
+        "A": 35,  # Запрос
+        "B": 25,  # Приоритетный предмет
+        "C": 25,  # Частотность за 30 дней
+        "D": 25,  # Количество артикулов
+        "E": 25,  # Частотность на 1 артикул
+        "F": 25,  # Динамика 30 дней
+        "G": 25,  # Динамика 60 дней
+        "H": 25,  # Динамика 90 дней
     }
 
     ws.row_dimensions[4].height = 40
@@ -282,9 +295,7 @@ async def get_report_download_bytes():
 
 
 def test():
-    test_data = [
-        (1, 1, 1, 1, 1, 1, 1, 1)
-    ]
+    test_data = [(1, 1, 1, 1, 1, 1, 1, 1)]
     f = create_file_from_dataset(test_data)
     with open("test.xlsx", "wb") as file:
         file.write(f.read())

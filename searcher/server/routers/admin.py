@@ -8,9 +8,8 @@ from server.funcs.get_wb_id_external_report import get_external_report_download_
 router = APIRouter()
 
 
-@router.get('/trends')
-async def get_advert_download(
-):
+@router.get("/trends")
+async def get_advert_download():
     """
     Выгрузка трендовых запросов
     """
@@ -22,7 +21,7 @@ async def get_advert_download(
             media_type="application/vnd.ms-excel",
             headers={
                 "Content-Disposition": f"attachment; filename="
-                                       f"{quote(f'Топ 500 трендовых запросов в {MONTH_NAMES[today.month]} {today.year}г', encoding='utf-8')}.xlsx"
+                f"{quote(f'Топ 500 трендовых запросов в {MONTH_NAMES[today.month]} {today.year}г', encoding='utf-8')}.xlsx"
             },
         )
     except Exception as e:
@@ -30,9 +29,8 @@ async def get_advert_download(
         return JSONResponse(status_code=500, content="Ошибка")
 
 
-@router.get('/wb_id_trends')
-async def get_advert_download(
-):
+@router.get("/wb_id_trends")
+async def get_advert_download():
     """
     Выгрузка топ 50 товаров
     """
@@ -44,7 +42,7 @@ async def get_advert_download(
             media_type="application/vnd.ms-excel",
             headers={
                 "Content-Disposition": f"attachment; filename="
-                                       f"{quote(f'Топ 50 товаров со внешней рекламой в {MONTH_NAMES[today.month]} {today.year}г', encoding='utf-8')}.xlsx"
+                f"{quote(f'Топ 50 товаров со внешней рекламой в {MONTH_NAMES[today.month]} {today.year}г', encoding='utf-8')}.xlsx"
             },
         )
     except Exception as e:

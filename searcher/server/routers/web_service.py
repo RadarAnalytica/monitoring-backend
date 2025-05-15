@@ -12,7 +12,6 @@ from server.funcs.web_service import get_product_request_data
 web_service_router = APIRouter()
 
 
-
 @web_service_router.get("/wb_id_analysis")
 async def get_product_queries_v2(
     product_id: int = Query(),
@@ -23,6 +22,10 @@ async def get_product_queries_v2(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     start = datetime.now()
-    result = await get_product_request_data(product_id=product_id, date_from=date_from, date_to=date_to)
-    logger.info(f"Время выполнения wb_id_analysis {(datetime.now() - start).total_seconds()}s")
+    result = await get_product_request_data(
+        product_id=product_id, date_from=date_from, date_to=date_to
+    )
+    logger.info(
+        f"Время выполнения wb_id_analysis {(datetime.now() - start).total_seconds()}s"
+    )
     return result

@@ -10,7 +10,14 @@ from parser.save_to_db_worker import save_to_db
 
 
 async def get_r_data_q(
-    http_queue: asyncio.Queue, db_queue, city, date, http_session, preset_queue=None, query_history_queue=None, today_date=None
+    http_queue: asyncio.Queue,
+    db_queue,
+    city,
+    date,
+    http_session,
+    preset_queue=None,
+    query_history_queue=None,
+    today_date=None,
 ):
     while True:
         r = await http_queue.get()
@@ -29,7 +36,6 @@ async def get_r_data_q(
         )
 
 
-
 async def try_except_query_data(query_string, dest, limit, page, http_session, rqa=5):
     try:
         x = await get_query_data(
@@ -46,7 +52,16 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
     return x
 
 
-async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=None, query_history_queue=None, today_date=None):
+async def get_r_data(
+    r,
+    city,
+    date,
+    http_session,
+    db_queue=None,
+    preset_queue=None,
+    query_history_queue=None,
+    today_date=None,
+):
     count = 0
     while count <= 3:
         try:
@@ -95,27 +110,30 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
                         cpm,
                         brand_id,
                         subject_id,
-                        supplier_id
+                        supplier_id,
                     )
                 )
             if preset_queue:
-                preset = result[0].get("metadata", dict()).get("catalog_value", "").replace("preset=", "")
+                preset = (
+                    result[0]
+                    .get("metadata", dict())
+                    .get("catalog_value", "")
+                    .replace("preset=", "")
+                )
                 try:
                     preset = int(preset) if preset else None
-                    norm_query = result[0].get("metadata", dict()).get("normquery", None)
+                    norm_query = (
+                        result[0].get("metadata", dict()).get("normquery", None)
+                    )
                 except (ValueError, TypeError):
                     preset = None
                     norm_query = None
                 if preset and norm_query:
-                    await preset_queue.put(
-                        [(preset, norm_query, r[0])]
-                    )
+                    await preset_queue.put([(preset, norm_query, r[0])])
             if query_history_queue:
                 total = result[0].get("data", dict()).get("total", 0)
                 if total:
-                    await query_history_queue.put(
-                        [(r[0], today_date, total)]
-                    )
+                    await query_history_queue.put([(r[0], today_date, total)])
             await db_queue.put(request_products)
             return
         except Exception as e:
@@ -126,7 +144,9 @@ async def get_r_data(r, city, date, http_session, db_queue=None, preset_queue=No
 async def get_city_result(city, date, requests, request_batch_no, get_preset=False):
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
     today_date = Date.today()
-    await send_log_message(f"Начался сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}")
+    await send_log_message(
+        f"Начался сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}"
+    )
     requests_list = [r for r in requests if not r[1].isdigit()]
     del requests
     preset_queue = None
@@ -154,10 +174,10 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         "cpm",
                         "brand_id",
                         "subject_id",
-                        "supplier_id"
+                        "supplier_id",
                     ],
                     client=client,
-                    batch_no=request_batch_no
+                    batch_no=request_batch_no,
                 )
             )
             if get_preset:
@@ -166,7 +186,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         queue=preset_queue,
                         table="preset",
                         fields=["preset", "norm_query", "query"],
-                        client=client
+                        client=client,
                     )
                 )
                 query_history_worker = asyncio.create_task(
@@ -174,7 +194,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         queue=query_history_queue,
                         table="query_history",
                         fields=["query", "date", "total_products"],
-                        client=client
+                        client=client,
                     )
                 )
             requests_tasks = [
@@ -187,7 +207,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         http_queue=http_queue,
                         preset_queue=preset_queue,
                         query_history_queue=query_history_queue,
-                        today_date=today_date
+                        today_date=today_date,
                     )
                 )
                 for _ in range(3)
@@ -198,7 +218,9 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                     counter += 1
                     await http_queue.put(requests_list.pop(0))
                     if not (counter % 1000):
-                        logger.info(f"Осталось запросов в батче {request_batch_no}: {len(requests_list)}")
+                        logger.info(
+                            f"Осталось запросов в батче {request_batch_no}: {len(requests_list)}"
+                        )
                 except Exception as e:
                     logger.error(f"{e}")
             await http_queue.put(None)
@@ -210,7 +232,9 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                 await asyncio.gather(preset_worker)
                 await query_history_queue.put(None)
                 await asyncio.gather(query_history_worker)
-    await send_log_message(f"Завершен сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}")
+    await send_log_message(
+        f"Завершен сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}"
+    )
     return
 
 

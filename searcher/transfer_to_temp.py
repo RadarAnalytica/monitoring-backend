@@ -9,7 +9,8 @@ def transfer(l, r, step, city, date):
     logger.info(f"CITY {city}, DATE {date}")
     for i in range(l, r, step):
         logger.info(f"Batch {i}")
-        client.command(f"""INSERT INTO
+        client.command(
+            f"""INSERT INTO
     update_request_product(
         product,
         city,
@@ -79,7 +80,8 @@ FROM
             supplier_product
         WHERE
             wb_id BETWEEN {i} AND {i + step - 1}
-    ) AS spp ON spp.wb_id = rp.product""")
+    ) AS spp ON spp.wb_id = rp.product"""
+        )
         logger.info("SLEEPING")
         time.sleep(5)
         logger.info("WOKE UP")

@@ -1,12 +1,10 @@
 from datetime import date
 from clickhouse_db.get_async_connection import get_async_connection
 
+
 async def get_product_request_data(product_id: int, date_from: date, date_to: date):
     stmt_dates = """SELECT min(id), min(date), max(id), max(date) FROM dates WHERE date BETWEEN %(v1)s AND %(v2)s"""
-    dates_params = {
-        "v1": date_from,
-        "v2": date_to
-    }
+    dates_params = {"v1": date_from, "v2": date_to}
     stmt_main = """SELECT
         d.date,
         COUNT(DISTINCT rp.query),
@@ -103,7 +101,11 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
     result = dict()
     async with get_async_connection() as client:
         dates_query = await client.query(stmt_dates, parameters=dates_params)
-        min_date_id, min_date, max_date_id, max_date = dates_query.result_rows[0] if dates_query.result_rows else (None, None, None, None)
+        min_date_id, min_date, max_date_id, max_date = (
+            dates_query.result_rows[0]
+            if dates_query.result_rows
+            else (None, None, None, None)
+        )
         if not any((min_date_id, max_date_id, min_date, max_date)):
             return result
         main_params = {
@@ -112,7 +114,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
             "v3": max_date_id,
             "v4": min_date,
             "v5": max_date,
-            "v6": str(product_id)
+            "v6": str(product_id),
         }
         main_query = await client.query(stmt_main, parameters=main_params)
         result = {
@@ -123,7 +125,7 @@ async def get_product_request_data(product_id: int, date_from: date, date_to: da
                 "ad_c": row[4],
                 "avg_frequency": row[5],
                 "id_frequency": row[6],
-                "total_shows": row[7]
+                "total_shows": row[7],
             }
             for row in main_query.result_rows
         }

@@ -2,7 +2,12 @@ import asyncio
 from datetime import datetime, date
 import pytz
 from celery.exceptions import SoftTimeLimitExceeded
-from parser.get_init_data import get_cities_data, get_dates_data, write_new_date, get_requests_data
+from parser.get_init_data import (
+    get_cities_data,
+    get_dates_data,
+    write_new_date,
+    get_requests_data,
+)
 from parser.parser_main import get_city_result
 from celery_main import celery_app
 from settings import logger
@@ -13,7 +18,15 @@ def process_city(city, date_, requests, batch_no):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
     try:
-        asyncio.run(get_city_result(city, date_, requests, batch_no, get_preset=True if city[0] == 1 else False))
+        asyncio.run(
+            get_city_result(
+                city,
+                date_,
+                requests,
+                batch_no,
+                get_preset=True if city[0] == 1 else False,
+            )
+        )
         end_time = datetime.now()
         delta = (end_time - start_time).seconds
         logger.info(
@@ -45,7 +58,7 @@ def fire_requests(city_no):
     request_batches = []
     batch_size = 167000
     for r_id in range(0, len(requests) + batch_size, batch_size):
-        request_batches.append(requests[r_id:r_id + batch_size])
+        request_batches.append(requests[r_id : r_id + batch_size])
     city = cities[0]
     for i, r_batch in enumerate(request_batches, 1):
         if r_batch:

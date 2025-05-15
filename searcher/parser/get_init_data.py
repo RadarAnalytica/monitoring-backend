@@ -34,11 +34,10 @@ async def get_requests_id_download_data():
         q = await client.query(query)
     return dict(q.result_rows)
 
+
 async def get_requests_id_download_data_new(query: str):
     async with get_async_connection() as client:
-        params = {
-            "v1": query
-        }
+        params = {"v1": query}
         query = f"""SELECT id FROM request WHERE query = %(v1)s;"""
         q = await client.query(query, parameters=params)
     return q.result_rows[0][0] if q.result_rows and q.result_rows[0] else None
@@ -53,7 +52,6 @@ async def get_request_frequency_download_data_new(query_id: int, new_date, clien
     query = f"""SELECT sum(frequency) FROM request_frequency WHERE query_id = %(v1)s AND date BETWEEN '{str(start_date)}' AND '{str(end_date)}';"""
     q = await client.query(query, parameters=params)
     return q.result_rows[0][0] if q.result_rows and q.result_rows[0] else None
-
 
 
 async def get_requests_max_id():

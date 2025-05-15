@@ -45,7 +45,9 @@ CLICKHOUSE_CONFING = {
     "password": getenv("CLICKHOUSE_PASSWORD", ""),
     "database": getenv("CLICKHOUSE_DB", "__default__"),
 }
-SECRET_KEY = getenv("SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE")
+SECRET_KEY = getenv(
+    "SECRET_KEY", "FuzwkJ+n/R+BJIehXnX+xcUxnXVUZSa0sqrMMzWNjfp+aDPlL5j0BTAJpFQJnOIE"
+)
 
 ALGORITHM = "HS256"
 

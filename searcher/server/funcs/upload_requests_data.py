@@ -5,14 +5,23 @@ from server.funcs.prepare_csv_contents import prepare_request_frequency
 from settings import logger
 
 
-
-async def upload_requests_worker(requests_slice: list[list[int, str, int, datetime]], client):
-    await client.insert('request', requests_slice, column_names=["id", "query", "quantity", "updated"])
+async def upload_requests_worker(
+    requests_slice: list[list[int, str, int, datetime]], client
+):
+    await client.insert(
+        "request", requests_slice, column_names=["id", "query", "quantity", "updated"]
+    )
     logger.info("Start of part DB renewal - request")
 
 
-async def upload_request_frequency_worker(requests_slice: list[list[int, int, datetime]], client):
-    await client.insert('request_frequency', requests_slice, column_names=["query_id", "frequency", "date"])
+async def upload_request_frequency_worker(
+    requests_slice: list[list[int, int, datetime]], client
+):
+    await client.insert(
+        "request_frequency",
+        requests_slice,
+        column_names=["query_id", "frequency", "date"],
+    )
     logger.info("Start of part DB renewal - request_frequency")
 
 

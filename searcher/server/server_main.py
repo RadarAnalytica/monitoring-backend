@@ -13,4 +13,3 @@ app.include_router(web_service_router, prefix="/api/web_service", tags=["web_ser
 app.include_router(csv_router, prefix="/api/csv", tags=["csv"])
 app.include_router(city_router, prefix="/api/cities", tags=["cities"])
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
-

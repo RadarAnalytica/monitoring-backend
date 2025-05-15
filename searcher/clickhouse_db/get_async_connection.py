@@ -26,12 +26,12 @@ class AsyncSession:
         self.client.close()
 
 
-
 @contextmanager
 def get_sync_connection():
     session = SyncSession(CLICKHOUSE_CONFING)
     with session as client:
         yield client
+
 
 class SyncSession:
 

@@ -24,8 +24,11 @@ celery_app.conf.task_default_expires = 300
 celery_app.conf.beat_schedule = {
     "parse_search_moscow": {
         "task": "fire_requests",
-        "schedule": crontab(hour="8", minute="0",),
-        "args": (1,)
+        "schedule": crontab(
+            hour="8",
+            minute="0",
+        ),
+        "args": (1,),
     },
     # "parse_search_krasnodar": {
     #     "task": "fire_requests",
@@ -42,5 +45,4 @@ celery_app.conf.beat_schedule = {
     #     "schedule": crontab(hour="0", minute="1",),
     #     "args": (4,)
     # }
-
 }

@@ -34,7 +34,7 @@ async def get_best_similar_products(product_id, city=1, amount=25):
             "v2": city,
             "v3": last_date,
             "v4": tuple(keywords),
-            "v5": amount
+            "v5": amount,
         }
         logger.info(f"Дата: {(datetime.now() - start).total_seconds()}s")
         query = f"""SELECT DISTINCT product 

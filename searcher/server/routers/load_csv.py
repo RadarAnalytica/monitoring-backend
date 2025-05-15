@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, File, UploadFile, BackgroundTasks
 from fastapi.params import Depends
 from fastapi.responses import JSONResponse
@@ -23,9 +22,13 @@ async def upload_csv(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     try:
-        contents = [tuple(row) for row in pd.read_csv(file.file).itertuples(index=False)]
+        contents = [
+            tuple(row) for row in pd.read_csv(file.file).itertuples(index=False)
+        ]
         try:
-            requests_data, error_rows = await prepare_csv_contents(contents, filename=file.filename)
+            requests_data, error_rows = await prepare_csv_contents(
+                contents, filename=file.filename
+            )
         except:
             return {"message": "Error with file name, must be {YYYY-MM-DD}.csv"}
         logger.info("Loading to background")

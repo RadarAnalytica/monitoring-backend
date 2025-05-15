@@ -64,6 +64,7 @@ async def get_dates_data():
         q = await client.query(query)
     return q.result_rows
 
+
 async def get_requests_data():
     async with get_async_connection() as client:
         query = f"""SELECT id, query

@@ -12,6 +12,7 @@ TABLE_NAME = "request_frequency"
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 
+
 async def get_files_list():
     url = "https://cloud-api.yandex.net/v1/disk/public/resources"
     params = {"public_key": PUBLIC_URL, "limit": 1000}  # Можно увеличить limit
@@ -20,11 +21,16 @@ async def get_files_list():
             if response.status == 200:
                 data = await response.json()
                 items = data.get("_embedded", {}).get("items", [])
-                filenames = {item["name"]: item["file"] for item in items if item["type"] == "file"}
+                filenames = {
+                    item["name"]: item["file"]
+                    for item in items
+                    if item["type"] == "file"
+                }
                 return filenames
             else:
                 print(f"❌ Ошибка {response.status}: {await response.text()}")
                 return dict()
+
 
 async def get_direct_link(session, filename):
     url = "https://cloud-api.yandex.net/v1/disk/public/resources/download"
@@ -35,6 +41,7 @@ async def get_direct_link(session, filename):
         else:
             print(f"❌ Ошибка при получении ссылки {filename}: {await response.text()}")
             raise ValueError
+
 
 async def download_file(session, filename, direct_link):
     save_path = os.path.join(SAVE_DIR, filename)
@@ -47,12 +54,21 @@ async def download_file(session, filename, direct_link):
     print(f"❌ Ошибка при скачивании {filename}: {response.status}")
     return None
 
+
 async def load_to_clickhouse(filename: str, queries_dict: dict):
     file_path = os.path.join(SAVE_DIR, filename)
     if not os.path.exists(file_path):
         return
     file_date = date.fromisoformat(filename.replace(".csv", ""))
-    update_time = datetime(year=file_date.year, month=file_date.month, day=file_date.day, hour=0, minute=0, second=0, microsecond=0)
+    update_time = datetime(
+        year=file_date.year,
+        month=file_date.month,
+        day=file_date.day,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
     start_week = file_date - timedelta(days=6)
     df = pd.read_csv(file_path)
     df["parse_date"] = pd.to_datetime(df["parse_date"]).dt.date
@@ -70,11 +86,15 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             continue
         file_date = row["parse_date"]
         main_dict[request_str] = (total_weekly, file_date)
-    queries_ids = tuple(sorted([queries_dict.get(key) for key in main_dict.keys() if queries_dict.get(key)]))
+    queries_ids = tuple(
+        sorted(
+            [queries_dict.get(key) for key in main_dict.keys() if queries_dict.get(key)]
+        )
+    )
     queries_parts = []
     step = 1000
     for i in range(1001):
-        queries_parts.append(queries_ids[i * step: (step * i) + step])
+        queries_parts.append(queries_ids[i * step : (step * i) + step])
     query_1 = f"""SELECT query_id, sum(frequency) 
         FROM request_frequency
         WHERE query_id IN %(v1)s 
@@ -87,9 +107,7 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
         for queries_part in queries_parts:
             if not queries_part:
                 continue
-            params = {
-                "v1": queries_part
-            }
+            params = {"v1": queries_part}
             query_ids_query = await client.query(query_1, parameters=params)
             query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
             queries_frequency.update(query_ids_temp)
@@ -111,7 +129,8 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
             mid_quantity = total_weekly // 7
             new_records.extend(
                 [
-                    (start_week + timedelta(days=i), query_id, mid_quantity or 0) for i in range(7)
+                    (start_week + timedelta(days=i), query_id, mid_quantity or 0)
+                    for i in range(7)
                 ]
             )
         else:
@@ -124,15 +143,24 @@ async def load_to_clickhouse(filename: str, queries_dict: dict):
         if new_records:
             step = 10000
             for i in range(0, len(new_records) + 1, step):
-                batch = new_records[i: i + step]
+                batch = new_records[i : i + step]
                 if batch:
-                    await client.insert(TABLE_NAME, batch, column_names=["date", "query_id", "frequency"])
+                    await client.insert(
+                        TABLE_NAME,
+                        batch,
+                        column_names=["date", "query_id", "frequency"],
+                    )
         else:
             print(f"⚠️ Пустой файл: {filename}")
         if new_queries:
-            await client.insert("request", new_queries, column_names=["id", "query", "quantity", "updated"])
+            await client.insert(
+                "request",
+                new_queries,
+                column_names=["id", "query", "quantity", "updated"],
+            )
             await client.command("OPTIMIZE TABLE request")
         print(f"✅ Загружено в ClickHouse: {filename}")
+
 
 async def main(start_file=None):
     filenames = os.listdir(SAVE_DIR)
@@ -170,4 +198,5 @@ async def main(start_file=None):
         else:
             await load_to_clickhouse(fn, queries_dict)
 
-asyncio.run(main(start_file='2024-05-29.csv'))
+
+asyncio.run(main(start_file="2024-05-29.csv"))

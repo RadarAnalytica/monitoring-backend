@@ -13,7 +13,9 @@ async def send_log_message(message: str, ex: Exception | None = None):
         try:
             for admin in ADMINS:
                 if ex:
-                    await bot.send_message(admin, f"Мониторинг\n{message}\nОшибка: {ex}")
+                    await bot.send_message(
+                        admin, f"Мониторинг\n{message}\nОшибка: {ex}"
+                    )
                 else:
                     await bot.send_message(admin, f"Мониторинг\nСообщение: {message}")
         except Exception as e:
@@ -31,7 +33,10 @@ def log_alert(message=None, track_error=False):
                 result = await func(*args, **kwargs)
             except Exception as e:
                 if track_error:
-                    await send_log_message(f"❗Исключение❗\n\nФункция: {func.__module__}.{func.__name__}\n\n", ex=e)
+                    await send_log_message(
+                        f"❗Исключение❗\n\nФункция: {func.__module__}.{func.__name__}\n\n",
+                        ex=e,
+                    )
                 raise e
             return result
 

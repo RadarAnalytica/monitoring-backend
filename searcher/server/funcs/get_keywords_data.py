@@ -3,10 +3,7 @@ from clickhouse_connect.driver import AsyncClient
 
 
 async def get_keywords_db_data(products, city=-1257786):
-    params = {
-        "v1": tuple(products),
-        "v2": city
-    }
+    params = {"v1": tuple(products), "v2": city}
     async with get_async_connection() as client:
         query = f"""SELECT r.query, r.quantity
         FROM request_product AS rp

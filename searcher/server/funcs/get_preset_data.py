@@ -14,9 +14,9 @@ MONTH_DICT = {
     9: "Сентябрь",
     10: "Октябрь",
     11: "Ноябрь",
-    12: "Декабрь"
-
+    12: "Декабрь",
 }
+
 
 async def get_preset_db_data():
     async with get_async_connection() as client:
@@ -42,7 +42,7 @@ async def get_single_preset_db_data(query: str):
         q_result = list(q.result_rows)
         result = {
             "preset": q_result[0][0] if q_result and q_result[0] else None,
-            "norm_query": q_result[0][1] if q_result and q_result[0] else None
+            "norm_query": q_result[0][1] if q_result and q_result[0] else None,
         }
     return result
 
@@ -82,13 +82,15 @@ async def get_single_preset_db_data(query: str):
 #     return subjects_dict
 
 
-async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, page=1, page_size=100):
+async def get_preset_by_id_db_data(
+    query: str = None, preset_id: int = None, page=1, page_size=100
+):
     result = {
         "preset": preset_id or query,
         "queries": dict(),
         "dates": [],
         "total_pages": 0,
-        "current_page": 0
+        "current_page": 0,
     }
     if not query and not preset_id:
         return result
@@ -115,7 +117,7 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
             return result
         norm_query = norm_query_rows[0][0]
         result["preset"] = norm_query
-        norm_query = ' '.join(norm_query.split()[:2])
+        norm_query = " ".join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
             "v1": nq_stmt,
@@ -126,15 +128,16 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
                 WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)"""
         q = await client.query(presets_stmt, parameters=params)
         presets = [row[0] for row in q.result_rows]
-        total_pages = (len(presets) // page_size) + (1 if len(presets) % page_size else 0) if presets else 0
+        total_pages = (
+            (len(presets) // page_size) + (1 if len(presets) % page_size else 0)
+            if presets
+            else 0
+        )
         result["current_page"] = page
         result["total_pages"] = total_pages
         if not total_pages or page > total_pages:
             return result
-        params = {
-            "v1": presets,
-            "v2": (page - 1) * page_size
-        }
+        params = {"v1": presets, "v2": (page - 1) * page_size}
         stmt = """SELECT query_id
         FROM (
             SELECT
@@ -178,7 +181,9 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
                 query_date = sub_row[0]
                 all_dates.add(query_date)
                 quantity = sub_row[1]
-                result["queries"][query].append({query_date.strftime("%d.%m.%Y"): quantity})
+                result["queries"][query].append(
+                    {query_date.strftime("%d.%m.%Y"): quantity}
+                )
         dates_list = [d.strftime("%d.%m.%Y") for d in sorted(all_dates, reverse=True)]
         result["dates"] = dates_list
     return result
@@ -187,59 +192,55 @@ async def get_preset_by_id_db_data(query: str = None, preset_id: int = None, pag
 async def get_query_frequency_db(query: str):
     start_date = datetime.now().date() - timedelta(days=29)
     async with get_async_connection() as client:
-        param_q_id = {
-            "v1": query
-        }
+        param_q_id = {"v1": query}
         query_id_query = """SELECT id FROM request where query = %(v1)s"""
         q_id = await client.query(query_id_query, parameters=param_q_id)
-        query_id = q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
+        query_id = (
+            q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
+        )
         if not query_id:
-            return {
-                query: []
-            }
-        param_sums = {
-            "v1": query_id,
-            "v2": start_date
-        }
+            return {query: []}
+        param_sums = {"v1": query_id, "v2": start_date}
         query_frequency = """SELECT rf.date, sum(rf.frequency) FROM request_frequency as rf  WHERE rf.query_id = %(v1)s AND date >= %(v2)s GROUP BY rf.date ORDER BY rf.date"""
         q_f = await client.query(query_frequency, parameters=param_sums)
-        frequency_data = [{row[0].strftime("%d.%m.%Y"): row[1]} for row in q_f.result_rows]
-    result = {
-        query: frequency_data
-    }
+        frequency_data = [
+            {row[0].strftime("%d.%m.%Y"): row[1]} for row in q_f.result_rows
+        ]
+    result = {query: frequency_data}
     return result
+
 
 async def get_query_frequency_all_time_db(query: str):
     async with get_async_connection() as client:
-        param_q_id = {
-            "v1": query
-        }
+        param_q_id = {"v1": query}
         query_id_query = """SELECT id FROM request where query = %(v1)s"""
         q_id = await client.query(query_id_query, parameters=param_q_id)
-        query_id = q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
+        query_id = (
+            q_id.result_rows[0][0] if q_id.result_rows and q_id.result_rows[0] else None
+        )
         if not query_id:
-            return {
-                query: []
-            }
+            return {query: []}
         param_sums = {
             "v1": query_id,
         }
         query_frequency = """SELECT toYear(rf.date) as y, toMonth(rf.date) as m, sum(rf.frequency) FROM request_frequency as rf  WHERE rf.query_id = %(v1)s GROUP BY y, m ORDER BY y, m"""
         q_f = await client.query(query_frequency, parameters=param_sums)
-        frequency_data = [{f"{row[0]} {MONTH_DICT.get(row[1])}": row[2]} for row in q_f.result_rows]
-    result = {
-        query: frequency_data
-    }
+        frequency_data = [
+            {f"{row[0]} {MONTH_DICT.get(row[1])}": row[2]} for row in q_f.result_rows
+        ]
+    result = {query: frequency_data}
     return result
 
 
-async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int = None, page=1, page_size=100):
+async def get_preset_by_query_all_time_db_data(
+    query: str = None, preset_id: int = None, page=1, page_size=100
+):
     result = {
         "preset": str(preset_id or query),
         "queries": dict(),
         "dates": [],
         "total_pages": 0,
-        "current_page": 0
+        "current_page": 0,
     }
     if not query and not preset_id:
         return result
@@ -265,7 +266,7 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
             return result
         norm_query = norm_query_rows[0][0]
         result["preset"] = norm_query
-        norm_query = ' '.join(norm_query.split()[:2])
+        norm_query = " ".join(norm_query.split()[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
             "v1": nq_stmt,
@@ -276,15 +277,16 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
                 WHERE query IN (SELECT id FROM request WHERE query LIKE %(v1)s)"""
         q = await client.query(presets_stmt, parameters=params)
         presets = [row[0] for row in q.result_rows]
-        total_pages = (len(presets) // page_size) + (1 if len(presets) % page_size else 0) if presets else 0
+        total_pages = (
+            (len(presets) // page_size) + (1 if len(presets) % page_size else 0)
+            if presets
+            else 0
+        )
         result["current_page"] = page
         result["total_pages"] = total_pages
         if not total_pages or page > total_pages:
             return result
-        params = {
-            "v1": presets,
-            "v2": (page - 1) * page_size
-        }
+        params = {"v1": presets, "v2": (page - 1) * page_size}
         stmt = """SELECT query_id
         FROM (
             SELECT
@@ -326,7 +328,12 @@ async def get_preset_by_query_all_time_db_data(query: str = None, preset_id: int
                 query_month = sub_row[1]
                 all_dates.add((query_year, query_month))
                 quantity = sub_row[2]
-                result["queries"][query].append({f"{query_year} {MONTH_DICT.get(query_month)}": quantity})
-        dates_list = [f"{query_year} {MONTH_DICT.get(query_month)}" for query_year, query_month in sorted(all_dates, reverse=True)]
+                result["queries"][query].append(
+                    {f"{query_year} {MONTH_DICT.get(query_month)}": quantity}
+                )
+        dates_list = [
+            f"{query_year} {MONTH_DICT.get(query_month)}"
+            for query_year, query_month in sorted(all_dates, reverse=True)
+        ]
         result["dates"] = dates_list
     return result
