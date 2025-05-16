@@ -14,7 +14,7 @@ from settings import logger
 
 
 @celery_app.task(name="process_city", time_limit=3600 * 6)
-def process_city(city, date_, requests, batch_no):
+def process_city(city, date_, requests, batch_no, test):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
     try:
@@ -25,6 +25,7 @@ def process_city(city, date_, requests, batch_no):
                 requests,
                 batch_no,
                 get_preset=True if city[0] == 1 else False,
+                test=test
             )
         )
         end_time = datetime.now()
@@ -39,7 +40,7 @@ def process_city(city, date_, requests, batch_no):
 
 
 @celery_app.task(name="fire_requests")
-def fire_requests(city_no):
+def fire_requests(city_no, test):
     today = datetime.now(tz=pytz.utc).date()
     last_date = asyncio.run(get_dates_data())
     if not last_date:
@@ -62,4 +63,4 @@ def fire_requests(city_no):
     city = cities[0]
     for i, r_batch in enumerate(request_batches, 1):
         if r_batch:
-            process_city.delay(city, today_date, r_batch, i)
+            process_city.delay(city, today_date, r_batch, i, test)

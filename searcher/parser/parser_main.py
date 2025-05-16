@@ -141,11 +141,13 @@ async def get_r_data(
             logger.critical(f"{e}")
 
 
-async def get_city_result(city, date, requests, request_batch_no, get_preset=False):
+async def get_city_result(city, date, requests, request_batch_no, get_preset=False, test=False):
+    if test:
+        get_preset = False
     logger.info(f"Город {city} старт, batch: {request_batch_no}")
     today_date = Date.today()
     await send_log_message(
-        f"Начался сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}"
+        f"Начался сбор данных{'(ТЕСТОВЫЙ)' if test else ''} по городу:\n{city[2]}\nbatch: {request_batch_no}"
     )
     requests_list = [r for r in requests if not r[1].isdigit()]
     del requests
@@ -162,7 +164,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
             db_worker = asyncio.create_task(
                 save_to_db(
                     queue=db_queue,
-                    table="request_product",
+                    table="request_product" if not test else "update_request_product",
                     fields=[
                         "product",
                         "city",
