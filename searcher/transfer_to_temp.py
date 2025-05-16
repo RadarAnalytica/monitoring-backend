@@ -33,9 +33,9 @@ SELECT
     rp.advert,
     rp.natural_place,
     rp.cpm,
-    bp.id,
-    sp.id,
-    spp.id
+    coalesce(bp.id, 0),
+    coalesce(sp.id, 0),
+    coalesce(spp.id, 0)
 FROM
     (
         SELECT
@@ -88,35 +88,15 @@ FROM
     client.close()
 
 
-dates = list(range(1, 49))
+dates = list(range(1, 40))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
 for i_ in dates:
     left = 1
     right = 410000000
-    if i_ == 48:
-        left = 19874838
+    if i_ == 39:
+        left = 100000000
     transfer(left, right, 5000000, 1, i_)
     time.sleep(5)
 
-
-# var = f"мосун"
-# stmt = f".*{var}.*"
-# x = f"""SELECT *,
-#        greatest(
-#            match(lower(trademark), '{stmt}'),
-#            match(lower(name), '{stmt}'),
-#            match(lower(full_name), '{stmt}')
-#        ) AS best_match
-# FROM supplier_meta
-# WHERE greatest(
-#              match(lower(trademark), '{stmt}'),
-#              match(lower(name), '{stmt}'),
-#              match(lower(full_name), '{stmt}')
-#          ) > 0
-# ORDER BY best_match DESC
-# LIMIT 10;"""
-
-
-# print(x)
