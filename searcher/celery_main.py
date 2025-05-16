@@ -33,8 +33,8 @@ celery_app.conf.beat_schedule = {
     "parse_search_moscow_test": {
         "task": "fire_requests",
         "schedule": crontab(
-            hour="8",
-            minute="0",
+            hour="13",
+            minute="15",
         ),
         "args": (1, True),
     },
