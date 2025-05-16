@@ -1,9 +1,9 @@
 import os
-
-from celery import Celery
+import asyncio
+from celery import Celery, signals
 from celery.schedules import crontab
 from settings import REDIS_HOST, REDIS_PORT
-
+from service.log_alert import send_log_message
 celery_app = Celery(
     "searcher",
     include=[
@@ -54,3 +54,9 @@ celery_app.conf.beat_schedule = {
     #     "args": (4,)
     # }
 }
+
+@signals.task_failure.connect
+def task_failure_handler(*other_args, sender=None, task_id=None, exception=None, args=None, kwargs=None, **other_kwargs):
+    message = f"Задача '{sender.name}' task_id: {task_id}\nзавершилась с ошибкой:\n{exception}\n\nАргументы:\n{args}\n\nКлючевые аргументы:\n{kwargs}"
+    asyncio.run(send_log_message(message))
+
