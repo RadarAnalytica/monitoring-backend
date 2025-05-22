@@ -13,7 +13,7 @@ from celery_main import celery_app
 from settings import logger
 
 
-@celery_app.task(name="process_city", time_limit=3600 * 6)
+@celery_app.task(name="process_city", time_limit=3600 * 8)
 def process_city(city, date_, requests, batch_no, test):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")
