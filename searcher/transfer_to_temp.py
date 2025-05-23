@@ -88,7 +88,7 @@ FROM
     client.close()
 
 
-dates = list(range(1, 25))
+dates = list(range(1, 20))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
@@ -96,7 +96,7 @@ for i_ in dates:
     left = 1
     right = 370000000
     if i_ == 24:
-        left = 324000001
+        left = 284999997
     transfer(left, right, 3000000, 1, i_)
     time.sleep(5)
 
