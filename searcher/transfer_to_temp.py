@@ -95,7 +95,7 @@ print(dates[0], "-", dates[-1])
 for i_ in dates:
     left = 1
     right = 370000000
-    if i_ == 24:
+    if i_ == 19:
         left = 284999997
     transfer(left, right, 3000000, 1, i_)
     time.sleep(5)
