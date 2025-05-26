@@ -24,8 +24,11 @@ async def get_r_data_q(
         if r is None:
             await http_queue.put(r)
             break
+        page = r[0]
+        query = r[1]
         await get_r_data(
-            r=r,
+            r=query,
+            page=page,
             city=city,
             date=date,
             http_session=http_session,
@@ -48,12 +51,13 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
             timeout=5,
         )
     except ValueError:
-        x = {"products": []}
+        x = {"data": {"products": []}}
     return x
 
 
 async def get_r_data(
     r,
+    page,
     city,
     date,
     http_session,
@@ -61,38 +65,30 @@ async def get_r_data(
     preset_queue=None,
     query_history_queue=None,
     today_date=None,
+    limit=300
 ):
     count = 0
     while count <= 3:
         try:
-            full_res = []
-            tasks = [
-                asyncio.create_task(
-                    try_except_query_data(
+            result = await try_except_query_data(
                         query_string=r[1],
                         dest=city[1],
-                        limit=300,
-                        page=i,
+                        limit=limit,
+                        page=page,
                         rqa=3,
                         http_session=http_session,
                     )
-                )
-                for i in range(1, 5)
-            ]
-            result = await asyncio.gather(*tasks)
-            for res in result:
-                full_res.extend(res.get("data").get("products", []))
-            if not full_res:
-                full_res = []
+            full_res = result.get("data", dict()).get("products", [])
             request_products = []
+            page_increment = (page - 1) * limit
             for i, p in enumerate(full_res, 1):
                 if not p.get("id"):
                     continue
                 log = p.get("log", {})
-                brand_id = abs(p.get("brandId", 0))
-                subject_id = abs(p.get("subjectId", 0))
-                supplier_id = abs(p.get("supplierId", 0))
-                natural_place = log.get("position", 0)
+                brand_id = abs(p.get("brandId", 0) or 0)
+                subject_id = abs(p.get("subjectId", 0) or 0)
+                supplier_id = abs(p.get("supplierId", 0) or 0)
+                natural_place = log.get("position", 0) or 0
                 if natural_place > 65535:
                     natural_place = 65535
                 cpm = log.get("cpm", 0)
@@ -104,7 +100,7 @@ async def get_r_data(
                         city[0],
                         date[0],
                         r[0],
-                        i,
+                        i + page_increment,
                         log.get("tp", "z"),
                         natural_place,
                         cpm,
@@ -113,9 +109,9 @@ async def get_r_data(
                         supplier_id,
                     )
                 )
-            if preset_queue:
+            if page == 1 and preset_queue:
                 preset = (
-                    result[0]
+                    result
                     .get("metadata", dict())
                     .get("catalog_value", "")
                     .replace("preset=", "")
@@ -123,15 +119,15 @@ async def get_r_data(
                 try:
                     preset = int(preset) if preset else None
                     norm_query = (
-                        result[0].get("metadata", dict()).get("normquery", None)
+                        result.get("metadata", dict()).get("normquery", None)
                     )
                 except (ValueError, TypeError):
                     preset = None
                     norm_query = None
                 if preset and norm_query:
                     await preset_queue.put([(preset, norm_query, r[0])])
-            if query_history_queue:
-                total = result[0].get("data", dict()).get("total", 0)
+            if page == 1 and query_history_queue:
+                total = result.get("data", dict()).get("total", 0)
                 if total:
                     await query_history_queue.put([(r[0], today_date, total)])
             await db_queue.put(request_products)
@@ -157,7 +153,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
         query_history_queue = asyncio.Queue(2)
         preset_queue = asyncio.Queue(2)
     db_queue = asyncio.Queue(2)
-    http_queue = asyncio.Queue(3)
+    http_queue = asyncio.Queue(15)
     logger.info("Запросы есть")
     async with ClientSession() as http_session:
         async with get_async_connection() as client:
@@ -212,13 +208,15 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         today_date=today_date,
                     )
                 )
-                for _ in range(3)
+                for _ in range(12)
             ]
             counter = 0
             while requests_list:
                 try:
                     counter += 1
-                    await http_queue.put(requests_list.pop(0))
+                    query = requests_list.pop(0)
+                    for i in range(1, 5):
+                        await http_queue.put((i, query))
                     if not (counter % 1000):
                         logger.info(
                             f"Осталось запросов в батче {request_batch_no}: {len(requests_list)}"
@@ -266,3 +264,23 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
 #         f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
 #         f"Выполнено за: {delta // 60 // 60} часов, {delta // 60} минут"
 #     )
+"""INSERT INTO product_data_temp(wb_id, date, size, warehouse, price, basic_price, quantity, orders, supplier_id, subject_id, brand_id, root_id)
+SELECT
+    pd.wb_id,
+    pd.date,
+    pd.size,
+    pd.warehouse,
+    pd.price,
+    pd.basic_price,
+    pd.quantity,
+    pd.orders,
+    COALESCE(sp.id, pd.supplier_id) AS supplier_id,
+    COALESCE(sub.id, pd.subject_id) AS subject_id,
+    COALESCE(br.id, pd.brand_id) AS brand_id,
+    COALESCE(rt.id, pd.root_id) AS root_id
+FROM product_data AS pd
+LEFT OUTER JOIN supplier_product AS sp ON pd.wb_id = sp.wb_id
+LEFT OUTER JOIN subject_product AS sub ON pd.wb_id = sub.wb_id
+LEFT OUTER JOIN brand_product AS br ON pd.wb_id = br.product_id
+LEFT OUTER JOIN root_product AS rt ON pd.wb_id = rt.wb_id;
+"""
