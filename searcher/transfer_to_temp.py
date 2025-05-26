@@ -59,7 +59,7 @@ FROM
             id,
             product_id
         FROM
-            brand_product
+            brand_product FINAL 
         WHERE
             product_id BETWEEN {i} AND {i + step - 1}
     ) AS bp ON bp.product_id = rp.product
@@ -68,7 +68,7 @@ FROM
             id,
             wb_id
         FROM
-            subject_product
+            subject_product FINAL
         WHERE
             wb_id BETWEEN {i} AND {i + step - 1}
     ) AS sp ON sp.wb_id = rp.product
@@ -77,7 +77,7 @@ FROM
             id,
             wb_id
         FROM
-            supplier_product
+            supplier_product FINAL 
         WHERE
             wb_id BETWEEN {i} AND {i + step - 1}
     ) AS spp ON spp.wb_id = rp.product"""
@@ -88,14 +88,14 @@ FROM
     client.close()
 
 
-dates = list(range(1, 20))
+dates = list(range(1, 18))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
 for i_ in dates:
     left = 1
     right = 370000000
-    if i_ == 19:
+    if i_ == 17:
         left = 284999997
     transfer(left, right, 3000000, 1, i_)
     time.sleep(5)
