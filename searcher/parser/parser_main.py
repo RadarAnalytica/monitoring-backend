@@ -264,23 +264,23 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
 #         f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
 #         f"Выполнено за: {delta // 60 // 60} часов, {delta // 60} минут"
 #     )
-"""INSERT INTO product_data_temp(wb_id, date, size, warehouse, price, basic_price, quantity, orders, supplier_id, subject_id, brand_id, root_id)
-SELECT
-    pd.wb_id,
-    pd.date,
-    pd.size,
-    pd.warehouse,
-    pd.price,
-    pd.basic_price,
-    pd.quantity,
-    pd.orders,
-    COALESCE(sp.id, pd.supplier_id) AS supplier_id,
-    COALESCE(sub.id, pd.subject_id) AS subject_id,
-    COALESCE(br.id, pd.brand_id) AS brand_id,
-    COALESCE(rt.id, pd.root_id) AS root_id
-FROM product_data AS pd
-LEFT OUTER JOIN supplier_product AS sp ON pd.wb_id = sp.wb_id
-LEFT OUTER JOIN subject_product AS sub ON pd.wb_id = sub.wb_id
-LEFT OUTER JOIN brand_product AS br ON pd.wb_id = br.product_id
-LEFT OUTER JOIN root_product AS rt ON pd.wb_id = rt.wb_id;
-"""
+# """INSERT INTO product_data_temp(wb_id, date, size, warehouse, price, basic_price, quantity, orders, supplier_id, subject_id, brand_id, root_id)
+# SELECT
+#     pd.wb_id,
+#     pd.date,
+#     pd.size,
+#     pd.warehouse,
+#     pd.price,
+#     pd.basic_price,
+#     pd.quantity,
+#     pd.orders,
+#     COALESCE(sp.id, pd.supplier_id) AS supplier_id,
+#     COALESCE(sub.id, pd.subject_id) AS subject_id,
+#     COALESCE(br.id, pd.brand_id) AS brand_id,
+#     COALESCE(rt.id, pd.root_id) AS root_id
+# FROM product_data AS pd
+# LEFT OUTER JOIN supplier_product AS sp ON pd.wb_id = sp.wb_id
+# LEFT OUTER JOIN subject_product AS sub ON pd.wb_id = sub.wb_id
+# LEFT OUTER JOIN brand_product AS br ON pd.wb_id = br.product_id
+# LEFT OUTER JOIN root_product AS rt ON pd.wb_id = rt.wb_id;
+# """
