@@ -96,7 +96,7 @@ for i_ in dates:
     left = 1
     right = 370000000
     if i_ == 17:
-        left = 284999997
+        left = 305712506
     transfer(left, right, 3000000, 1, i_)
     time.sleep(5)
 
