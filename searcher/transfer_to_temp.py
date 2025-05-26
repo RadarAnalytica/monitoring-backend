@@ -88,15 +88,13 @@ FROM
     client.close()
 
 
-dates = list(range(1, 18))
+dates = list(range(1, 10))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
 for i_ in dates:
     left = 1
-    right = 370000000
-    if i_ == 17:
-        left = 305712506
+    right = 350000000
     transfer(left, right, 3000000, 1, i_)
     time.sleep(5)
 
