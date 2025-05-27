@@ -4,99 +4,32 @@ import clickhouse_connect
 from settings import CLICKHOUSE_CONFING, logger
 
 
-def transfer(l, r, step, city, date):
+def transfer(date):
     client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
-    logger.info(f"CITY {city}, DATE {date}")
-    for i in range(l, r, step):
-        logger.info(f"Batch {i}")
-        client.command(
-            f"""INSERT INTO
-    update_request_product(
-        product,
-        city,
-        date,
-        query,
-        place,
-        advert,
-        natural_place,
-        cpm,
-        brand_id,
-        subject_id,
-        supplier_id
-    )
+    logger.info(f"DATE {date}")
+    client.command(
+            f"""INSERT INTO radar.supplier_aggregates
 SELECT
-    rp.product,
-    rp.city,
-    rp.date,
-    rp.query,
-    rp.place,
-    rp.advert,
-    rp.natural_place,
-    rp.cpm,
-    coalesce(bp.id, 0),
-    coalesce(sp.id, 0),
-    coalesce(spp.id, 0)
-FROM
-    (
-        SELECT
-            product,
-            city,
-            date,
-            query,
-            place,
-            advert,
-            natural_place,
-            cpm
-        FROM
-            request_product
-        WHERE
-            city = {city}
-            AND date = {date}
-            AND product BETWEEN {i} AND {i + step - 1}
-    ) AS rp
-    LEFT OUTER JOIN (
-        SELECT
-            id,
-            product_id
-        FROM
-            brand_product FINAL 
-        WHERE
-            product_id BETWEEN {i} AND {i + step - 1}
-    ) AS bp ON bp.product_id = rp.product
-    LEFT OUTER JOIN (
-        SELECT
-            id,
-            wb_id
-        FROM
-            subject_product FINAL
-        WHERE
-            wb_id BETWEEN {i} AND {i + step - 1}
-    ) AS sp ON sp.wb_id = rp.product
-    LEFT OUTER JOIN (
-        SELECT
-            id,
-            wb_id
-        FROM
-            supplier_product FINAL 
-        WHERE
-            wb_id BETWEEN {i} AND {i + step - 1}
-    ) AS spp ON spp.wb_id = rp.product"""
+    date,
+    supplier_id,
+    avgState(place) AS place_avg_state,
+    sumState(cpm) AS cpm_sum_state,
+    sumState(if(advert = 'b', cpm, 0)) AS cpm_sum_b_state,
+    sumState(if(advert = 'c', cpm, 0)) AS cpm_sum_c_state,
+    avgState(if(cpm > 0, toNullable(cpm), NULL)) AS cpm_avg_state,
+    avgState(if(advert = 'b', toNullable(cpm), NULL)) AS cpm_avg_b_state,
+    avgState(if(advert = 'c', toNullable(cpm), NULL)) AS cpm_avg_c_state,
+    uniqExactState(product) AS unique_products_state
+FROM radar.request_product where city = 1 and date = {date}
+GROUP BY date, supplier_id;"""
         )
-        logger.info("SLEEPING")
-        time.sleep(5)
-        logger.info("WOKE UP")
     client.close()
 
 
-dates = list(range(1, 10))
+dates = list(range(1, 111))
 dates.sort(reverse=True)
 print(dates[0], "-", dates[-1])
 
-for i_ in dates:
-    left = 1
-    right = 390000000
-    if i_ == 9:
-        left = 344439647
-    transfer(left, right, 3000000, 1, i_)
+for i in dates:
     time.sleep(5)
-
+    transfer(i)
