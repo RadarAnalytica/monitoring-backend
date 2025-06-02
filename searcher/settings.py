@@ -39,7 +39,7 @@ POSTGRES_CONFIG = {
     "port": getenv("PG_PORT", "5432"),
 }
 
-CLICKHOUSE_CONFING = {
+CLICKHOUSE_CONFIG = {
     "host": getenv("CLICKHOUSE_CONTAINER_NAME", "localhost"),
     "username": getenv("CLICKHOUSE_USER", "default"),
     "password": getenv("CLICKHOUSE_PASSWORD", ""),

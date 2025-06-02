@@ -3,7 +3,7 @@ import clickhouse_connect
 from clickhouse_connect.driver.asyncclient import AsyncClient
 from copy import deepcopy
 
-from settings import CLICKHOUSE_CONFING
+from settings import CLICKHOUSE_CONFIG
 
 
 class AsyncSession:
@@ -24,7 +24,7 @@ class AsyncSession:
 
 @asynccontextmanager
 async def get_async_connection(**kwargs) -> AsyncClient:
-    session = AsyncSession(CLICKHOUSE_CONFING, **kwargs)
+    session = AsyncSession(CLICKHOUSE_CONFIG, **kwargs)
     async with session as client:
         yield client
 
@@ -44,6 +44,6 @@ class SyncSession:
 
 @contextmanager
 def get_sync_connection():
-    session = SyncSession(CLICKHOUSE_CONFING)
+    session = SyncSession(CLICKHOUSE_CONFIG)
     with session as client:
         yield client
