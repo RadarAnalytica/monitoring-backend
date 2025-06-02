@@ -16,7 +16,7 @@ def make_radar_header(
 ):
     ws.title = sheet_title
     today = date.today()
-    month_start = today.replace(day=1)
+    month_start = today.replace(day=1, month=5)
     img = Image(BASE_DIR / "static" / "icon.png")
 
     img.height = 120
