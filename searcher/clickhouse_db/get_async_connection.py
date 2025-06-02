@@ -1,17 +1,9 @@
 from contextlib import asynccontextmanager, contextmanager
 import clickhouse_connect
 from clickhouse_connect.driver.asyncclient import AsyncClient
-from clickhouse_connect.driver.client import Client
 from copy import deepcopy
 
 from settings import CLICKHOUSE_CONFING
-
-
-@asynccontextmanager
-async def get_async_connection(**kwargs) -> AsyncClient:
-    session = AsyncSession(CLICKHOUSE_CONFING, **kwargs)
-    async with session as client:
-        yield client
 
 
 class AsyncSession:
@@ -30,10 +22,10 @@ class AsyncSession:
         await self.client.close()
 
 
-@contextmanager
-def get_sync_connection():
-    session = SyncSession(CLICKHOUSE_CONFING)
-    with session as client:
+@asynccontextmanager
+async def get_async_connection(**kwargs) -> AsyncClient:
+    session = AsyncSession(CLICKHOUSE_CONFING, **kwargs)
+    async with session as client:
         yield client
 
 
@@ -48,3 +40,10 @@ class SyncSession:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.client.close()
+
+
+@contextmanager
+def get_sync_connection():
+    session = SyncSession(CLICKHOUSE_CONFING)
+    with session as client:
+        yield client
