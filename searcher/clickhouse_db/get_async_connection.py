@@ -23,7 +23,7 @@ class AsyncSession:
 
 
 @asynccontextmanager
-async def get_async_connection(**kwargs) -> AsyncClient:
+async def get_async_connection(**kwargs):
     session = AsyncSession(CLICKHOUSE_CONFIG, **kwargs)
     async with session as client:
         yield client

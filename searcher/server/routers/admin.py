@@ -14,7 +14,7 @@ async def get_advert_download(date_: date_type):
     Выгрузка трендовых запросов
     """
     try:
-        excel_stream = await get_report_download_bytes()
+        excel_stream = await get_report_download_bytes(date_=date_)
         today = datetime.now()
         return StreamingResponse(
             excel_stream,
