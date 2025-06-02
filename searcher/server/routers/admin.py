@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
-from datetime import datetime
+from datetime import datetime, date as date_type
 from urllib.parse import quote
 from server.funcs.get_trends_report import get_report_download_bytes, MONTH_NAMES
 from server.funcs.get_wb_id_external_report import get_external_report_download_bytes
@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/trends")
-async def get_advert_download():
+async def get_advert_download(date_: date_type):
     """
     Выгрузка трендовых запросов
     """
@@ -30,7 +30,7 @@ async def get_advert_download():
 
 
 @router.get("/wb_id_trends")
-async def get_advert_download():
+async def get_advert_download(date_: date_type):
     """
     Выгрузка топ 50 товаров
     """

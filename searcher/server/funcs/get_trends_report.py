@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date
+from datetime import date, timedelta
 from io import BytesIO
 from json import JSONDecodeError
 
@@ -87,13 +87,13 @@ async def get_report_data(http_session: ClientSession, query_string):
     return total, subject
 
 
-async def get_report_dataset():
+async def get_report_dataset(date_: str|date):
     stmt = r"""SELECT r.query, 
         rfn.fs, 
         round(rfn.growth, 2), 
         round(rfn60.growth, 2), 
         round(rfn90.growth, 2) 
-    FROM request as r 
+    FROM (select * from request final where r.quantity > 10000 and not NOT match(r.query, '^[\s]*[0-9]+[\s]*$')) as r 
     JOIN (
         SELECT 
             rf1.query_id, 
@@ -106,8 +106,9 @@ async def get_report_dataset():
             FROM 
                 request_frequency 
             WHERE 
-                date >= today() - 29 
+                date >= %(v1)s - 29 
             GROUP BY query_id
+            having sum(frequency) >= 10000
         ) as rf1 
         JOIN (
             SELECT 
@@ -115,8 +116,9 @@ async def get_report_dataset():
                 sum(frequency) as fs 
             FROM request_frequency 
             WHERE 
-                date BETWEEN today() - 59 AND today() - 30 
+                date BETWEEN %(v1)s - 59 AND %(v1)s - 30 
             GROUP BY query_id
+            having sum(frequency) >= 20000
         ) as rf2 
         ON rf1.query_id = rf2.query_id 
         ORDER BY growth DESC
@@ -134,9 +136,10 @@ async def get_report_dataset():
             FROM 
                 request_frequency 
             WHERE 
-                date >= today() - 59 
+                date >= %(v1)s - 59 
             GROUP BY 
                 query_id
+            having sum(frequency) >= 30000
         ) as rf3 
         JOIN (
             SELECT 
@@ -145,7 +148,7 @@ async def get_report_dataset():
             FROM 
                 request_frequency 
             WHERE 
-                date BETWEEN today() - 119 AND today() - 60 
+                date BETWEEN %(v1)s - 119 AND %(v1)s - 60 
             GROUP BY query_id
         ) as rf4 ON rf3.query_id = rf4.query_id 
         ORDER BY growth DESC
@@ -161,7 +164,7 @@ async def get_report_dataset():
                 sum(frequency) as fs 
             FROM 
                 request_frequency 
-            WHERE date >= today() - 89 GROUP BY query_id
+            WHERE date >= %(v1)s - 89 GROUP BY query_id
         ) as rf5 
         JOIN (
             SELECT 
@@ -170,7 +173,7 @@ async def get_report_dataset():
             FROM 
                 request_frequency 
             WHERE 
-                date BETWEEN today() - 179 AND today() - 90 
+                date BETWEEN %(v1)s - 179 AND %(v1)s - 90 
             GROUP BY query_id
         ) as rf6 ON rf5.query_id = rf6.query_id 
         ORDER BY 
@@ -189,7 +192,7 @@ async def get_report_dataset():
     ORDER BY 
         rfn.fs DESC LIMIT 500"""
     async with get_async_connection() as client:
-        q = await client.query(stmt)
+        q = await client.query(stmt, parameters={"v1": date_})
         result = list(q.result_rows)
     dataset = []
     async with ClientSession() as http_session:
@@ -224,8 +227,8 @@ async def get_report_dataset():
     return dataset
 
 
-def create_file_from_dataset(dataset: list[tuple]):
-    today = date.today()
+def create_file_from_dataset(date_, dataset: list[tuple]):
+    today = date_
     wb = Workbook()
     ws = wb.active
     make_radar_header(
@@ -288,15 +291,15 @@ def create_file_from_dataset(dataset: list[tuple]):
     return excel_stream
 
 
-async def get_report_download_bytes():
-    dataset = await get_report_dataset()
-    file = create_file_from_dataset(dataset=dataset)
+async def get_report_download_bytes(date_: date):
+    dataset = await get_report_dataset(date_=date_)
+    file = create_file_from_dataset(date_=date_, dataset=dataset)
     return file
 
 
 def test():
     test_data = [(1, 1, 1, 1, 1, 1, 1, 1)]
-    f = create_file_from_dataset(test_data)
+    f = create_file_from_dataset(date_=date.today() - timedelta(days=2), dataset=test_data)
     with open("test.xlsx", "wb") as file:
         file.write(f.read())
 

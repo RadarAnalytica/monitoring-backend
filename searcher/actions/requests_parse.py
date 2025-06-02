@@ -9,6 +9,7 @@ from parser.get_init_data import (
     get_requests_data,
 )
 from parser.parser_main import get_city_result
+from parser.optimize_tables import optimize_table_final, optimize_request_product_partition
 from celery_main import celery_app
 from settings import logger
 
@@ -64,3 +65,13 @@ def fire_requests(city_no, test):
     for i, r_batch in enumerate(request_batches, 1):
         if r_batch:
             process_city.delay(city, today_date, r_batch, i, test)
+
+
+@celery_app.task(name="optimize_table", time_limit=3600 * 2)
+def optimize_table(table_name):
+    asyncio.run(optimize_table_final(table_name=table_name))
+
+
+@celery_app.task(name="optimize_request_product", time_limit=3600 * 2)
+def optimize_request_product():
+    asyncio.run(optimize_request_product_partition())
