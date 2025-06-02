@@ -108,7 +108,6 @@ async def get_report_dataset(date_: str|date):
             WHERE 
                 date >= %(v1)s - 29 
             GROUP BY query_id
-            having sum(frequency) >= 10000
         ) as rf1 
         JOIN (
             SELECT 
@@ -118,7 +117,6 @@ async def get_report_dataset(date_: str|date):
             WHERE 
                 date BETWEEN %(v1)s - 59 AND %(v1)s - 30 
             GROUP BY query_id
-            having sum(frequency) >= 20000
         ) as rf2 
         ON rf1.query_id = rf2.query_id 
         ORDER BY growth DESC
@@ -139,7 +137,6 @@ async def get_report_dataset(date_: str|date):
                 date >= %(v1)s - 59 
             GROUP BY 
                 query_id
-            having sum(frequency) >= 30000
         ) as rf3 
         JOIN (
             SELECT 
