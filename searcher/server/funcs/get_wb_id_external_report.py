@@ -23,7 +23,7 @@ async def get_valid_products(products_list: list[int]):
     return result
 
 
-async def get_report_dataset():
+async def get_report_dataset(date_):
     stmt = r"""SELECT r.query, 
         rfn.fs,
         rfn.diff,
@@ -200,8 +200,8 @@ def create_file_from_dataset(dataset: list[tuple]):
     return excel_stream
 
 
-async def get_external_report_download_bytes():
-    dataset = await get_report_dataset()
+async def get_external_report_download_bytes(date_):
+    dataset = await get_report_dataset(date_=date_)
     file = create_file_from_dataset(dataset=dataset)
     return file
 

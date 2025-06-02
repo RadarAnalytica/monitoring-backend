@@ -35,7 +35,7 @@ async def get_advert_download(date_: date_type):
     Выгрузка топ 50 товаров
     """
     try:
-        excel_stream = await get_external_report_download_bytes()
+        excel_stream = await get_external_report_download_bytes(date_=date_)
         today = datetime.now()
         return StreamingResponse(
             excel_stream,
