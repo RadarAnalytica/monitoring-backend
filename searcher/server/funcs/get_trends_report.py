@@ -93,7 +93,7 @@ async def get_report_dataset(date_: str|date):
         round(rfn.growth, 2), 
         round(rfn60.growth, 2), 
         round(rfn90.growth, 2) 
-    FROM (select * from request final where quantity > 10000 and not NOT match(query, '^[\s]*[0-9]+[\s]*$')) as r 
+    FROM (select * from request final where quantity > 10000 and NOT match(query, '^[\s]*[0-9]+[\s]*$')) as r 
     JOIN (
         SELECT 
             rf1.query_id, 
@@ -176,11 +176,7 @@ async def get_report_dataset(date_: str|date):
         ORDER BY 
             growth DESC
     ) as rfn90 ON rfn90.query_id = r.id 
-    WHERE 
-        r.quantity > 10000 
-    AND 
-        NOT match(r.query, '^[\s]*[0-9]+[\s]*$') 
-    AND
+    WHERE
         rfn.growth >= 30
     AND
         rfn60.growth >= 30

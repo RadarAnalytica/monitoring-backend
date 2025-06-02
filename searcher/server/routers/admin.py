@@ -15,7 +15,7 @@ async def get_advert_download(date_: date_type):
     """
     try:
         excel_stream = await get_report_download_bytes(date_=date_)
-        today = datetime.now()
+        today = date_
         return StreamingResponse(
             excel_stream,
             media_type="application/vnd.ms-excel",
