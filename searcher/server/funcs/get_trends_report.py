@@ -106,7 +106,7 @@ async def get_report_dataset(date_: str|date):
             FROM 
                 request_frequency 
             WHERE 
-                date >= %(v1)s - 29 
+                date >= toDate(%(v1)s) - 29 
             GROUP BY query_id
         ) as rf1 
         JOIN (
@@ -115,7 +115,7 @@ async def get_report_dataset(date_: str|date):
                 sum(frequency) as fs 
             FROM request_frequency 
             WHERE 
-                date BETWEEN %(v1)s - 59 AND %(v1)s - 30 
+                date BETWEEN toDate(%(v1)s) - 59 AND toDate(%(v1)s) - 30 
             GROUP BY query_id
         ) as rf2 
         ON rf1.query_id = rf2.query_id 
@@ -134,7 +134,7 @@ async def get_report_dataset(date_: str|date):
             FROM 
                 request_frequency 
             WHERE 
-                date >= %(v1)s - 59 
+                date >= toDate(%(v1)s) - 59 
             GROUP BY 
                 query_id
         ) as rf3 
@@ -145,7 +145,7 @@ async def get_report_dataset(date_: str|date):
             FROM 
                 request_frequency 
             WHERE 
-                date BETWEEN %(v1)s - 119 AND %(v1)s - 60 
+                date BETWEEN toDate(%(v1)s) - 119 AND toDate(%(v1)s) - 60 
             GROUP BY query_id
         ) as rf4 ON rf3.query_id = rf4.query_id 
         ORDER BY growth DESC
@@ -161,7 +161,7 @@ async def get_report_dataset(date_: str|date):
                 sum(frequency) as fs 
             FROM 
                 request_frequency 
-            WHERE date >= %(v1)s - 89 GROUP BY query_id
+            WHERE date >= toDate(%(v1)s) - 89 GROUP BY query_id
         ) as rf5 
         JOIN (
             SELECT 
@@ -170,7 +170,7 @@ async def get_report_dataset(date_: str|date):
             FROM 
                 request_frequency 
             WHERE 
-                date BETWEEN %(v1)s - 179 AND %(v1)s - 90 
+                date BETWEEN toDate(%(v1)s) - 179 AND toDate(%(v1)s) - 90 
             GROUP BY query_id
         ) as rf6 ON rf5.query_id = rf6.query_id 
         ORDER BY 
