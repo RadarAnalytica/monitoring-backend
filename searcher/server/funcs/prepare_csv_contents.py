@@ -119,10 +119,11 @@ async def recount_request_frequency(rows, client):
             start_date = new_date - timedelta(days=29)
             new_freq = month_frequency - prev_query_sum
             avg_new_freq = new_freq // 30
-            for i in range(30):
-                frequency_rows.append(
-                    (query_id, avg_new_freq, start_date + timedelta(days=i))
-                )
+            if avg_new_freq > 0:
+                for i in range(30):
+                    frequency_rows.append(
+                        (query_id, avg_new_freq, start_date + timedelta(days=i))
+                    )
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return frequency_rows

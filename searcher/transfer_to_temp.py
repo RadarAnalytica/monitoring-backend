@@ -1,11 +1,11 @@
 import time
 
 import clickhouse_connect
-from settings import CLICKHOUSE_CONFING, logger
+from settings import CLICKHOUSE_CONFIG, logger
 
 
 def transfer(date):
-    client = clickhouse_connect.get_client(**CLICKHOUSE_CONFING)
+    client = clickhouse_connect.get_client(**CLICKHOUSE_CONFIG)
     logger.info(f"DATE {date}")
     client.command(
             f"""INSERT INTO radar.brand_aggregates
@@ -26,10 +26,10 @@ GROUP BY date, brand_id;"""
     client.close()
 
 
-dates = list(range(1, 126))
-dates.sort(reverse=True)
-print(dates[0], "-", dates[-1])
-
-for i in dates:
-    time.sleep(5)
-    transfer(i)
+# dates = list(range(1, 126))
+# dates.sort(reverse=True)
+# print(dates[0], "-", dates[-1])
+#
+# for i in dates:
+#     time.sleep(5)
+#     transfer(i)
