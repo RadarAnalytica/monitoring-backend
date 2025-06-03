@@ -128,8 +128,10 @@ async def get_r_data(
                     await preset_queue.put([(preset, norm_query, r[0])])
             if page == 1 and query_history_queue:
                 total = result.get("data", dict()).get("total", 0)
+                top_product = full_res[0]
+                priority = top_product.get("subjectId", 0)
                 if total:
-                    await query_history_queue.put([(r[0], today_date, total)])
+                    await query_history_queue.put([(r[0], today_date, total, priority)])
             await db_queue.put(request_products)
             return
         except Exception as e:
@@ -191,7 +193,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                     save_to_db(
                         queue=query_history_queue,
                         table="query_history",
-                        fields=["query", "date", "total_products"],
+                        fields=["query", "date", "total_products", "priority"],
                         client=client,
                     )
                 )
