@@ -52,7 +52,7 @@ async def prepare_request_frequency(rows, client):
     for i in range(300):
         queries_parts.append(queries_ids[i * step : (step * i) + step])
     query_1 = f"""SELECT query_id, sum(frequency) 
-            FROM request_frequency
+            FROM request_frequency_test
             WHERE query_id IN %(v1)s 
             AND date BETWEEN '{str(start_week)}' AND '{str(end_week)}'
             GROUP BY query_id"""
