@@ -26,7 +26,7 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     error_rows = []
     new_query_scaler = 1
     for row in contents:
-        query = str(row[0]).strip().lower()
+        query = str(row[0]).strip().lower().replace('\ufeff', '')
         try:
             query_id = queries_dict.get(query)
             if not query_id:
@@ -149,7 +149,7 @@ async def prepare_update_month_csv_contents(contents: list[tuple[str, int]], fil
     error_rows = []
     new_query_scaler = 1
     for row in contents:
-        query = str(row[0]).strip().lower()
+        query = str(row[0]).strip().lower().replace('\ufeff', '')
         try:
             query_id = queries_dict.get(query)
             if not query_id:

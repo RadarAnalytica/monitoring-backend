@@ -18,7 +18,7 @@ async def upload_request_frequency_worker(
     requests_slice: list[list[int, int, datetime]], client
 ):
     await client.insert(
-        "request_frequency",
+        "request_frequency_test",
         requests_slice,
         column_names=["query_id", "frequency", "date"],
     )
@@ -74,11 +74,11 @@ async def recount_requests_csv_bg(requests_data: list, new_requests: list):
     async with get_async_connection() as client:
         if new_requests:
             await upload_requests_worker(requests_slice=new_requests, client=client)
+            logger.info("Requests uploaded")
         slice_1 = requests_data[:250000]
         slice_2 = requests_data[250000:500000]
         slice_3 = requests_data[500000:750000]
         slice_4 = requests_data[750000:]
-        logger.info("Requests uploaded")
         frequency_rows_1 = await recount_request_frequency(slice_1, client)
         if frequency_rows_1:
             await update_test_request_frequency_worker(frequency_rows_1, client)
