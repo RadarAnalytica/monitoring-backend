@@ -85,3 +85,81 @@ async def prepare_request_frequency(rows, client):
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return frequency_rows
+
+
+async def recount_request_frequency(rows, client):
+    frequency_rows = []
+    queries_ids = tuple(sorted([row[0] for row in rows]))
+    queries_parts = []
+    step = 1000
+    new_date = rows[0][3].date()
+    start_month = new_date - timedelta(days=29)
+    end_month = new_date
+    for i in range(300):
+        queries_parts.append(queries_ids[i * step : (step * i) + step])
+    query_1 = f"""SELECT query_id, sum(frequency) 
+            FROM request_frequency_test
+            WHERE query_id IN %(v1)s 
+            AND date BETWEEN '{str(start_month)}' AND '{str(end_month)}'
+            GROUP BY query_id"""
+    queries_frequency = dict()
+    print("getting query ids")
+    for queries_part in queries_parts:
+        if not queries_part:
+            continue
+        params = {"v1": queries_part}
+        query_ids_query = await client.query(query_1, parameters=params)
+        query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
+        queries_frequency.update(query_ids_temp)
+    for row in rows:
+        query_id = int(row[0])
+        month_frequency = int(row[2])
+        try:
+            prev_query_sum = queries_frequency.get(query_id, 0)
+            start_date = new_date - timedelta(days=29)
+            new_freq = month_frequency - prev_query_sum
+            avg_new_freq = new_freq // 30
+            for i in range(30):
+                frequency_rows.append(
+                    (query_id, avg_new_freq, start_date + timedelta(days=i))
+                )
+        except (ValueError, TypeError, IndexError):
+            logger.error("SHIT REQUESTS OMGGGG")
+    return frequency_rows
+
+
+async def prepare_update_month_csv_contents(contents: list[tuple[str, int]], filename: str):
+    if not "месяц" in filename:
+        raise ValueError("фигня из под коня")
+    file_date = date.fromisoformat(filename.lower().replace(".csv", "").replace("месяц", "").strip())
+    now_date = datetime(
+        year=file_date.year,
+        month=file_date.month,
+        day=file_date.day,
+        hour=1,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    max_query_id = await get_requests_max_id()
+    queries_dict = await get_requests_id_download_data()
+    requests_data = []
+    new_requests = []
+    error_rows = []
+    new_query_scaler = 1
+    for row in contents:
+        query = str(row[0]).strip().lower()
+        try:
+            query_id = queries_dict.get(query)
+            if not query_id:
+                query_id = max_query_id + new_query_scaler
+                new_query_scaler += 1
+                new_requests.append((query_id, query, row[1] // 4, now_date))
+            requests_data.append((query_id, query, row[1], now_date))
+        except (ValueError, TypeError, IndexError):
+            error_rows.append(row)
+    logger.info("Data prepared")
+    if len(requests_data) < 750000:
+        raise ValueError
+    return requests_data, error_rows, new_requests
+
