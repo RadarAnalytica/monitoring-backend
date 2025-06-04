@@ -25,6 +25,7 @@ async def upload_csv(
         contents = [
             tuple(row) for row in pd.read_csv(file.file, encoding="utf-8-sig", header=None).itertuples(index=False)
         ]
+        contents.reverse()
         try:
             requests_data, error_rows = await prepare_csv_contents(
                 contents, filename=file.filename
