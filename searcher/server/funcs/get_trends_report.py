@@ -106,7 +106,7 @@ async def get_report_dataset(date_: str|date):
             FROM 
                 request_frequency 
             WHERE 
-                date >= toDate(%(v1)s) - 29 
+                date BETWEEN toDate(%(v1)s) - 29 and toDate(%(v1)s)
             GROUP BY query_id
         ) as rf1 
         JOIN (
