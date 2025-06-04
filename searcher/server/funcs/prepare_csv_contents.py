@@ -7,6 +7,13 @@ from parser.get_init_data import (
     get_request_frequency_download_data_new,
 )
 from settings import logger
+import unicodedata
+
+
+def strip_invisible(s):
+    return ''.join(
+        c for c in s if not unicodedata.category(c).startswith('Cf')
+    )
 
 
 async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
@@ -26,7 +33,7 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     error_rows = []
     new_query_scaler = 1
     for row in contents:
-        query = str(row[0]).strip().lower().replace('\ufeff', '')
+        query = strip_invisible(str(row[0]).strip().lower())
         try:
             query_id = queries_dict.get(query)
             if not query_id:
