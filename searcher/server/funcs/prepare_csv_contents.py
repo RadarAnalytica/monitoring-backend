@@ -23,7 +23,7 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
         month=file_date.month,
         day=file_date.day,
         hour=1,
-        minute=1,
+        minute=2,
         second=0,
         microsecond=0,
     )
