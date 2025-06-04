@@ -156,7 +156,7 @@ async def prepare_update_month_csv_contents(contents: list[tuple[str, int]], fil
     error_rows = []
     new_query_scaler = 1
     for row in contents:
-        query = str(row[0]).strip().lower().replace('\ufeff', '')
+        query = strip_invisible(str(row[0]).strip().lower())
         try:
             query_id = queries_dict.get(query)
             if not query_id:

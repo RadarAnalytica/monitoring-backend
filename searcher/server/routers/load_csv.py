@@ -54,7 +54,7 @@ async def upload_csv_correction(
         return JSONResponse(status_code=403, content="Unauthorized")
     try:
         contents = [
-            tuple(row) for row in pd.read_csv(file.file).itertuples(index=False)
+            tuple(row) for row in pd.read_csv(file.file, encoding="utf-8-sig", header=None).itertuples(index=False)
         ]
         try:
             requests_data, error_rows, new_requests = await prepare_update_month_csv_contents(
