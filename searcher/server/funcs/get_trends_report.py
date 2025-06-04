@@ -189,22 +189,22 @@ async def get_report_dataset(date_: str|date):
         result = list(q.result_rows)
     dataset = []
     async with ClientSession() as http_session:
-        queries = [row[0] for row in result]
-        tasks = [
-            asyncio.create_task(
-                get_report_data(http_session=http_session, query_string=query)
-            )
-            for query in queries
-        ]
-        t_and_p = await asyncio.gather(*tasks)
+        # queries = [row[0] for row in result]
+        # tasks = [
+        #     asyncio.create_task(
+        #         get_report_data(http_session=http_session, query_string=query)
+        #     )
+        #     for query in queries
+        # ]
+        # t_and_p = await asyncio.gather(*tasks)
         subjects_dict = await get_today_subjects_dict(http_session=http_session)
-        for row, tp_row in zip(result, t_and_p):
+        for row in result:
             query = row[0]
             frequency = row[1]
             growth_30 = row[2]
             growth_60 = row[3]
             growth_90 = row[4]
-            total, priority = tp_row
+            total, priority = 1, 1
             dataset.append(
                 (
                     query,
