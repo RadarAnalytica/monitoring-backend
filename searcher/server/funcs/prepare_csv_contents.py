@@ -42,7 +42,6 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
                 if not query_id:
                     query_id = max_query_id + new_query_scaler
                     new_query_scaler += 1
-                if not subject_id:
                     subject_id = await get_query_prio_subject(http_session=http_session, query_string=query)
                 requests_data.append((query_id, query, row[1], subject_id, now_date))
             except (ValueError, TypeError, IndexError):
