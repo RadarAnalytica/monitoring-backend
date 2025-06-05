@@ -68,7 +68,11 @@ async def get_queries_subjects(queries_slice: list[tuple[str, int]]):
                 fields=["query_id", "subject_id"],
                 client=client,
             ))
+            counter = 0
             while queries_slice:
+                counter += 1
+                if counter % 100 == 0:
+                    logger.info(f"REQUESTS {counter} BATCH")
                 item = queries_slice.pop(0)
                 await http_queue.put(item)
 
