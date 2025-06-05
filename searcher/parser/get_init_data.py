@@ -29,6 +29,7 @@ async def get_requests_data():
 
 
 async def get_requests_id_download_data():
+    logger.info("GETTING ALL QUERIES IDS")
     async with get_async_connection() as client:
         query = f"""SELECT query, id FROM request FINAL ORDER BY id;"""
         q = await client.query(query)

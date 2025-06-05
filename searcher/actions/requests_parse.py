@@ -109,6 +109,7 @@ def fire_requests_subject():
     batch_size = 2500000
     for r_id in range(0, len(requests) + batch_size, batch_size):
         request_batches.append(requests[r_id : r_id + batch_size])
+    del requests
     for r_batch in request_batches:
         if r_batch:
             process_request_batch.delay(r_batch)
