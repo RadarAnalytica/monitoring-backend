@@ -104,7 +104,7 @@ async def prepare_request_frequency(rows, client):
                 sum(if(date between '{str(days_59)}' and '{str(new_date)}', frequency, 0)) as freq_new_60,
                 sum(if(date between '{str(days_59)}' and '{str(days_30)}', frequency, 0)) as freq_old_30,
                 sum(if(date between '{str(days_29)}' and '{str(new_date)}', frequency, 0)) as freq_new_30)
-            FROM request_frequency_test
+            FROM request_frequency
             WHERE query_id IN %(v1)s 
             AND date BETWEEN '{str(days_179)}' AND '{new_date}'
             GROUP BY query_id"""
@@ -164,7 +164,7 @@ async def recount_request_frequency(rows, client):
     for i in range(300):
         queries_parts.append(queries_ids[i * step : (step * i) + step])
     query_1 = f"""SELECT query_id, sum(frequency) 
-            FROM request_frequency_test
+            FROM request_frequency
             WHERE query_id IN %(v1)s 
             AND date BETWEEN '{str(start_month)}' AND '{str(end_month)}'
             GROUP BY query_id"""

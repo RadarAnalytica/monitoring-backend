@@ -18,7 +18,7 @@ async def upload_request_frequency_worker(
     requests_slice: list[list[int, int, datetime]], client
 ):
     await client.insert(
-        "request_frequency_test",
+        "request_frequency",
         requests_slice,
         column_names=["query_id", "frequency", "g30", "g60", "g90", "date"],
     )
