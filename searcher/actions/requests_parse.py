@@ -6,8 +6,9 @@ from parser.get_init_data import (
     get_cities_data,
     get_dates_data,
     write_new_date,
-    get_requests_data,
+    get_requests_data, get_requests_id_download_data,
 )
+from parser.get_query_subject import get_queries_subjects
 from parser.parser_main import get_city_result
 from parser.optimize_tables import optimize_table_final, optimize_request_product_partition
 from celery_main import celery_app
@@ -75,3 +76,39 @@ def optimize_table(table_name):
 @celery_app.task(name="optimize_request_product", time_limit=3600 * 2)
 def optimize_request_product():
     asyncio.run(optimize_request_product_partition())
+
+
+
+@celery_app.task(name="process_request_batch", time_limit=3600 * 8)
+def process_request_batch(requests_slice):
+    start_time = datetime.now()
+    logger.info(f"Вход в search subjects")
+    try:
+        asyncio.run(
+            get_queries_subjects(
+                queries_slice=requests_slice
+            )
+        )
+        end_time = datetime.now()
+        delta = (end_time - start_time).seconds
+        logger.info(
+            f"Старт парса: {start_time.strftime('%H:%M %d.%m.%Y')}\n"
+            f"Завершение парса: {end_time.strftime('%H:%M %d.%m.%Y')}\n"
+            f"Выполнено за: {delta // 60 // 60} часов, {delta // 60 % 60} минут"
+        )
+    except SoftTimeLimitExceeded:
+        logger.info(f"Превышен лимит времени")
+
+
+
+@celery_app.task(name="fire_request_subject")
+def fire_requests_subject():
+    requests = asyncio.run(get_requests_id_download_data())
+    requests = list(requests.items())
+    request_batches = []
+    batch_size = 2500000
+    for r_id in range(0, len(requests) + batch_size, batch_size):
+        request_batches.append(requests[r_id : r_id + batch_size])
+    for r_batch in request_batches:
+        if r_batch:
+            process_request_batch.delay(r_batch)
