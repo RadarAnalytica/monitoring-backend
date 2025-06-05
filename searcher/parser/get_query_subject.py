@@ -54,15 +54,15 @@ async def save_to_db(
 
 
 async def get_queries_subjects(left, right):
-    http_queue = asyncio.Queue(10)
-    save_queue = asyncio.Queue(10)
+    http_queue = asyncio.Queue(20)
+    save_queue = asyncio.Queue(20)
     async with ClientSession() as http_session:
         http_tasks = [
             asyncio.create_task(http_worker(http_session=http_session, http_queue=http_queue, save_queue=save_queue))
             for _ in range(10)
         ]
         async with get_async_connection() as client:
-            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND NOT match(query, '^[\s]*[0-9]{{5,}}[\s]*$')")
+            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND subject_id = 0 ORDER BY id")
             queries_slice = list(q.result_rows)
             save_db_task = asyncio.create_task(save_to_db(
                 queue=save_queue,
