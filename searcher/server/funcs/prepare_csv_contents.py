@@ -6,7 +6,9 @@ from parser.get_init_data import (
     get_requests_max_id,
     get_request_frequency_download_data_new,
 )
+from parser.get_query_subject import get_query_prio_subject
 from settings import logger
+from aiohttp import ClientSession
 import unicodedata
 
 
@@ -32,16 +34,19 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     requests_data = []
     error_rows = []
     new_query_scaler = 1
-    for row in contents:
-        query = strip_invisible(str(row[0]).strip().lower())
-        try:
-            query_id = queries_dict.get(query)
-            if not query_id:
-                query_id = max_query_id + new_query_scaler
-                new_query_scaler += 1
-            requests_data.append((query_id, query, row[1], now_date))
-        except (ValueError, TypeError, IndexError):
-            error_rows.append(row)
+    async with ClientSession() as http_session:
+        for row in contents:
+            query = strip_invisible(str(row[0]).strip().lower())
+            try:
+                query_id, subject_id = queries_dict.get(query, (0, 0))
+                if not query_id:
+                    query_id = max_query_id + new_query_scaler
+                    new_query_scaler += 1
+                if not subject_id:
+                    subject_id = await get_query_prio_subject(http_session=http_session, query_string=query)
+                requests_data.append((query_id, query, row[1], subject_id, now_date))
+            except (ValueError, TypeError, IndexError):
+                error_rows.append(row)
     logger.info("Data prepared")
     if len(requests_data) < 750000:
         raise ValueError
@@ -53,15 +58,31 @@ async def prepare_request_frequency(rows, client):
     queries_ids = tuple(sorted([row[0] for row in rows]))
     queries_parts = []
     step = 1000
-    new_date = rows[0][3].date()
+    new_date: date = rows[0][3].date()
     start_week = new_date - timedelta(days=6)
     end_week = new_date - timedelta(days=1)
+    days_179 = new_date - timedelta(days=179)
+    days_119 = new_date - timedelta(days=119)
+    days_90 = new_date - timedelta(days=90)
+    days_89 = new_date - timedelta(days=89)
+    days_60 = new_date - timedelta(days=60)
+    days_59 = new_date - timedelta(days=59)
+    days_30 = new_date - timedelta(days=30)
+    days_29 = new_date - timedelta(days=29)
     for i in range(300):
         queries_parts.append(queries_ids[i * step : (step * i) + step])
-    query_1 = f"""SELECT query_id, sum(frequency) 
+    query_1 = f"""SELECT 
+                query_id, 
+                (sum(if(date between '{str(start_week)}' and '{str(end_week)}', frequency, 0)) as freq_last,
+                sum(if(date between '{str(days_179)}' and '{str(days_90)}', frequency, 0)) as freq_old_90,
+                sum(if(date between '{str(days_89)}' and '{str(new_date)}', frequency, 0)) as freq_new_90,
+                sum(if(date between '{str(days_119)}' and '{str(days_60)}', frequency, 0)) as freq_old_60,
+                sum(if(date between '{str(days_59)}' and '{str(new_date)}', frequency, 0)) as freq_new_60,
+                sum(if(date between '{str(days_59)}' and '{str(days_30)}', frequency, 0)) as freq_old_30,
+                sum(if(date between '{str(days_29)}' and '{str(new_date)}', frequency, 0)) as freq_new_30)
             FROM request_frequency_test
             WHERE query_id IN %(v1)s 
-            AND date BETWEEN '{str(start_week)}' AND '{str(end_week)}'
+            AND date BETWEEN '{str(days_179)}' AND '{new_date}'
             GROUP BY query_id"""
     queries_frequency = dict()
     print("getting query ids")
@@ -76,19 +97,33 @@ async def prepare_request_frequency(rows, client):
         query_id = int(row[0])
         week_frequency = int(row[2])
         try:
-            prev_query_sum = queries_frequency.get(query_id)
+            (
+                prev_query_sum,
+                freq_old_90,
+                freq_new_90,
+                freq_old_60,
+                freq_new_60,
+                freq_old_30,
+                freq_new_30
+            ) = queries_frequency.get(query_id, (0, 0, 0, 0, 0, 0, 0))
             if not prev_query_sum:
                 start_date = new_date - timedelta(days=6)
                 avg_freq = week_frequency // 7
                 for i in range(7):
                     frequency_rows.append(
-                        (query_id, avg_freq, start_date + timedelta(days=i))
+                        (query_id, avg_freq, 100, 100, 100, start_date + timedelta(days=i))
                     )
             else:
                 new_freq = week_frequency - prev_query_sum
                 if new_freq < 0:
-                    new_freq = 0
-                frequency_rows.append((query_id, new_freq, new_date))
+                    new_freq = week_frequency // 12
+                freq_new_30 += new_freq
+                freq_new_60 += new_freq
+                freq_new_90 += new_freq
+                g30 = int((freq_new_30 - freq_old_30) // freq_old_30)
+                g60 = int((freq_new_60 - freq_old_60) // freq_old_60)
+                g90 = int((freq_new_90 - freq_old_90) // freq_old_90)
+                frequency_rows.append((query_id, new_freq, g30, g60, g90, new_date))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return frequency_rows
@@ -155,17 +190,20 @@ async def prepare_update_month_csv_contents(contents: list[tuple[str, int]], fil
     new_requests = []
     error_rows = []
     new_query_scaler = 1
-    for row in contents:
-        query = strip_invisible(str(row[0]).strip().lower())
-        try:
-            query_id = queries_dict.get(query)
-            if not query_id:
-                query_id = max_query_id + new_query_scaler
-                new_query_scaler += 1
-                new_requests.append((query_id, query, row[1] // 4, now_date))
-            requests_data.append((query_id, query, row[1], now_date))
-        except (ValueError, TypeError, IndexError):
-            error_rows.append(row)
+    async with ClientSession() as http_session:
+        for row in contents:
+            query = strip_invisible(str(row[0]).strip().lower())
+            try:
+                query_id, subject_id = queries_dict.get(query, (0, 0))
+                if not query_id:
+                    query_id = max_query_id + new_query_scaler
+                    new_query_scaler += 1
+                    new_requests.append((query_id, query, row[1] // 4, now_date))
+                if not subject_id:
+                    subject_id = await get_query_prio_subject(http_session=http_session, query_string=query)
+                requests_data.append((query_id, query, row[1], now_date))
+            except (ValueError, TypeError, IndexError):
+                error_rows.append(row)
     logger.info("Data prepared")
     if len(requests_data) < 750000:
         raise ValueError

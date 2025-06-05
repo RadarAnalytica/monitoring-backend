@@ -82,3 +82,18 @@ async def get_queries_subjects(left, right):
             await save_queue.put(None)
             await asyncio.gather(*http_tasks, save_db_task)
     logger.info("Slice request done")
+
+
+async def get_query_prio_subject(http_session: ClientSession, query_string: str):
+    subject_id = 0
+    try:
+        item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3,
+                                       dest=-1257786, rqa=3)
+        if item_result:
+            products = item_result.get("data", dict()).get("products", [])
+            if products:
+                first = products[0]
+                subject_id = first.get("subjectId", 0)
+    except:
+        return subject_id
+    return subject_id

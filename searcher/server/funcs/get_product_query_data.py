@@ -229,7 +229,7 @@ async def get_ex_ad(product_id):
     past_period_start = this_period - timedelta(days=30)
     past_period_end = this_period - timedelta(days=1)
     params = {
-        "v1": str(product_id),
+        "v1": fr"match(query, '^[\\s!#]*{product_id}[\\s!#]*$')",
     }
     async with get_async_connection() as client:
         client: AsyncClient

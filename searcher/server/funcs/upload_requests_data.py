@@ -9,7 +9,7 @@ async def upload_requests_worker(
     requests_slice: list[list[int, str, int, datetime]], client
 ):
     await client.insert(
-        "request", requests_slice, column_names=["id", "query", "quantity", "updated"]
+        "request", requests_slice, column_names=["id", "query", "quantity", "subject_id", "updated"]
     )
     logger.info("Start of part DB renewal - request")
 
@@ -20,7 +20,7 @@ async def upload_request_frequency_worker(
     await client.insert(
         "request_frequency_test",
         requests_slice,
-        column_names=["query_id", "frequency", "date"],
+        column_names=["query_id", "frequency", "g30", "g60", "g90", "date"],
     )
     logger.info("Start of part DB renewal - request_frequency")
 
