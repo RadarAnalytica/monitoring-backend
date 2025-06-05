@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, date, timedelta
 
 from parser.get_init_data import (
@@ -17,6 +18,29 @@ def strip_invisible(s):
         c for c in s if not unicodedata.category(c).startswith('Cf')
     )
 
+async def get_missing_queries_subjects_batch(rows, http_session):
+    for row in rows:
+        pass
+
+
+async def get_missing_queries_subjects_rows(rows, http_session):
+    queries = [row[0] for row in rows]
+    step = len(queries) // 40
+    queries_batches = []
+    for i in range(0, len(queries) + step, step):
+        slc = queries[i: i + step]
+        if slc:
+            queries_batches.append(slc)
+    del queries
+    tasks = [
+        asyncio.create_task(get_missing_queries_subjects_batch(rows=batch, http_session=http_session))
+        for batch in queries_batches
+    ]
+    tasks_result = await asyncio.gather(*tasks)
+    result = []
+    for rows in tasks_result:
+        result.extend(rows)
+    return result
 
 async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     file_date = date.fromisoformat(filename.strip().replace(".csv", ""))
@@ -42,6 +66,7 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
                 if not query_id:
                     query_id = max_query_id + new_query_scaler
                     new_query_scaler += 1
+                    logger.info(f"GETTING SUBJECT FOR {query}")
                     subject_id = await get_query_prio_subject(http_session=http_session, query_string=query)
                 requests_data.append((query_id, query, row[1], subject_id, now_date))
             except (ValueError, TypeError, IndexError):
@@ -57,7 +82,7 @@ async def prepare_request_frequency(rows, client):
     queries_ids = tuple(sorted([row[0] for row in rows]))
     queries_parts = []
     step = 1000
-    new_date: date = rows[0][3].date()
+    new_date: date = rows[0][4].date()
     start_week = new_date - timedelta(days=6)
     end_week = new_date - timedelta(days=1)
     days_179 = new_date - timedelta(days=179)
