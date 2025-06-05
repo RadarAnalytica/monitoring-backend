@@ -144,9 +144,9 @@ async def prepare_request_frequency(rows, client):
                 freq_new_30 += new_freq
                 freq_new_60 += new_freq
                 freq_new_90 += new_freq
-                g30 = int((freq_new_30 - freq_old_30) // freq_old_30)
-                g60 = int((freq_new_60 - freq_old_60) // freq_old_60)
-                g90 = int((freq_new_90 - freq_old_90) // freq_old_90)
+                g30 = int((freq_new_30 - freq_old_30) // freq_old_30) if freq_old_30 else 100
+                g60 = int((freq_new_60 - freq_old_60) // freq_old_60) if freq_old_60 else 100
+                g90 = int((freq_new_90 - freq_old_90) // freq_old_90) if freq_old_90 else 100
                 frequency_rows.append((query_id, new_freq, g30, g60, g90, new_date))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
