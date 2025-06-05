@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
@@ -30,9 +30,11 @@ async def get_requests_data():
 
 async def get_requests_id_download_data():
     logger.info("GETTING ALL QUERIES IDS")
+    start = datetime.now()
     async with get_async_connection() as client:
         query = f"""SELECT query, id FROM request FINAL ORDER BY id;"""
         q = await client.query(query)
+    logger.info(f"QUERIES IDS ENDED IN {(datetime.now() - start).total_seconds()}")
     return dict(q.result_rows)
 
 

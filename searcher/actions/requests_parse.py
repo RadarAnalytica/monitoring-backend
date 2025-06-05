@@ -104,12 +104,13 @@ def process_request_batch(requests_slice):
 @celery_app.task(name="fire_request_subject")
 def fire_requests_subject():
     requests = asyncio.run(get_requests_id_download_data())
-    requests = list(requests.items())
+    requests_list = list(requests.items())
+    del requests
     request_batches = []
     batch_size = 2500000
-    for r_id in range(0, len(requests) + batch_size, batch_size):
-        request_batches.append(requests[r_id : r_id + batch_size])
-    del requests
+    for r_id in range(0, len(requests_list) + batch_size, batch_size):
+        request_batches.append(requests_list[r_id : r_id + batch_size])
+    del requests_list
     while request_batches:
         batch = request_batches.pop(0)
         if batch:
