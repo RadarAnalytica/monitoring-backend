@@ -62,7 +62,7 @@ async def get_queries_subjects(left, right):
             for _ in range(10)
         ]
         async with get_async_connection() as client:
-            q = await client.query(f"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND NOT match(query, '^[\s]*[0-9]{{5,}}[\s]*$')")
+            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND NOT match(query, '^[\s]*[0-9]{{5,}}[\s]*$')")
             queries_slice = list(q.result_rows)
             save_db_task = asyncio.create_task(save_to_db(
                 queue=save_queue,
