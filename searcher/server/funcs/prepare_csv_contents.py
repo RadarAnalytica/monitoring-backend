@@ -79,6 +79,7 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
 
 async def prepare_request_frequency(rows, client):
     frequency_rows = []
+    growth_rows = []
     queries_ids = tuple(sorted([row[0] for row in rows]))
     queries_parts = []
     step = 1000
@@ -120,6 +121,7 @@ async def prepare_request_frequency(rows, client):
     for row in rows:
         query_id = int(row[0])
         week_frequency = int(row[2])
+        subject_id = int(row[3])
         try:
             (
                 prev_query_sum,
@@ -135,22 +137,28 @@ async def prepare_request_frequency(rows, client):
                 avg_freq = week_frequency // 7
                 for i in range(7):
                     frequency_rows.append(
-                        (query_id, avg_freq, 100, 100, 100, start_date + timedelta(days=i))
+                        (query_id, avg_freq, start_date + timedelta(days=i))
                     )
+                sum_30 = week_frequency
+                g30 = 100
+                g60 = 100
+                g90 = 100
             else:
                 new_freq = week_frequency - prev_query_sum
                 if new_freq < 0:
-                    new_freq = week_frequency // 12
+                    new_freq = week_frequency // 14
                 freq_new_30 += new_freq
                 freq_new_60 += new_freq
                 freq_new_90 += new_freq
-                g30 = int((freq_new_30 - freq_old_30) // freq_old_30) if freq_old_30 else 100
-                g60 = int((freq_new_60 - freq_old_60) // freq_old_60) if freq_old_60 else 100
-                g90 = int((freq_new_90 - freq_old_90) // freq_old_90) if freq_old_90 else 100
-                frequency_rows.append((query_id, new_freq, g30, g60, g90, new_date))
+                g30 = int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100
+                g60 = int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100
+                g90 = int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100
+                sum_30 = freq_new_30
+                frequency_rows.append((query_id, new_freq, new_date))
+            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, subject_id))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
-    return frequency_rows
+    return frequency_rows, growth_rows
 
 
 async def recount_request_frequency(rows, client):

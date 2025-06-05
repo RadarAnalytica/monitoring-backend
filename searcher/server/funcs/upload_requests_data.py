@@ -20,9 +20,19 @@ async def upload_request_frequency_worker(
     await client.insert(
         "request_frequency",
         requests_slice,
-        column_names=["query_id", "frequency", "g30", "g60", "g90", "date"],
+        column_names=["query_id", "frequency", "date"],
     )
     logger.info("Start of part DB renewal - request_frequency")
+
+async def upload_request_growth_worker(
+    requests_slice: list[list[int, int, datetime]], client
+):
+    await client.insert(
+        "request_growth",
+        requests_slice,
+        column_names=["query_id", "new_date", "g30", "g60", "g90", "sum_30", "subject_id"],
+    )
+    logger.info("Start of part DB renewal - request_growth")
 
 
 async def upload_requests_csv_bg(requests_data: list):
@@ -39,21 +49,25 @@ async def upload_requests_csv_bg(requests_data: list):
         await upload_requests_worker(slice_4, client)
         await client.command("OPTIMIZE TABLE request FINAL")
         logger.info("Requests uploaded")
-        frequency_rows_1 = await prepare_request_frequency(slice_1, client)
+        frequency_rows_1, growth_rows_1 = await prepare_request_frequency(slice_1, client)
         if frequency_rows_1:
             await upload_request_frequency_worker(frequency_rows_1, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_1)
         logger.info("Slice 1 ready")
-        frequency_rows_2 = await prepare_request_frequency(slice_2, client)
+        frequency_rows_2, growth_rows_2 = await prepare_request_frequency(slice_2, client)
         if frequency_rows_2:
             await upload_request_frequency_worker(frequency_rows_2, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_2)
         logger.info("Slice 2 ready")
-        frequency_rows_3 = await prepare_request_frequency(slice_3, client)
+        frequency_rows_3, growth_rows_3 = await prepare_request_frequency(slice_3, client)
         if frequency_rows_3:
             await upload_request_frequency_worker(frequency_rows_3, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_3)
         logger.info("Slice 3 ready")
-        frequency_rows_4 = await prepare_request_frequency(slice_4, client)
+        frequency_rows_4, growth_rows_4 = await prepare_request_frequency(slice_4, client)
         if frequency_rows_4:
             await upload_request_frequency_worker(frequency_rows_4, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_4)
         logger.info("Slice 4 ready")
     logger.warning("DB renewal complete")
 
