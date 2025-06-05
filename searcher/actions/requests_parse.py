@@ -80,13 +80,14 @@ def optimize_request_product():
 
 
 @celery_app.task(name="process_request_batch", time_limit=3600 * 8)
-def process_request_batch(requests_slice):
+def process_request_batch(left, right):
     start_time = datetime.now()
     logger.info(f"Вход в search subjects")
     try:
         asyncio.run(
             get_queries_subjects(
-                queries_slice=requests_slice
+                left=left,
+                right=right,
             )
         )
         end_time = datetime.now()
@@ -103,16 +104,8 @@ def process_request_batch(requests_slice):
 
 @celery_app.task(name="fire_request_subject")
 def fire_requests_subject():
-    requests = asyncio.run(get_requests_id_download_data())
-    requests_list = list(requests.items())
-    del requests
-    request_batches = []
-    batch_size = 2500000
-    for r_id in range(0, len(requests_list) + batch_size, batch_size):
-        request_batches.append(requests_list[r_id : r_id + batch_size])
-    del requests_list
-    while request_batches:
-        batch = request_batches.pop(0)
-        if batch:
-            process_request_batch.delay(batch)
-            del batch
+    process_request_batch.delay(0, 2000000)
+    process_request_batch.delay(2000000, 4000000)
+    process_request_batch.delay(4000000, 6000000)
+    process_request_batch.delay(6000000, 8000000)
+    process_request_batch.delay(8000000, 12000000)
