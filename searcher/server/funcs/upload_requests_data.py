@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from clickhouse_db.get_async_connection import get_async_connection
-from server.funcs.prepare_csv_contents import prepare_request_frequency, recount_request_frequency
+from server.funcs.prepare_csv_contents import prepare_request_frequency, recount_request_frequency, get_request_frequency_by_date
 from settings import logger
 
 
@@ -110,3 +110,15 @@ async def recount_requests_csv_bg(requests_data: list, new_requests: list):
             await update_test_request_frequency_worker(frequency_rows_4, client)
         logger.info("Slice 4 ready")
     logger.warning("DB renewal complete")
+
+
+async def recount_growth_by_date(date_: date):
+    logger.info("Recounting growth requests data")
+    async with get_async_connection() as client:
+        await client.command("OPTIMIZE TABLE request FINAL")
+        logger.info("GETTING GROWTH ROWS")
+        growth_rows = await get_request_frequency_by_date(date_=date_, client=client)
+        logger.info("GROWTH ROWS ACQUIRED")
+        await upload_request_growth_worker(client=client, requests_slice=growth_rows)
+    logger.info(f"GROWTH ROWS FOR DATE {date_} UPLOADED ")
+

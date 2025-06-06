@@ -107,7 +107,7 @@ async def prepare_request_frequency(rows, client):
                 sum(if(date between '{str(days_29)}' and '{str(new_date)}', frequency, 0)) as freq_new_30)
             FROM request_frequency
             WHERE query_id IN %(v1)s 
-            AND date BETWEEN '{str(days_179)}' AND '{new_date}'
+            AND date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
             GROUP BY query_id"""
     queries_frequency = dict()
     print("getting query ids")
@@ -240,4 +240,52 @@ async def prepare_update_month_csv_contents(contents: list[tuple[str, int]], fil
     if len(requests_data) < 750000:
         raise ValueError
     return requests_data, error_rows, new_requests
+
+
+async def get_request_frequency_by_date(date_, client):
+    new_date: date = date_
+    days_179 = new_date - timedelta(days=179)
+    days_119 = new_date - timedelta(days=119)
+    days_90 = new_date - timedelta(days=90)
+    days_89 = new_date - timedelta(days=89)
+    days_60 = new_date - timedelta(days=60)
+    days_59 = new_date - timedelta(days=59)
+    days_30 = new_date - timedelta(days=30)
+    days_29 = new_date - timedelta(days=29)
+    stmt = f"""SELECT 
+                rf.query_id,
+                r.subject_id,
+                (sum(if(rf.date between '{str(days_179)}' and '{str(days_90)}', rf.frequency, 0)) as freq_old_90,
+                sum(if(rf.date between '{str(days_89)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_90,
+                sum(if(rf.date between '{str(days_119)}' and '{str(days_60)}', rf.frequency, 0)) as freq_old_60,
+                sum(if(rf.date between '{str(days_59)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_60,
+                sum(if(rf.date between '{str(days_59)}' and '{str(days_30)}', rf.frequency, 0)) as freq_old_30,
+                sum(if(rf.date between '{str(days_29)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_30)
+            FROM request_frequency as rf
+            JOIN request as r on r.id = rf.query_id 
+            WHERE rf.date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
+            GROUP BY query_id"""
+    print("getting query ids")
+    q = await client.query(stmt)
+    growth_rows = []
+    for row in q.result_rows:
+        query_id = int(row[0])
+        subject_id = int(row[1])
+        try:
+            (
+                freq_old_90,
+                freq_new_90,
+                freq_old_60,
+                freq_new_60,
+                freq_old_30,
+                freq_new_30
+            ) = row[2]
+            sum_30 = freq_new_30
+            g30 = (int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100) if sum_30 > 0 else 0
+            g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_30 > 0 else 0
+            g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_30 > 0 else 0
+            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, subject_id))
+        except (ValueError, TypeError, IndexError):
+            logger.error("SHIT REQUESTS OMGGGG")
+    return growth_rows
 

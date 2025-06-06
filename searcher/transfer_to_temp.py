@@ -1,35 +1,16 @@
-import time
+import asyncio
+from datetime import date, timedelta
 
-import clickhouse_connect
-from settings import CLICKHOUSE_CONFIG, logger
+from server.funcs.upload_requests_data import recount_growth_by_date
+from settings import logger
 
-
-def transfer(date):
-    client = clickhouse_connect.get_client(**CLICKHOUSE_CONFIG)
-    logger.info(f"DATE {date}")
-    client.command(
-            f"""INSERT INTO radar.brand_aggregates
-SELECT
-    date,
-    brand_id,
-    avgState(place) AS place_avg_state,
-    sumState(cpm) AS cpm_sum_state,
-    sumState(if(advert = 'b', cpm, 0)) AS cpm_sum_b_state,
-    sumState(if(advert = 'c', cpm, 0)) AS cpm_sum_c_state,
-    avgState(if(cpm > 0, toNullable(cpm), NULL)) AS cpm_avg_state,
-    avgState(if(advert = 'b', toNullable(cpm), NULL)) AS cpm_avg_b_state,
-    avgState(if(advert = 'c', toNullable(cpm), NULL)) AS cpm_avg_c_state,
-    uniqExactState(product) AS unique_products_state
-FROM radar.request_product where city = 1 and date = {date}
-GROUP BY date, brand_id;"""
-        )
-    client.close()
+async def main():
+    start_date = date(year=2025, month=6, day=3)
+    dates_list = [start_date - timedelta(days=i) for i in range(90)]
+    for d in dates_list:
+        logger.info(f"DATE {d}")
+        await recount_growth_by_date(d)
 
 
-# dates = list(range(1, 126))
-# dates.sort(reverse=True)
-# print(dates[0], "-", dates[-1])
-#
-# for i in dates:
-#     time.sleep(5)
-#     transfer(i)
+if __name__ == '__main__':
+    asyncio.run(main())
