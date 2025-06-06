@@ -177,7 +177,7 @@ async def recount_request_frequency(rows, client):
             AND date BETWEEN '{str(start_month)}' AND '{str(end_month)}'
             GROUP BY query_id"""
     queries_frequency = dict()
-    print("getting query ids")
+    logger.info("getting query ids")
     for queries_part in queries_parts:
         if not queries_part:
             continue
@@ -261,11 +261,10 @@ async def get_request_frequency_by_date(date_, client):
                 sum(if(rf.date between '{str(days_59)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_60,
                 sum(if(rf.date between '{str(days_59)}' and '{str(days_30)}', rf.frequency, 0)) as freq_old_30,
                 sum(if(rf.date between '{str(days_29)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_30)
-            FROM request_frequency as rf
+            FROM (select * from request_frequency where date = {str(new_date)}) as rf
             JOIN request as r on r.id = rf.query_id 
             WHERE rf.date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
             GROUP BY rf.query_id"""
-    print("getting query ids")
     q = await client.query(stmt)
     growth_rows = []
     for row in q.result_rows:
