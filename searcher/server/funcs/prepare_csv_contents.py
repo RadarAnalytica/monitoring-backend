@@ -261,7 +261,7 @@ async def get_request_frequency_by_date(date_, client):
                 sum(if(rf.date between '{str(days_59)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_60,
                 sum(if(rf.date between '{str(days_59)}' and '{str(days_30)}', rf.frequency, 0)) as freq_old_30,
                 sum(if(rf.date between '{str(days_29)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_30)
-            FROM (select * from request_frequency where date = {str(new_date)}) as rf
+            FROM (select * from request_frequency where date = '{str(new_date)}') as rf
             JOIN request as r on r.id = rf.query_id 
             WHERE rf.date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
             GROUP BY rf.query_id"""
