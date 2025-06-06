@@ -264,7 +264,7 @@ async def get_request_frequency_by_date(date_, client):
             FROM request_frequency as rf
             JOIN request as r on r.id = rf.query_id 
             WHERE rf.date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
-            GROUP BY query_id"""
+            GROUP BY rf.query_id"""
     print("getting query ids")
     q = await client.query(stmt)
     growth_rows = []
