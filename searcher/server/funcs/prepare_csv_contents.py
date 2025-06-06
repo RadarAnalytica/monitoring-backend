@@ -254,7 +254,7 @@ async def get_request_frequency_by_date(date_, client):
     days_29 = new_date - timedelta(days=29)
     stmt = f"""SELECT 
                 rf.query_id,
-                r.subject_id,
+                max(r.subject_id),
                 (sum(if(rf.date between '{str(days_179)}' and '{str(days_90)}', rf.frequency, 0)) as freq_old_90,
                 sum(if(rf.date between '{str(days_89)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_90,
                 sum(if(rf.date between '{str(days_119)}' and '{str(days_60)}', rf.frequency, 0)) as freq_old_60,
