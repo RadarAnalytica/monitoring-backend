@@ -5,7 +5,7 @@ from server.funcs.upload_requests_data import recount_growth_by_date
 from settings import logger
 
 async def main():
-    start_date = date(year=2025, month=6, day=1)
+    start_date = date(year=2025, month=5, day=13)
     dates_list = [start_date - timedelta(days=i) for i in range(90)]
     for d in dates_list:
         logger.info(f"DATE {d}")
