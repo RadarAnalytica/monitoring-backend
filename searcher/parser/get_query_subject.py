@@ -17,11 +17,13 @@ async def http_worker(http_session: ClientSession, http_queue: asyncio.Queue, sa
         query_string, query_id = item[0], item[1]
         item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3, dest=-1257786, rqa=3)
         if item_result:
+            total = item_result.get("data", dict()).get("total", 0)
             products = item_result.get("data", dict()).get("products", [])
             if products:
                 first = products[0]
                 subject_id = first.get("subjectId", 0)
-                await save_queue.put((query_id, subject_id))
+                if total or subject_id:
+                    await save_queue.put((query_id, subject_id, total))
 
 
 async def save_to_db(
@@ -67,7 +69,7 @@ async def get_queries_subjects(left, right):
             save_db_task = asyncio.create_task(save_to_db(
                 queue=save_queue,
                 table="request_subject",
-                fields=["query_id", "subject_id"],
+                fields=["query_id", "subject_id", "total_products"],
                 client=client,
             ))
             counter = 0
