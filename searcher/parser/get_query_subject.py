@@ -64,7 +64,7 @@ async def get_queries_subjects(left, right):
             for _ in range(10)
         ]
         async with get_async_connection() as client:
-            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND subject_id = 0 ORDER BY id")
+            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND (subject_id = 0 OR total_products = 0) ORDER BY id")
             queries_slice = list(q.result_rows)
             save_db_task = asyncio.create_task(save_to_db(
                 queue=save_queue,
