@@ -13,7 +13,7 @@ async def http_worker(http_session: ClientSession, http_queue: asyncio.Queue, sa
         item = await http_queue.get()
         if item is None:
             await http_queue.put(None)
-            break
+            return
         query_string, query_id = item[0], item[1]
         item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3, dest=-1257786, rqa=3)
         if item_result:
@@ -81,8 +81,9 @@ async def get_queries_subjects(left, right):
                 await http_queue.put(item)
 
             await http_queue.put(None)
+            await asyncio.gather(*http_tasks)
             await save_queue.put(None)
-            await asyncio.gather(*http_tasks, save_db_task)
+            await save_db_task
     logger.info("Slice request done")
 
 
