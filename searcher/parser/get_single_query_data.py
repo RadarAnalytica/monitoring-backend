@@ -37,7 +37,7 @@ async def get_query_data(
             # logger.critical(f"ОШИБКА, {type(e)}")
             continue
         except client_exceptions.ServerDisconnectedError:
-            counter -= 1
+            logger.info("SERVER DISCONNECT")
             continue
 
     return _data
