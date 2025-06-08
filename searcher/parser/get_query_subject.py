@@ -78,6 +78,7 @@ async def get_queries_subjects(left, right):
                 if counter % 100 == 0:
                     logger.info(f"REQUESTS {counter} BATCH")
                 item = queries_slice.pop(0)
+                logger.info(item)
                 await http_queue.put(item)
 
             await http_queue.put(None)
