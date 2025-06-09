@@ -7,7 +7,7 @@ from parser.get_init_data import (
     get_requests_max_id,
     get_request_frequency_download_data_new,
 )
-from parser.get_query_subject import get_query_prio_subject
+from parser.get_query_subject import get_query_prio_subject, get_query_list_prio_subjects
 from settings import logger
 from aiohttp import ClientSession
 import unicodedata
@@ -57,20 +57,24 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     queries_dict = await get_requests_id_download_data()
     requests_data = []
     error_rows = []
+    new_queries = []
     new_query_scaler = 1
     async with ClientSession() as http_session:
         for row in contents:
             query = strip_invisible(str(row[0]).strip().lower())
             try:
-                query_id, subject_id = queries_dict.get(query, (0, 0))
+                query_id, subject_id, total_products = queries_dict.get(query, (0, 0, 0))
                 if not query_id:
                     query_id = max_query_id + new_query_scaler
                     new_query_scaler += 1
                     logger.info(f"GETTING SUBJECT FOR {query}")
-                    subject_id = await get_query_prio_subject(http_session=http_session, query_string=query)
-                requests_data.append((query_id, query, row[1], subject_id, now_date))
+                    new_queries.append((query_id, query, now_date))
+                else:
+                    requests_data.append((query_id, query, row[1], subject_id, total_products, now_date))
             except (ValueError, TypeError, IndexError):
                 error_rows.append(row)
+        new_queries_meta = await get_query_list_prio_subjects(http_session=http_session, queries=new_queries)
+        requests_data.extend(new_queries_meta)
     logger.info("Data prepared")
     if len(requests_data) < 750000:
         raise ValueError

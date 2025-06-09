@@ -3,6 +3,7 @@ from parser.get_single_query_data import get_query_data
 import asyncio
 import gc
 from clickhouse_db.get_async_connection import get_async_connection
+from datetime import date
 
 from clickhouse_connect.driver import AsyncClient
 from settings import logger
@@ -105,3 +106,33 @@ async def get_query_prio_subject(http_session: ClientSession, query_string: str)
     except:
         return subject_id
     return subject_id
+
+
+async def get_query_prio_subject_and_total(http_session: ClientSession, query_data: tuple[int, str, date]):
+    subject_id = 0
+    query_string = query_data[1]
+    query_id = query_data[0]
+    total_products = 0
+    new_date = query_data[2]
+    try:
+        item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3,
+                                       dest=-1257786, rqa=3)
+        if item_result:
+            products = item_result.get("data", dict()).get("products", [])
+            total_products = item_result.get("data", dict()).get("total", 0)
+            if products:
+                first = products[0]
+                subject_id = first.get("subjectId", 0)
+    except:
+        return query_id, query_string, subject_id, total_products, new_date
+    return query_id, query_string, subject_id, total_products, new_date
+
+
+
+async def get_query_list_prio_subjects(http_session: ClientSession, queries: list[tuple[int, str, date]]):
+    tasks = [
+        asyncio.create_task(get_query_prio_subject_and_total(http_session=http_session, query_data=query_data))
+        for query_data in queries
+    ]
+    result = await asyncio.gather(*tasks)
+    return result
