@@ -87,7 +87,7 @@ async def prepare_request_frequency(rows, client):
     queries_ids = tuple(sorted([row[0] for row in rows]))
     queries_parts = []
     step = 1000
-    new_date: date = rows[0][4].date()
+    new_date: date = rows[0][5].date()
     start_week = new_date - timedelta(days=6)
     end_week = new_date - timedelta(days=1)
     days_179 = new_date - timedelta(days=179)

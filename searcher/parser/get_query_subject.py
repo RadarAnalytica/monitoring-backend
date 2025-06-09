@@ -116,7 +116,7 @@ async def get_query_prio_subject_and_total(http_session: ClientSession, query_da
     new_date = query_data[2]
     try:
         item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3,
-                                       dest=-1257786, rqa=3)
+                                       dest=-1257786, rqa=1 if query_string.isdigit() else 3)
         if item_result:
             products = item_result.get("data", dict()).get("products", [])
             total_products = item_result.get("data", dict()).get("total", 0)

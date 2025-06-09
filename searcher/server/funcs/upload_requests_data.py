@@ -6,16 +6,16 @@ from settings import logger
 
 
 async def upload_requests_worker(
-    requests_slice: list[list[int, str, int, datetime]], client
+    requests_slice: list[list | tuple], client
 ):
     await client.insert(
-        "request", requests_slice, column_names=["id", "query", "quantity", "subject_id", "updated"]
+        "request", requests_slice, column_names=["id", "query", "quantity", "subject_id", "total_products", "updated"]
     )
     logger.info("Start of part DB renewal - request")
 
 
 async def upload_request_frequency_worker(
-    requests_slice: list[list[int, int, datetime]], client
+    requests_slice: list[list | tuple], client
 ):
     await client.insert(
         "request_frequency",
@@ -25,7 +25,7 @@ async def upload_request_frequency_worker(
     logger.info("Start of part DB renewal - request_frequency")
 
 async def upload_request_growth_worker(
-    requests_slice: list[list[int, int, datetime]], client
+    requests_slice: list[list | tuple], client
 ):
     await client.insert(
         "request_growth",
