@@ -61,7 +61,7 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     new_query_scaler = 1
     async with ClientSession() as http_session:
         for row in contents:
-            query = strip_invisible(str(row[0]).strip().lower())
+            query = strip_invisible(str(row[0]).strip('!# ').lower())
             try:
                 query_id, subject_id, total_products = queries_dict.get(query, (0, 0, 0))
                 if not query_id:
