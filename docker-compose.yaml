@@ -35,7 +35,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    entrypoint: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9013", "--workers", "6", "--timeout-keep-alive", "300"]
+    entrypoint:  [
+      "gunicorn",
+      "main:app",
+      "-k", "uvicorn.workers.UvicornWorker",
+      "-b", "0.0.0.0:9013",
+      "--workers", "4",
+      "--timeout", "300"
+    ]
 #
 #  backend_patch:
 #    build:
