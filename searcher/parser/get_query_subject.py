@@ -108,12 +108,13 @@ async def get_query_prio_subject(http_session: ClientSession, query_string: str)
     return subject_id
 
 
-async def get_query_prio_subject_and_total(http_session: ClientSession, query_data: tuple[int, str, date]):
+async def get_query_prio_subject_and_total(http_session: ClientSession, query_data: tuple[int, str, date, int]):
     subject_id = 0
     query_string = query_data[1]
     query_id = query_data[0]
     total_products = 0
     new_date = query_data[2]
+    quantity = query_data[3]
     try:
         item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3,
                                        dest=-1257786, rqa=1 if query_string.isdigit() else 3)
@@ -124,12 +125,12 @@ async def get_query_prio_subject_and_total(http_session: ClientSession, query_da
                 first = products[0]
                 subject_id = first.get("subjectId", 0)
     except:
-        return query_id, query_string, subject_id, total_products, new_date
-    return query_id, query_string, subject_id, total_products, new_date
+        return query_id, query_string, quantity, subject_id, total_products, new_date
+    return query_id, query_string, quantity, subject_id, total_products, new_date
 
 
 
-async def get_query_list_prio_subjects(http_session: ClientSession, queries: list[tuple[int, str, date]]):
+async def get_query_list_prio_subjects(http_session: ClientSession, queries: list[tuple[int, str, date, int]]):
     tasks = [
         asyncio.create_task(get_query_prio_subject_and_total(http_session=http_session, query_data=query_data))
         for query_data in queries

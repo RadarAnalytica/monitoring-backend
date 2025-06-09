@@ -62,15 +62,18 @@ async def prepare_csv_contents(contents: list[tuple[str, int]], filename: str):
     async with ClientSession() as http_session:
         for row in contents:
             query = strip_invisible(str(row[0]).strip().strip('!#').strip().lower())
+            if not query:
+                continue
+            quantity = row[1]
             try:
                 query_id, subject_id, total_products = queries_dict.get(query, (0, 0, 0))
                 if not query_id:
                     query_id = max_query_id + new_query_scaler
                     new_query_scaler += 1
                     logger.info(f"GETTING SUBJECT FOR {query}")
-                    new_queries.append((query_id, query, now_date))
+                    new_queries.append((query_id, query, now_date, quantity))
                 else:
-                    requests_data.append((query_id, query, row[1], subject_id, total_products, now_date))
+                    requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
             except (ValueError, TypeError, IndexError):
                 error_rows.append(row)
         new_queries_meta = await get_query_list_prio_subjects(http_session=http_session, queries=new_queries)
