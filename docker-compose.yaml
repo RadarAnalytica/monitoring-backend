@@ -35,6 +35,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    entrypoint: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9013", "--workers", "6"]
 #
 #  backend_patch:
 #    build:
