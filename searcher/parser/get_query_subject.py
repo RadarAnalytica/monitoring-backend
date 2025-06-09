@@ -14,10 +14,14 @@ async def http_worker(http_session: ClientSession, http_queue: asyncio.Queue, sa
         if item is None:
             await http_queue.put(None)
             return
-        query_string, query_id = item[0], item[1]
+        query_string: str = item[0]
+        query_id = item[1]
         item_result = await get_query_data(http_session=http_session, query_string=query_string, page=1, limit=3, dest=-1257786, rqa=3)
         if item_result:
-            total = item_result.get("data", dict()).get("total", 0)
+            if query_string.isdigit():
+                total = 1
+            else:
+                total = item_result.get("data", dict()).get("total", 0)
             products = item_result.get("data", dict()).get("products", [])
             if products:
                 first = products[0]
@@ -64,7 +68,7 @@ async def get_queries_subjects(left, right):
             for _ in range(10)
         ]
         async with get_async_connection() as client:
-            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND (subject_id = 0 OR total_products = 0) ORDER BY id")
+            q = await client.query(fr"SELECT query, id FROM request FINAL WHERE id BETWEEN {left + 1} AND {right} AND  AND (subject_id = 0 OR total_products = 0) ORDER BY id")
             queries_slice = list(q.result_rows)
             save_db_task = asyncio.create_task(save_to_db(
                 queue=save_queue,
