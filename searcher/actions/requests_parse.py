@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime, date
 import pytz
 from celery.exceptions import SoftTimeLimitExceeded
+
+from parser.collect_subjects import collect_subject_ids_names
 from parser.get_init_data import (
     get_cities_data,
     get_dates_data,
@@ -109,3 +111,8 @@ def fire_requests_subject():
     process_request_batch.delay(4000000, 6000000)
     process_request_batch.delay(6000000, 8000000)
     process_request_batch.delay(8000000, 12000000)
+
+
+@celery_app.task(name="get_today_subjects_dict")
+def get_today_subjects_dict():
+    asyncio.run(collect_subject_ids_names())

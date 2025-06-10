@@ -68,6 +68,10 @@ celery_app.conf.beat_schedule = {
     #     "schedule": crontab(hour="0", minute="1",),
     #     "args": (4,)
     # }
+    "get_today_subjects_dict": {
+        "task": "get_today_subjects_dict",
+        "schedule": crontab(hour="10", minute="40",),
+    },
 }
 
 @signals.task_failure.connect
