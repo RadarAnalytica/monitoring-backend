@@ -126,7 +126,7 @@ async def get_r_data(
                     norm_query = None
                 if preset and norm_query:
                     await preset_queue.put([(preset, norm_query, r[0])])
-            if page == 1 and query_history_queue:
+            if page == 1 and query_history_queue and full_res:
                 total = result.get("data", dict()).get("total", 0)
                 top_product = full_res[0]
                 priority = top_product.get("subjectId", 0)
@@ -210,7 +210,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         today_date=today_date,
                     )
                 )
-                for _ in range(15)
+                for _ in range(5)
             ]
             counter = 0
             while requests_list:
