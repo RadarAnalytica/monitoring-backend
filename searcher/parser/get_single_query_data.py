@@ -7,7 +7,7 @@ from settings import SEARCH_URL, logger
 
 
 async def get_query_data(
-    http_session: ClientSession, query_string, dest, limit, page, rqa=5, timeout=5
+    http_session: ClientSession, query_string, dest, limit, page, rqa=5, timeout=5, upload=False
 ):
     _data = {"data": {"products": []}}
     counter = 0
@@ -34,10 +34,12 @@ async def get_query_data(
                     # logger.critical("response not ok")
                     continue
         except (TypeError, asyncio.TimeoutError) as e:
-            # logger.critical(f"ОШИБКА, {type(e)}")
+            logger.critical(f"ОШИБКА, {type(e)}")
             continue
         except client_exceptions.ServerDisconnectedError:
             logger.info("SERVER DISCONNECT")
+            if not upload:
+                counter -= 1
             continue
 
     return _data
