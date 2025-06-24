@@ -25,15 +25,15 @@ celery_app.conf.beat_schedule = {
     "parse_search_moscow": {
         "task": "fire_requests",
         "schedule": crontab(
-            hour="18",
-            minute="10",
+            hour="20",
+            minute="0",
         ),
         "args": (1, False),
     },
     "optimize_preset": {
         "task": "optimize_table",
         "schedule": crontab(
-            hour="22",
+            hour="5",
             minute="40",
         ),
         "args": ("preset",),
@@ -41,7 +41,7 @@ celery_app.conf.beat_schedule = {
     "optimize_latest_partition": {
         "task": "optimize_request_product",
         "schedule": crontab(
-            hour="23",
+            hour="6",
             minute="40",
         ),
     },
