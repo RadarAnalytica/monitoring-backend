@@ -18,16 +18,22 @@ async def main():
                 left = i
                 right = i + step - 1
                 logger.info(f"LEFT {left}, RIGHT {right}")
-                stmt = f"""INSERT INTO query_products_daily
-                    SELECT
-                        query,
-                        date,
-                        groupUniqArrayState(product) AS products,
-                        countDistinctIfState(product, advert = 'b') AS advert_b_count,
-                        countDistinctIfState(product, advert = 'c') AS advert_c_count
-                    FROM request_product WHERE city = 1 AND date = {d} AND product BETWEEN {left} AND {right}
-                    GROUP BY query, date;
-                """
+                stmt = f"""
+INSERT INTO query_products_daily
+SELECT
+    query,
+    date,
+    groupUniqArrayState(if(place <= 100, product, NULL)) AS products_100,
+    groupUniqArrayState(if(place <= 300, product, NULL)) AS products_300,
+    countDistinctIfState(product, advert = 'b' and place <= 100) AS advert_b_count,
+    countDistinctIfState(product, advert = 'c' and place <= 100) AS advert_c_count,
+    uniqExactState(product) AS products_top_count
+FROM request_product
+WHERE city = 1
+  AND date = {d}
+  AND product BETWEEN {left} AND {right}
+GROUP BY query, date;
+"""
                 await client.command(stmt)
 
 if __name__ == '__main__':
