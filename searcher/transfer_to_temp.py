@@ -9,7 +9,7 @@ async def main():
     step = 50000000
     l = 1
     r = 500000001
-    dates = [i for i in range(151)]
+    dates = [i for i in range(156)]
     dates.reverse()
     async with get_async_connection() as client:
         for d in dates:
