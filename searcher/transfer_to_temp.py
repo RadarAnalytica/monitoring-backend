@@ -22,7 +22,9 @@ async def main():
 SELECT
     query,
     date,
-    groupUniqArrayState(product) AS products
+    groupUniqArrayState(product) AS products,
+    countDistinctIfState(product, advert = 'b') AS advert_b_count,
+    countDistinctIfState(product, advert = 'c') AS advert_c_count
 FROM request_product WHERE city = 1 AND date = {d} AND product BETWEEN {left} AND {right}
 GROUP BY query, date;
 """
