@@ -17,6 +17,7 @@ async def main():
             for i in range(l, r, step):
                 left = i
                 right = i + step - 1
+                logger.info(f"LEFT {left}, RIGHT {right}")
                 stmt = f"""INSERT INTO query_products_daily
 SELECT
     query,
