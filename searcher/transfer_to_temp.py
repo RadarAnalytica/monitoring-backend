@@ -176,9 +176,9 @@ FROM (
             sum(pd.a_orders) AS ord,
             avg(pd.a_price) AS prc,
             coalesce(avgIf(pd.revenue, pd.full_day = 1 AND pd.revenue > 0), 0) AS avg_day_rev,
-            coalesce(avgIf(pd.a_orders, pd.full_day = 1 AND pd.orders > 0), 0) AS avg_day_ord,
+            coalesce(avgIf(pd.a_orders, pd.full_day = 1 AND pd.a_orders > 0), 0) AS avg_day_ord,
             sum(pd.zero_day) * avgIf(pd.revenue, pd.full_day = 1) AS lost_rev,
-            sum(pd.zero_day) * avgIf(pd.orders, pd.full_day = 1) AS lost_ord
+            sum(pd.zero_day) * avgIf(pd.a_orders, pd.full_day = 1) AS lost_ord
         FROM (
             SELECT 
                 wb_id,
@@ -200,7 +200,7 @@ FROM (
                 AND price > 0
             GROUP BY wb_id, date, size
         ) AS pd
-        GROUP BY wb_id, size
+        GROUP BY pd.wb_id, pd.size
     ) AS pdd
     GROUP BY wb_id
 ) AS pdd
