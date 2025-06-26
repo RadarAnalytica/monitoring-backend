@@ -269,13 +269,14 @@ LEFT OUTER JOIN (
             subjects_list = subjects or []
             avg_reviews = round(feedback)
             order_per_review = round(orders_per_feedback)
-            buyout_stmt = """SELECT coalesce(avg(ratio), 0) FROM supplier_history WHERE id IN %(v1)s AND date = %(v2)s"""
+            buyout_stmt = """SELECT coalesce(avg(if(ratio > 0, ratio, NULL)), 0) FROM supplier_history WHERE id IN %(v1)s AND date = %(v2)s"""
             buyout_params = {
                 "v1": suppliers_list,
                 "v2": end_date
             }
             buyout_q = await client.query(buyout_stmt, parameters=buyout_params)
             buyout_percent = buyout_q.result_rows[0][0] if buyout_q.result_rows and buyout_q.result_rows[0] else 0
+            buyout_percent = buyout_percent if not math.isnan(buyout_percent) else 0
             fbo_commission = 0
             fbs_commission = 0
             dbs_commission = 0
