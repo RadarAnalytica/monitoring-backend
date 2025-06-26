@@ -243,7 +243,7 @@ LEFT OUTER JOIN (
             potential_revenue = round(avg_potential_revenue)
             avg_revenue = round(avg_id_rev)
             avg_with_sales_revenue = round(avg_id_rev)
-            avg_daily_revenue = round(avg_daily_rev)
+            avg_daily_revenue = round(avg_daily_rev) if avg_daily_rev != float("nan") else round(avg_potential_revenue / 30)
             lost_revenue_percent = round(lost_revenue * 100 / full_revenue) if full_revenue else 0
             monopoly_percent = round(top_30_revenue * 100 / top_100_revenue) if top_100_revenue else 0
             orders = full_orders
