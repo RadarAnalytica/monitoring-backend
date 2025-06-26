@@ -134,78 +134,88 @@ async def main():
                 "v2": start_date,
                 "v3": end_date
             }
-            top_300_stmt = """select 
-                avg(pdd.id_prc) as avg_price,
-                sum(pdd.id_rev) as full_revenue,
-                avg(pdd.id_rev) as avg_id_rev,
-                sum(pdd.id_ord) as full_orders,
-                sum(pdd.id_lost_rev) as lost_rev,
-                sum(pdd.id_lost_ord) as lost_ord, 
-                median(pdd.id_prc) as median_price, 
-                groupUniqArray(pdd.sup) as suppliers, 
-                groupUniqArray(pdd.sub) as subjects,
-                groupUniqArray(pdd.br) as brands,
-                coalesce(avg(if(pm.feedbacks > 0, pm.feedbacks, NULL)), 0) as feedback,
-                coalesce(avg(if(pm.rating > 0, pm.rating, NULL)), 0) as ratings,
-                coalesce(avg(if(pdd.potential_revenue > 0, pdd.potential_revenue, NULL)), 0) as avg_potential_revenue,
-                coalesce(avg(if(pdd.potential_orders > 0, pdd.potential_orders, NULL)), 0) as avg_potential_orders,
-                avg(id_day_rev) as avg_daily_rev,
-                avg(if(pm.period_feedbacks, pdd.id_ord / pm.period_feedbacks, 0)) as orders_per_feedback
-                
-            from (select 
-                wb_id, 
-                avg(prc) as id_prc, 
-                max(supplier) as sup,
-                max(subject) as sub,
-                max(brand) as br,
-                sum(rev) as id_rev,
-                sum(ord) as id_orc,
-                sum(avg_day_rev) * 30 as potential_revenue,
-                sum(avg_day_ord) * 30 as potential_orders,
-                sum(lost_rev) as id_lost_rev,
-                sum(lost_ord) as id_lost_ord
-                sum(avg_day_rev) as id_day_rev
-            FROM
-            (select
-                pd.wb_id, 
-                pd.size, 
-                max(pd.supplier_id) as supplier, 
-                max(pd.subject_id) as subject,
-                max(pd.brand_id) as brand,
-                sum(pd.revenue) as rev,
-                sum(pd.orders)as ord,
-                avg(pd.price) as prc,
-                coalesce(avg(if(pd.full_day = 1, if(pd.revenue > 0, pd.revenue, NULL), NULL)), 0) as avg_day_rev, 
-                coalesce(avg(if(pd.full_day = 1, if(pd.orders> 0, pd.orders, NULL), NULL)), 0) as avg_day_ord,
-                sum(pd.zero_day) * avg(if(pd.full_day = 1, pd.revenue, NULL)) as lost_rev,
-                sum(pd.zero_day) * avg(if(pd.full_day = 1, pd.orders, NULL)) as lost_ord
-                                
-            from (select 
-            wb_id, 
-            date, 
-            size,
-            max(supplier_id) as supplier_id,
-            max(subject_id) as subject_id,
-            max(brand_id) as brand_id,
-            sum(price * orders) / 100 as revenue, 
-            sum(orders) as orders, 
-            sum(quantity) as quantity, 
-            avg(price) as price,
-            if(sum(quantity) = 0, 1, 0) as zero_day,
-            if(sum(quantity) = 0, 0, 1) as full_day
-            from product_data 
-            where wb_id in %(v1)s 
-            and date between %(v2)s and %(v3)s) and price > 0 group by wb_id, date, size order by wb_id, date, size)
-            group by wb_id, size) as pd group by pd.wb_id) as pdd left outer join (
-            select 
+            top_300_stmt = """SELECT 
+    avg(pdd.id_prc) AS avg_price,
+    sum(pdd.id_rev) AS full_revenue,
+    avg(pdd.id_rev) AS avg_id_rev,
+    sum(pdd.id_ord) AS full_orders,
+    sum(pdd.id_lost_rev) AS lost_rev,
+    sum(pdd.id_lost_ord) AS lost_ord,
+    median(pdd.id_prc) AS median_price,
+    groupUniqArray(pdd.sup) AS suppliers,
+    groupUniqArray(pdd.sub) AS subjects,
+    groupUniqArray(pdd.br) AS brands,
+    coalesce(avg(if(pm.feedbacks > 0, pm.feedbacks, NULL)), 0) AS feedback,
+    coalesce(avg(if(pm.rating > 0, pm.rating, NULL)), 0) AS ratings,
+    coalesce(avg(if(pdd.potential_revenue > 0, pdd.potential_revenue, NULL)), 0) AS avg_potential_revenue,
+    coalesce(avg(if(pdd.potential_orders > 0, pdd.potential_orders, NULL)), 0) AS avg_potential_orders,
+    avg(pdd.id_day_rev) AS avg_daily_rev,
+    avg(if(pm.period_feedbacks, pdd.id_ord / pm.period_feedbacks, 0)) AS orders_per_feedback
+FROM (
+    SELECT 
+        wb_id,
+        avg(prc) AS id_prc,
+        max(supplier) AS sup,
+        max(subject) AS sub,
+        max(brand) AS br,
+        sum(rev) AS id_rev,
+        sum(ord) AS id_ord,
+        sum(avg_day_rev) * 30 AS potential_revenue,
+        sum(avg_day_ord) * 30 AS potential_orders,
+        sum(lost_rev) AS id_lost_rev,
+        sum(lost_ord) AS id_lost_ord,
+        sum(avg_day_rev) AS id_day_rev
+    FROM (
+        SELECT
+            pd.wb_id,
+            pd.size,
+            max(pd.supplier_id) AS supplier,
+            max(pd.subject_id) AS subject,
+            max(pd.brand_id) AS brand,
+            sum(pd.revenue) AS rev,
+            sum(pd.orders) AS ord,
+            avg(pd.price) AS prc,
+            coalesce(avgIf(pd.revenue, pd.full_day = 1 AND pd.revenue > 0), 0) AS avg_day_rev,
+            coalesce(avgIf(pd.orders, pd.full_day = 1 AND pd.orders > 0), 0) AS avg_day_ord,
+            sum(pd.zero_day) * avgIf(pd.revenue, pd.full_day = 1) AS lost_rev,
+            sum(pd.zero_day) * avgIf(pd.orders, pd.full_day = 1) AS lost_ord
+        FROM (
+            SELECT 
                 wb_id,
-                max(rating) as rating,
-                max(root_feedbacks) as feedbacks,
-                max(root_feedbacks) - min(root_feedbacks) as period_feedbacks
-                from product_meta
-                where date between %(v2)s and %(v3)s)
-                and wb_id IN %(v1)s
-            ) as pm on pm.wb_id = pdd.wb_id"""
+                date,
+                size,
+                max(supplier_id) AS supplier_id,
+                max(subject_id) AS subject_id,
+                max(brand_id) AS brand_id,
+                sum(price * orders) / 100 AS revenue,
+                sum(orders) AS orders,
+                sum(quantity) AS quantity,
+                avg(price) AS price,
+                if(sum(quantity) = 0, 1, 0) AS zero_day,
+                if(sum(quantity) = 0, 0, 1) AS full_day
+            FROM product_data
+            WHERE 
+                wb_id IN %(v1)s
+                AND date BETWEEN %(v2)s AND %(v3)s
+                AND price > 0
+            GROUP BY wb_id, date, size
+        ) AS pd
+        GROUP BY wb_id, size
+    ) AS pdd
+    GROUP BY wb_id
+) AS pdd
+LEFT OUTER JOIN (
+    SELECT 
+        wb_id,
+        max(rating) AS rating,
+        max(root_feedbacks) AS feedbacks,
+        max(root_feedbacks) - min(root_feedbacks) AS period_feedbacks
+    FROM product_meta
+    WHERE 
+        date BETWEEN %(v2)s AND %(v3)s
+        AND wb_id IN %(v1)s
+    GROUP BY wb_id
+) AS pm ON pm.wb_id = pdd.wb_id"""
             top_300_q = await client.query(top_300_stmt, parameters=top_300_params)
             top_300_res = list(top_300_q.result_rows)
             top_300_res = top_300_res[0][0] if top_300_res and top_300_res[0] else [0 for _ in range(16)]
