@@ -6,10 +6,10 @@ from server.funcs.upload_requests_data import recount_growth_by_date
 from settings import logger
 
 async def main():
-    step = 25000000
+    step = 20000000
     l = 1
     r = 500000001
-    dates = [i for i in range(156)]
+    dates = [i for i in range(144)]
     dates.reverse()
     async with get_async_connection() as client:
         for d in dates:
