@@ -175,10 +175,10 @@ FROM (
             sum(pd.revenue) AS rev,
             sum(pd.a_orders) AS ord,
             avg(pd.a_price) AS prc,
-            coalesce(avgIf(pd.revenue, pd.full_day = 1 AND pd.revenue > 0), 0) AS avg_day_rev,
-            coalesce(avgIf(pd.a_orders, pd.full_day = 1 AND pd.a_orders > 0), 0) AS avg_day_ord,
-            sum(pd.zero_day) * avgIf(pd.revenue, pd.full_day = 1) AS lost_rev,
-            sum(pd.zero_day) * avgIf(pd.a_orders, pd.full_day = 1) AS lost_ord
+            coalesce(avgIf(pd.revenue, toUInt8(pd.full_day = 1 AND pd.revenue > 0)), 0) AS avg_day_rev,
+            coalesce(avgIf(pd.a_orders, toUInt8(pd.full_day = 1 AND pd.a_orders > 0)), 0) AS avg_day_ord,
+            sum(pd.zero_day) * avgIf(pd.revenue, toUInt8(pd.full_day = 1)) AS lost_rev,
+            sum(pd.zero_day) * avgIf(pd.a_orders, toUInt8(pd.full_day = 1)) AS lost_ord
         FROM (
             SELECT 
                 wb_id,
