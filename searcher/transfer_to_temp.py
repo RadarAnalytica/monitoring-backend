@@ -112,7 +112,7 @@ async def main():
             }
             external_stmt = """SELECT count() FROM request WHERE query IN %(v1)s"""
             external_q = await client.query(external_stmt, parameters=external_params)
-            external_result = external_q.result_rows[0][0] if external_result.result_rows and external_result.result_rows[0] else 0
+            external_result = external_q.result_rows[0][0] if external_q.result_rows and external_q.result_rows[0] else 0
             top_30_params = {
                 "v1": top_30,
                 "v2": start_date,
