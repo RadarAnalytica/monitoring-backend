@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 from datetime import date, timedelta
 
 from clickhouse_db.get_async_connection import get_async_connection
@@ -239,15 +240,15 @@ LEFT OUTER JOIN (
                 orders_per_feedback
              ) = top_300_res
             revenue = round(full_revenue)
-            lost_revenue = round(lost_rev) if lost_rev != float('nan') else 0
+            lost_revenue = round(lost_rev) if not math.isnan(lost_rev) else 0
             potential_revenue = round(avg_potential_revenue)
             avg_revenue = round(avg_id_rev)
             avg_with_sales_revenue = round(avg_id_rev)
-            avg_daily_revenue = round(avg_daily_rev) if avg_daily_rev != float("nan") else round(avg_potential_revenue / 30)
+            avg_daily_revenue = round(avg_daily_rev) if not math.isnan(avg_daily_rev) else round(avg_potential_revenue / 30)
             lost_revenue_percent = round(lost_revenue * 100 / full_revenue) if full_revenue else 0
             monopoly_percent = round(top_30_revenue * 100 / top_100_revenue) if top_100_revenue else 0
             orders = full_orders
-            lost_orders = lost_ord if lost_orders != float("nan") else 0
+            lost_orders = lost_ord if not math.isnan(lost_orders) else 0
             lost_orders_percent = round(lost_orders * 100 / full_orders) if full_orders else 0
             potential_orders = round(avg_potential_orders)
             avg_price = round(avg_price)
