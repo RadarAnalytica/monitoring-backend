@@ -71,7 +71,7 @@ async def main():
             counter += 1
             query_id = i
             subject_id = subject
-            freq_stmt = f"""SELECT sum(if(date >= toDate('{end_date}') - 29, frequency, 0)) AS sum_30, SELECT sum(if(date >= toDate('{end_date}') - 59, frequency, 0)) AS sum_60, SELECT sum(if(date >= toDate('{end_date}') - 89, frequency, 0)) AS sum_90 FROM request_frequency WHERE query_id = {i} AND date BETWEEN toDate('{end_date}') - 89 AND toDate('{end_date}')"""
+            freq_stmt = f"""SELECT sum(if(date >= toDate('{end_date}') - 29, frequency, 0)) AS sum_30, sum(if(date >= toDate('{end_date}') - 59, frequency, 0)) AS sum_60, sum(if(date >= toDate('{end_date}') - 89, frequency, 0)) AS sum_90 FROM request_frequency WHERE query_id = {i} AND date BETWEEN toDate('{end_date}') - 89 AND toDate('{end_date}')"""
             f = await client.query(freq_stmt)
             f_result = list(f.result_rows)[0]
             frequency_30 = f_result[0]
