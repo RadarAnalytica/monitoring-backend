@@ -174,7 +174,7 @@ FROM (
             max(pd.brand_id) AS brand,
             sum(pd.revenue) AS rev,
             sum(pd.orders) AS ord,
-            avg(pd.price) AS prc,
+            avg(pd.a_price) AS prc,
             coalesce(avgIf(pd.revenue, pd.full_day = 1 AND pd.revenue > 0), 0) AS avg_day_rev,
             coalesce(avgIf(pd.orders, pd.full_day = 1 AND pd.orders > 0), 0) AS avg_day_ord,
             sum(pd.zero_day) * avgIf(pd.revenue, pd.full_day = 1) AS lost_rev,
@@ -190,7 +190,7 @@ FROM (
                 sum(price * orders) / 100 AS revenue,
                 sum(orders) AS orders,
                 sum(quantity) AS quantity,
-                avg(price) AS price,
+                avg(price) AS a_price,
                 if(sum(quantity) = 0, 1, 0) AS zero_day,
                 if(sum(quantity) = 0, 0, 1) AS full_day
             FROM product_data
