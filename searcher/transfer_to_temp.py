@@ -218,6 +218,7 @@ LEFT OUTER JOIN (
 ) AS pm ON pm.wb_id = pdd.wb_id"""
             top_300_q = await client.query(top_300_stmt, parameters=top_300_params)
             top_300_res = list(top_300_q.result_rows)
+            print(top_300_res)
             top_300_res = top_300_res[0] if top_300_res and top_300_res[0] else [0 for _ in range(16)]
             (
                 avg_price,
