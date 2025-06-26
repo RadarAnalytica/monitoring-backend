@@ -269,7 +269,7 @@ LEFT OUTER JOIN (
             subjects_list = subjects or []
             avg_reviews = round(feedback)
             order_per_review = round(orders_per_feedback)
-            buyout_stmt = """SELECT coalesce(avg(ratio), 0) FROM suppliers_history WHERE id IN %(v1)s AND date = %(v2)s"""
+            buyout_stmt = """SELECT coalesce(avg(ratio), 0) FROM supplier_history WHERE id IN %(v1)s AND date = %(v2)s"""
             buyout_params = {
                 "v1": suppliers_list,
                 "v2": end_date
