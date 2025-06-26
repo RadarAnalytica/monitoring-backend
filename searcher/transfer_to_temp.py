@@ -150,7 +150,7 @@ async def main():
     coalesce(avg(if(pdd.potential_revenue > 0, pdd.potential_revenue, NULL)), 0) AS avg_potential_revenue,
     coalesce(avg(if(pdd.potential_orders > 0, pdd.potential_orders, NULL)), 0) AS avg_potential_orders,
     avg(pdd.id_day_rev) AS avg_daily_rev,
-    avg(if(pm.period_feedbacks, pdd.id_ord / pm.period_feedbacks, 0)) AS orders_per_feedback
+    avg(if(pm.period_feedbacks > 0, pdd.id_ord / pm.period_feedbacks, 0)) AS orders_per_feedback
 FROM (
     SELECT 
         wb_id,
