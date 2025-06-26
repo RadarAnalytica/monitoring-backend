@@ -96,7 +96,7 @@ async def main():
                 countDistinctMerge(advert_c_count)   AS advert_c_count,
                 uniqExactMerge(products_top_count)   AS products_top_count
             FROM radar.query_products_daily
-            WHERE query = {i} AND date BETWEEN 126 AND 155
+            PREWHERE query = {i} AND date BETWEEN 126 AND 155
             """
             qp = await client.query(qp_stmt)
             qp_result = list(qp.result_rows)[0] if qp.result_rows and qp.result_rows[0] else ([], [], [], 0, 0, 0)
