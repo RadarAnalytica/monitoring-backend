@@ -239,7 +239,7 @@ LEFT OUTER JOIN (
                 orders_per_feedback
              ) = top_300_res
             revenue = round(full_revenue)
-            lost_revenue = round(lost_rev)
+            lost_revenue = round(lost_rev) if lost_rev != float('nan') else 0
             potential_revenue = round(avg_potential_revenue)
             avg_revenue = round(avg_id_rev)
             avg_with_sales_revenue = round(avg_id_rev)
@@ -247,7 +247,7 @@ LEFT OUTER JOIN (
             lost_revenue_percent = round(lost_revenue * 100 / full_revenue) if full_revenue else 0
             monopoly_percent = round(top_30_revenue * 100 / top_100_revenue) if top_100_revenue else 0
             orders = full_orders
-            lost_orders = lost_ord
+            lost_orders = lost_ord if lost_orders != float("nan") else 0
             lost_orders_percent = round(lost_orders * 100 / full_orders) if full_orders else 0
             potential_orders = round(avg_potential_orders)
             avg_price = round(avg_price)
