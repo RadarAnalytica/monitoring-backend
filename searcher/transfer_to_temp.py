@@ -202,7 +202,7 @@ FROM (
                 if(sum(quantity) = 0, 1, 0) AS zero_day,
                 if(sum(quantity) = 0, 0, 1) AS full_day
             FROM product_data
-            WHERE 
+            PREWHERE 
                 wb_id IN %(v1)s
                 AND date BETWEEN %(v2)s AND %(v3)s
                 AND price > 0
