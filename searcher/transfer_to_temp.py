@@ -1,7 +1,7 @@
 import asyncio
 import json
 import math
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from clickhouse_db.get_async_connection import get_async_connection
 from server.funcs.upload_requests_data import recount_growth_by_date
@@ -69,17 +69,20 @@ async def main():
         end_date = date(year=2025, month=6, day=24)
         counter = 0
         for i, subject, total_products, query in queries:
+            start = datetime.now()
             counter += 1
             query_id = i
             subject_id = subject
             freq_stmt = f"""SELECT sum(if(date >= toDate('{end_date}') - 29, frequency, 0)) AS sum_30, sum(if(date >= toDate('{end_date}') - 59, frequency, 0)) AS sum_60, sum(if(date >= toDate('{end_date}') - 89, frequency, 0)) AS sum_90 FROM request_frequency WHERE query_id = {i} AND date BETWEEN toDate('{end_date}') - 89 AND toDate('{end_date}')"""
             f = await client.query(freq_stmt)
             f_result = list(f.result_rows)[0]
+            print(f"Достаём частотность: {(datetime.now() - start).total_seconds()}")
             frequency_30 = f_result[0]
             frequency_60 = f_result[1]
             frequency_90 = f_result[2]
-            grow_stmt = f"""SELECT g30, g60, g90 from request_growth where query_id = {query_id} and date = '{end_date}'"""
+            grow_stmt = f"""SELECT sum(g30), sum(g60), sum(g90) from request_growth where query_id = {query_id} and date = '{end_date}'"""
             g = await client.query(grow_stmt)
+            print(f"Достаём рост: {(datetime.now() - start).total_seconds()}")
             g_result = list(g.result_rows)[0] if g.result_rows and g.result_rows[0] else (0, 0, 0)
             g30 = g_result[0]
             g60 = g_result[1]
@@ -97,6 +100,7 @@ async def main():
             """
             qp = await client.query(qp_stmt)
             qp_result = list(qp.result_rows)[0] if qp.result_rows and qp.result_rows[0] else ([], [], [], 0, 0, 0)
+            print(f"Достаём топы по кверям: {(datetime.now() - start).total_seconds()}")
             (top_30,
             top_100,
             top_300,
@@ -119,6 +123,7 @@ async def main():
                 "v2": start_date,
                 "v3": end_date
             }
+            print(f"Достаём external: {(datetime.now() - start).total_seconds()}")
             top_30_stmt = """select sum(price * orders) / 100 from product_data where wb_id in %(v1)s and date between %(v2)s and %(v3)s"""
             top_30_q = await client.query(top_30_stmt, parameters=top_30_params)
             top_30_revenue = top_30_q.result_rows[0][0] if top_30_q.result_rows and top_30_q.result_rows[0] else 0
@@ -127,9 +132,11 @@ async def main():
                 "v2": start_date,
                 "v3": end_date
             }
+            print(f"Достаём выручку 30: {(datetime.now() - start).total_seconds()}")
             top_100_stmt = """select sum(price * orders) / 100 from product_data where wb_id in %(v1)s and date between %(v2)s and %(v3)s"""
             top_100_q = await client.query(top_100_stmt, parameters=top_100_params)
             top_100_revenue = top_100_q.result_rows[0][0] if top_100_q.result_rows and top_100_q.result_rows[0] else 0
+            print(f"Достаём выручку 100: {(datetime.now() - start).total_seconds()}")
             top_300_params = {
                 "v1": top_300,
                 "v2": start_date,
@@ -219,7 +226,7 @@ LEFT OUTER JOIN (
 ) AS pm ON pm.wb_id = pdd.wb_id"""
             top_300_q = await client.query(top_300_stmt, parameters=top_300_params)
             top_300_res = list(top_300_q.result_rows)
-            print(top_300_res)
+            print(f"Достаём пиздец: {(datetime.now() - start).total_seconds()}")
             top_300_res = top_300_res[0] if top_300_res and top_300_res[0] else [0 for _ in range(16)]
             (
                 avg_price,
@@ -258,7 +265,7 @@ LEFT OUTER JOIN (
             goods_quantity = total_products
             top_goods_quantity = top_1200_count
             freq_per_good = round(frequency_30 / total_products, 1)
-            goods_with_sales_quantity = top_300
+            goods_with_sales_quantity = len(top_300)
             goods_with_sales_percent = 100
             suppliers_with_sales_percent = 100
             suppliers = suppliers or []
@@ -275,6 +282,7 @@ LEFT OUTER JOIN (
                 "v2": end_date
             }
             buyout_q = await client.query(buyout_stmt, parameters=buyout_params)
+            print(f"Достаём выкуп: {(datetime.now() - start).total_seconds()}")
             buyout_percent = buyout_q.result_rows[0][0] if buyout_q.result_rows and buyout_q.result_rows[0] else 0
             buyout_percent = buyout_percent if not math.isnan(buyout_percent) else 0
             fbo_commission = 0
