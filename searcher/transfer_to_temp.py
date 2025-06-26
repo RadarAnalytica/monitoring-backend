@@ -6,7 +6,7 @@ from server.funcs.upload_requests_data import recount_growth_by_date
 from settings import logger
 
 async def main():
-    step = 50000000
+    step = 25000000
     l = 1
     r = 500000001
     dates = [i for i in range(156)]
