@@ -65,12 +65,10 @@ async def main():
         q = await client.query(stmt)
         queries = list(q.result_rows)
         result = []
-        start_date = date(year=2025, month=5, day=25)
-        end_date = date(year=2025, month=6, day=24)
-        counter = 0
+        start_date = date(year=2025, month=5, day=27)
+        end_date = date(year=2025, month=6, day=26)
         for i, subject, total_products, query in queries:
             start = datetime.now()
-            counter += 1
             query_id = i
             subject_id = subject
             freq_stmt = f"""SELECT sum(if(date >= toDate('{end_date}') - 29, frequency, 0)) AS sum_30, sum(if(date >= toDate('{end_date}') - 59, frequency, 0)) AS sum_60, sum(if(date >= toDate('{end_date}') - 89, frequency, 0)) AS sum_90 FROM request_frequency WHERE query_id = {i} AND date BETWEEN toDate('{end_date}') - 89 AND toDate('{end_date}')"""
@@ -89,14 +87,14 @@ async def main():
             g90 = g_result[2]
             qp_stmt = f"""
             SELECT
-                groupUniqArrayMerge(products_30)     AS products_30,
-                groupUniqArrayMerge(products_100)    AS products_100,
-                groupUniqArrayMerge(products_300)    AS products_300,
-                countDistinctMerge(advert_b_count)   AS advert_b_count,
-                countDistinctMerge(advert_c_count)   AS advert_c_count,
-                uniqExactMerge(products_top_count)   AS products_top_count
-            FROM radar.query_products_daily
-            PREWHERE query = {i} AND date BETWEEN 126 AND 155
+                products_30,
+                products_100,
+                products_300,
+                advert_b_count,
+                advert_c_count,
+                products_top_count
+            FROM radar.query_products_agg
+            PREWHERE query = {i}
             """
             qp = await client.query(qp_stmt)
             qp_result = list(qp.result_rows)[0] if qp.result_rows and qp.result_rows[0] else ([], [], [], 0, 0, 0)
@@ -202,7 +200,7 @@ FROM (
                 if(sum(quantity) = 0, 1, 0) AS zero_day,
                 if(sum(quantity) = 0, 0, 1) AS full_day
             FROM product_data
-            PREWHERE 
+            WHERE 
                 wb_id IN %(v1)s
                 AND date BETWEEN %(v2)s AND %(v3)s
                 AND price > 0
@@ -335,8 +333,7 @@ LEFT OUTER JOIN (
                 "order_per_review": order_per_review,
             }
             logger.info(json.dumps(i_res, indent=2, ensure_ascii=False))
-            if counter == 10:
-                break
+
 
 if __name__ == '__main__':
     asyncio.run(main())
