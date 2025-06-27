@@ -61,13 +61,14 @@ def evaluate_niche(demand_coef, monopoly_pct, advert_pct, buyout_pct, revenue):
 
 async def main():
     async with get_async_connection() as client:
-        stmt = """SELECT r.id, qh.priority, qh.total_products, r.query FROM request r JOIN (select * from query_history where date = (select max(date) from query_history)) qh ON qh.query = r.id WHERE r.updated = (SELECT max(updated) FROM request) AND r.quantity >= 200"""
+        stmt = """SELECT r.id, qh.priority, qh.total_products, r.query FROM request r JOIN (select * from query_history where date = (select max(date) from query_history)) qh ON qh.query = r.id WHERE r.updated = (SELECT max(updated) FROM request) AND r.quantity >= 200 order by r.id"""
         q = await client.query(stmt)
         queries = list(q.result_rows)
         result = []
         start_date = date(year=2025, month=5, day=27)
         end_date = date(year=2025, month=6, day=26)
         for i, subject, total_products, query in queries:
+            logger.info(f"QUERY: {i}")
             start = datetime.now()
             query_id = i
             subject_id = subject
