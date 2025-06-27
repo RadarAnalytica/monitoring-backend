@@ -289,6 +289,7 @@ LEFT OUTER JOIN (
             dbs_express_commission = 0
             rating = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue)
             i_res = (
+                i,
                 query,
                 rating,
                 subject_id,
@@ -336,6 +337,7 @@ LEFT OUTER JOIN (
             if len(result) >= 10:
                 await client.insert(table="monitoring_oracle", column_names=[
                     "query_id",
+                    "query",
                     "rating",
                     "subject_id",
                     "frequency_30",
