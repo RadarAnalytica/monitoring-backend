@@ -269,9 +269,9 @@ LEFT OUTER JOIN (
             suppliers = suppliers or []
             suppliers_quantity = len(suppliers)
             avg_rating = round(ratings, 1)
-            brands_list = brands or []
-            suppliers_list = suppliers or []
-            subjects_list = subjects or []
+            brands_list = brands or [0]
+            suppliers_list = suppliers or [0]
+            subjects_list = subjects or [0]
             avg_reviews = round(feedback)
             order_per_review = round(orders_per_feedback)
             buyout_stmt = """SELECT coalesce(avg(if(ratio > 0, ratio, NULL)), 0) FROM supplier_history WHERE id IN %(v1)s AND date = %(v2)s"""
