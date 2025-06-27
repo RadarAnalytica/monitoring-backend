@@ -335,7 +335,7 @@ LEFT OUTER JOIN (
             result.append(i_res)
             if len(result) >= 10:
                 await client.insert(table="monitoring_oracle", column_names=[
-                    "query",
+                    "query_id",
                     "rating",
                     "subject_id",
                     "frequency_30",
