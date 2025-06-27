@@ -270,7 +270,7 @@ LEFT OUTER JOIN (
             suppliers_quantity = len(suppliers)
             avg_rating = round(ratings, 1)
             brands_list = brands or [0]
-            suppliers_list = suppliers or [0]
+            suppliers_list = suppliers or []
             subjects_list = subjects or [subject_id]
             avg_reviews = round(feedback)
             order_per_review = round(orders_per_feedback)
