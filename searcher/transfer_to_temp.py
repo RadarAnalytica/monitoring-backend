@@ -281,7 +281,7 @@ LEFT OUTER JOIN (
             buyout_stmt = """SELECT coalesce(avg(if(ratio > 0, ratio, NULL)), 0) FROM supplier_history WHERE id IN %(v1)s AND date = %(v2)s"""
             buyout_params = {
                 "v1": suppliers_list,
-                "v2": end_date
+                "v2": end_date - timedelta(days=1)
             }
             buyout_q = await client.query(buyout_stmt, parameters=buyout_params)
             print(f"Достаём выкуп: {(datetime.now() - start).total_seconds()}")
