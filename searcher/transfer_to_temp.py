@@ -333,7 +333,7 @@ LEFT OUTER JOIN (
                 order_per_review,
             )
             result.append(i_res)
-            if len(result) >= 1000:
+            if len(result) >= 10:
                 await client.insert(table="monitoring_oracle", column_names=[
                     "query",
                     "rating",
