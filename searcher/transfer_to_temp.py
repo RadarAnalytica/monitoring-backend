@@ -68,6 +68,8 @@ async def main():
         start_date = date(year=2025, month=5, day=27)
         end_date = date(year=2025, month=6, day=26)
         for i, subject, total_products, query in queries:
+            if i < 260:
+                continue
             logger.info(f"QUERY: {i}")
             start = datetime.now()
             query_id = i
@@ -267,6 +269,7 @@ LEFT OUTER JOIN (
             goods_with_sales_quantity = len(top_300)
             goods_with_sales_percent = 100
             suppliers_with_sales_percent = 100
+            print(suppliers)
             suppliers = suppliers or [0]
             suppliers_quantity = len(suppliers)
             avg_rating = round(ratings, 1)
