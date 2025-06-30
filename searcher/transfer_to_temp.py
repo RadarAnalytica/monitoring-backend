@@ -269,7 +269,6 @@ LEFT OUTER JOIN (
             goods_with_sales_quantity = len(top_300)
             goods_with_sales_percent = 100
             suppliers_with_sales_percent = 100
-            print(suppliers)
             suppliers = suppliers or [0]
             suppliers_quantity = len(suppliers)
             avg_rating = round(ratings, 1)

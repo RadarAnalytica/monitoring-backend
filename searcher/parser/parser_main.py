@@ -217,7 +217,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                 try:
                     counter += 1
                     query = requests_list.pop(0)
-                    for i in range(1, 5):
+                    for i in range(1, 4):
                         await http_queue.put((i, query))
                     if not (counter % 1000):
                         logger.info(
