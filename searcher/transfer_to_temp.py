@@ -134,7 +134,7 @@ FROM
     SELECT
         qpf.query as q,
         round(avg(if(pd.wb_id_price > 0, pd.wb_id_price, NULL))) AS avg_price_total,
-        round(avg(if(qpf.place <= 300, pd.wb_id_price, 0))) AS avg_price_300,
+        round(avg(if(qpf.place <= 300 AND pd.wb_id_price > 0, pd.wb_id_price, NULL))) AS avg_price_300,
         round(median(if(pd.wb_id_price > 0, pd.wb_id_price, NULL))) as median_price,
         sum(if(qpf.place <= 30, pd.wb_id_revenue, 0)) AS top_30,
         sum(if(qpf.place <= 100, pd.wb_id_revenue, 0)) AS top_100,
@@ -245,8 +245,8 @@ WHERE qpf2.ratio > 0
         for i in range(left, right, step):
             logger.info(f"batch {i}")
             params = {
-                "v1": left,
-                "v2": left + step - 1
+                "v1": i,
+                "v2": i + step - 1
             }
             q = await client.query(stmt, parameters=params)
             data = []
@@ -411,81 +411,56 @@ if __name__ == '__main__':
 (
     `query_id` UInt32 CODEC(LZ4HC(0)),
     `query` String CODEC(LZ4HC(0)),
-
     `subject_id` UInt32 CODEC(LZ4HC(0)),
-
     `rating` UInt32 CODEC(LZ4HC(0)),
-
     `frequency_30` UInt32 CODEC(LZ4HC(0)),
     `frequency_60` UInt32 CODEC(LZ4HC(0)),
     `frequency_90` UInt32 CODEC(LZ4HC(0)),
-
     `g30` Int32 CODEC(LZ4HC(0)),
     `g60` Int32 CODEC(LZ4HC(0)),
     `g90` Int32 CODEC(LZ4HC(0)),
-
     `revenue_total` UInt64 CODEC(LZ4HC(0)),
     `revenue_300` UInt64 CODEC(LZ4HC(0)),
-
     `lost_revenue_total` UInt64 CODEC(LZ4HC(0)),
     `lost_revenue_300` UInt64 CODEC(LZ4HC(0)),
-
     `potential_revenue` UInt64 CODEC(LZ4HC(0)),
     `potential_orders` UInt64 CODEC(LZ4HC(0)),
-
     `avg_revenue_total` UInt64 CODEC(LZ4HC(0)),
     `avg_revenue_300` UInt64 CODEC(LZ4HC(0)),
-
     `avg_with_sales_revenue` UInt64 CODEC(LZ4HC(0)),
-
     `avg_daily_revenue` UInt64 CODEC(LZ4HC(0)),
     `avg_daily_wb_id_revenue` UInt64 CODEC(LZ4HC(0)),
-
     `lost_revenue_percent_total` UInt64 CODEC(LZ4HC(0)),
     `lost_revenue_percent_300` UInt64 CODEC(LZ4HC(0)),
-
     `monopoly_percent` UInt64 CODEC(LZ4HC(0)),
-
     `orders_total` UInt64 CODEC(LZ4HC(0)),
     `orders_300` UInt64 CODEC(LZ4HC(0)),
-
     `lost_orders` UInt64 CODEC(LZ4HC(0)),
     `lost_orders_percent` UInt64 CODEC(LZ4HC(0)),
-
     `avg_price_total` UInt32 CODEC(LZ4HC(0)),
     `avg_price_300` UInt32 CODEC(LZ4HC(0)),
-
     `median_price` UInt64 CODEC(LZ4HC(0)),
     `advert_percent` UInt64 CODEC(LZ4HC(0)),
     `external_advert_percent` UInt64 CODEC(LZ4HC(0)),
     `goods_quantity` UInt64 CODEC(LZ4HC(0)),
     `top_goods_quantity` UInt64 CODEC(LZ4HC(0)),
     `freq_per_good` Float64 CODEC(LZ4HC(0)),
-
     `goods_with_sales_quantity_total` UInt64 CODEC(LZ4HC(0)),
     `goods_with_sales_percent_total` UInt64 CODEC(LZ4HC(0)),
-
     `goods_with_sales_quantity_300` UInt64 CODEC(LZ4HC(0)),
     `goods_with_sales_percent_300` UInt64 CODEC(LZ4HC(0)),
-
     `suppliers_with_sales_percent` UInt64 DEFAULT 100 CODEC(LZ4HC(0)),
-
     `suppliers_quantity` UInt64 CODEC(LZ4HC(0)),
-
     `avg_reviews` UInt64 CODEC(LZ4HC(0)),
     `avg_rating` Float32 CODEC(LZ4HC(0)),
-
     `order_per_review` Float32 CODEC(LZ4HC(0)),
     `buyout_percent` UInt32 CODEC(LZ4HC(0)),
-
     `fbo_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
     `fbs_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
     `dbs_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
     `dbs_express_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
-
     `brands_list` Array(UInt32) CODEC(LZ4HC(0)),
     `subjects_list` Array(UInt32) CODEC(LZ4HC(0)),
-
     `updated` DateTime DEFAULT now()
 )
 ENGINE = ReplacingMergeTree(updated)
