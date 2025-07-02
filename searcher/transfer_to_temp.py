@@ -107,9 +107,9 @@ async def main():
         qpf2.median_price as median_price,
         qpf2.advert as advert_percent,
         qpf2.ex_advert as external_advert_percent,
-        qpf1.dpc AS goods_quantity,
-        qpf2.all_ids as top_goods_quantity,        
-        round(if(qpf1.dpc > 0, rf.sum_30 / qpf1.dpc, 0), 1) AS freq_per_good,
+        qh.total_products AS goods_quantity,
+        qpf2.dpc as top_goods_quantity,        
+        round(if(qpf1.dpc > 0, rf.sum_30 / qh.total_products, 0), 1) AS freq_per_good,
         
         round(if(qpf2.all_ids > 0, qpf2.with_sales_ids * 100 / qpf2.all_ids, 0)) as goods_with_sales_percent_total,
         qpf2.with_sales_ids as goods_with_sales_quantity_total,
@@ -236,6 +236,14 @@ INNER JOIN
         FROM request
         WHERE ((id >= %(v1)s) AND (id <= %(v2)s))
     ) AS r ON r.id = qpf2.q
+    INNER JOIN
+    (
+        SELECT
+            query,
+            total_products
+        FROM query_history
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND date = yesterday()
+    ) AS qh ON qh.query = qpf2.q
 WHERE qpf2.ratio > 0
 """
     left = 0
