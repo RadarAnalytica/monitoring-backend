@@ -349,7 +349,7 @@ WHERE qpf2.ratio > 0
                 ))
 
             await client.insert(
-                table="monitoring_oracle_very_new",
+                table="monitoring_oracle_new",
                 column_names=[
                     "query_id",
                     "query",
