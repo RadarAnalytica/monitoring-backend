@@ -60,288 +60,298 @@ def evaluate_niche(demand_coef, monopoly_pct, advert_pct, buyout_pct, revenue):
     return difficulty_level
 
 async def main():
-    async with get_async_connection() as client:
-        stmt = """SELECT r.id, qh.priority, qh.total_products, r.query FROM request r JOIN (select * from query_history where date = (select max(date) from query_history)) qh ON qh.query = r.id WHERE r.updated = (SELECT max(updated) FROM request) AND r.quantity >= 200 order by r.id"""
-        q = await client.query(stmt)
-        queries = list(q.result_rows)
-        result = []
-        start_date = date(year=2025, month=5, day=27)
-        end_date = date(year=2025, month=6, day=26)
-        for i, subject, total_products, query in queries:
-            if i < 260:
-                continue
-            logger.info(f"QUERY: {i}")
-            start = datetime.now()
-            query_id = i
-            subject_id = subject
-            freq_stmt = f"""SELECT sum(if(date >= toDate('{end_date}') - 29, frequency, 0)) AS sum_30, sum(if(date >= toDate('{end_date}') - 59, frequency, 0)) AS sum_60, sum(if(date >= toDate('{end_date}') - 89, frequency, 0)) AS sum_90 FROM request_frequency WHERE query_id = {i} AND date BETWEEN toDate('{end_date}') - 89 AND toDate('{end_date}')"""
-            f = await client.query(freq_stmt)
-            f_result = list(f.result_rows)[0]
-            print(f"Достаём частотность: {(datetime.now() - start).total_seconds()}")
-            frequency_30 = f_result[0]
-            frequency_60 = f_result[1]
-            frequency_90 = f_result[2]
-            grow_stmt = f"""SELECT sum(g30), sum(g60), sum(g90) from request_growth where query_id = {query_id} and date = '{end_date}'"""
-            g = await client.query(grow_stmt)
-            print(f"Достаём рост: {(datetime.now() - start).total_seconds()}")
-            g_result = list(g.result_rows)[0] if g.result_rows and g.result_rows[0] else (0, 0, 0)
-            g30 = g_result[0]
-            g60 = g_result[1]
-            g90 = g_result[2]
-            qp_stmt = f"""
-            SELECT
-                products_30,
-                products_100,
-                products_300,
-                advert_b_count,
-                advert_c_count,
-                products_top_count
-            FROM radar.query_products_agg
-            PREWHERE query = {i}
-            """
-            qp = await client.query(qp_stmt)
-            qp_result = list(qp.result_rows)[0] if qp.result_rows and qp.result_rows[0] else ([], [], [], 0, 0, 0)
-            print(f"Достаём топы по кверям: {(datetime.now() - start).total_seconds()}")
-            (top_30,
-            top_100,
-            top_300,
-            advert_b_count,
-            advert_c_count,
-            top_1200_count) = qp_result
-            if not any((top_30, top_100, top_300)):
-                continue
-            advert_total = advert_c_count + advert_b_count
-            if advert_total > len(top_100):
-                advert_total = len(top_100)
-            external_params = {
-                "v1": tuple(str(wb_id) for wb_id in top_100),
-            }
-            external_stmt = """SELECT count() FROM request WHERE query IN %(v1)s"""
-            external_q = await client.query(external_stmt, parameters=external_params)
-            external_result = external_q.result_rows[0][0] if external_q.result_rows and external_q.result_rows[0] else 0
-            top_30_params = {
-                "v1": top_30,
-                "v2": start_date,
-                "v3": end_date
-            }
-            print(f"Достаём external: {(datetime.now() - start).total_seconds()}")
-            top_30_stmt = """select sum(price * orders) / 100 from product_data where wb_id in %(v1)s and date between %(v2)s and %(v3)s"""
-            top_30_q = await client.query(top_30_stmt, parameters=top_30_params)
-            top_30_revenue = top_30_q.result_rows[0][0] if top_30_q.result_rows and top_30_q.result_rows[0] else 0
-            top_100_params = {
-                "v1": top_100,
-                "v2": start_date,
-                "v3": end_date
-            }
-            print(f"Достаём выручку 30: {(datetime.now() - start).total_seconds()}")
-            top_100_stmt = """select sum(price * orders) / 100 from product_data where wb_id in %(v1)s and date between %(v2)s and %(v3)s"""
-            top_100_q = await client.query(top_100_stmt, parameters=top_100_params)
-            top_100_revenue = top_100_q.result_rows[0][0] if top_100_q.result_rows and top_100_q.result_rows[0] else 0
-            print(f"Достаём выручку 100: {(datetime.now() - start).total_seconds()}")
-            top_300_params = {
-                "v1": top_300,
-                "v2": start_date,
-                "v3": end_date
-            }
-            top_300_stmt = """SELECT 
-    avg(pdd.id_prc) AS avg_price,
-    sum(pdd.id_rev) AS full_revenue,
-    avg(pdd.id_rev) AS avg_id_rev,
-    sum(pdd.id_ord) AS full_orders,
-    sum(pdd.id_lost_rev) AS lost_rev,
-    sum(pdd.id_lost_ord) AS lost_ord,
-    median(pdd.id_prc) AS median_price,
-    groupUniqArray(pdd.sup) AS suppliers,
-    groupUniqArray(pdd.sub) AS subjects,
-    groupUniqArray(pdd.br) AS brands,
-    coalesce(avg(if(pm.feedbacks > 0, pm.feedbacks, NULL)), 0) AS feedback,
-    coalesce(avg(if(pm.rating > 0, pm.rating, NULL)), 0) AS ratings,
-    coalesce(avg(if(pdd.potential_revenue > 0, pdd.potential_revenue, NULL)), 0) AS avg_potential_revenue,
-    coalesce(avg(if(pdd.potential_orders > 0, pdd.potential_orders, NULL)), 0) AS avg_potential_orders,
-    avg(round(pdd.id_day_rev, 0)) AS avg_daily_rev,
-    avg(if(pm.period_feedbacks > 0, pdd.id_ord / pm.period_feedbacks, 0)) AS orders_per_feedback
-FROM (
-    SELECT 
-        wb_id,
-        avg(prc) AS id_prc,
-        max(supplier) AS sup,
-        max(subject) AS sub,
-        max(brand) AS br,
-        sum(rev) AS id_rev,
-        sum(ord) AS id_ord,
-        sum(avg_day_rev) * 30 AS potential_revenue,
-        sum(avg_day_ord) * 30 AS potential_orders,
-        sum(lost_rev) AS id_lost_rev,
-        sum(lost_ord) AS id_lost_ord,
-        sum(avg_day_rev) AS id_day_rev
-    FROM (
+    stmt = """SELECT
+        qpf2.q as query_id,
+        r.query as query,
+        qpf2.subject_id as subject_id,
+        
+        rf.sum_30 AS frequency_30,
+        rf.sum_60 AS frequency_60,
+        rf.sum_90 AS frequency_90,
+        rg.g30 AS g30,
+        rg.g60 AS g60,
+        rg.g90 AS g90,
+        
+        qpf2.revenue_total as revenue_total,
+        qpf2.top_300 as revenue_300,
+        
+        qpf2.lost_revenue_total as lost_revenue_total,
+        qpf2.lost_revenue_300 as lost_revenue_300,
+        
+        qpf2.potential_revenue as potential_revenue,
+        qpf2.potential_orders as potential_orders,
+        
+        round(if(qpf2.all_ids > 0, qpf2.revenue_total / qpf2.all_ids, 0)) as avg_revenue_total,
+        round(if(qpf2.total_ids_300 > 0, qpf2.revenue_total / qpf2.total_ids_300, 0)) as avg_revenue_300,
+        
+        qpf2.avg_with_sales as avg_with_sales_revenue,
+        
+        round(qpf2.revenue_total / 30) as avg_daily_revenue,
+        qpf2.avg_daily_wb_id_revenue,
+        
+        round(if(qpf2.revenue_total > 0, qpf2.lost_revenue_total * 100 / qpf2.revenue_total, 0)) as lost_revenue_percent_total,
+        round(if(qpf2.top_300 > 0, qpf2.lost_revenue_300 * 100 / qpf2.top_300, 0)) as lost_revenue_percent_300,
+        
+        round(if(qpf2.top_100 > 0, qpf2.top_30 * 100 / qpf2.top_100, 0)) as monopoly_percent,
+        
+        qpf2.orders_total as orders_total,
+        qpf2.top_300_orders orders_300,
+        
+        qpf2.lost_orders,
+        round(if(qpf2.top_100 > 0, qpf2.lost_orders * 100 / qpf2.orders_total, 0)) as lost_orders_percent,
+        
+        
+        qpf2.avg_price_total as avg_price_total,
+        qpf2.avg_price_300 as avg_price_300,
+        
+        qpf2.median_price as median_price,
+        qpf2.advert as advert_percent,
+        qpf2.ex_advert as external_advert_percent,
+        qpf1.dpc AS goods_quantity,
+        qpf2.all_ids as top_goods_quantity,        
+        round(if(qpf1.dpc > 0, rf.sum_30 / qpf1.dpc, 0), 1) AS freq_per_good,
+        
+        round(if(qpf2.all_ids > 0, qpf2.with_sales_ids * 100 / qpf2.all_ids, 0)) as goods_with_sales_percent_total,
+        qpf2.with_sales_ids as goods_with_sales_quantity_total,
+        
+        round(if(qpf2.total_ids_300 > 0, qpf2.with_sales_ids_300 * 100 / qpf2.total_ids_300, 0)) as goods_with_sales_percent_300,
+        qpf2.total_ids_300 as goods_with_sales_quantity_300,
+        
+        length(qpf2.suppliers) as suppliers_quantity,
+        
+        
+        qpf2.reviews as avg_reviews,
+        qpf2.rating as avg_rating,
+        
+        qpf2.opr as order_per_review,
+        qpf2.ratio as buyout_percent,
+        
+        qpf2.brands as brands_list,
+        qpf2.subjects as subjects_list
+        
+FROM
+(
+    SELECT
+        qpf.query as q,
+        round(avg(if(pd.wb_id_price > 0, pd.wb_id_price, NULL))) AS avg_price_total,
+        round(avg(if(qpf.place <= 300, pd.wb_id_price, 0))) AS avg_price_300,
+        round(median(if(pd.wb_id_price > 0, pd.wb_id_price, NULL))) as median_price,
+        sum(if(qpf.place <= 30, pd.wb_id_revenue, 0)) AS top_30,
+        sum(if(qpf.place <= 100, pd.wb_id_revenue, 0)) AS top_100,
+        sum(if(qpf.place <= 300, pd.wb_id_revenue, 0)) AS top_300,
+        sum(if(qpf.place <= 300, pd.wb_id_orders, 0)) AS top_300_orders,
+        sum(round(pd.wb_id_avg_daily_revenue)) as avg_daily_revenue,
+        sum(round(if(qpf.place <= 300, pd.wb_id_avg_daily_revenue, 0))) as avg_daily_revenue_300,
+        round(coalesce(avg(if(pd.wb_id_avg_daily_revenue > 0, pd.wb_id_avg_daily_revenue, NULL)))) as adr,
+        round(coalesce(avg(if(pd.wb_id_revenue > 0, pd.wb_id_revenue, NULL)), 0)) as avg_with_sales,
+        round(coalesce(avg(if(pd.wb_id_avg_daily_revenue > 0, pd.wb_id_avg_daily_revenue, NULL)), 0)) as avg_daily_wb_id_revenue,
+        sum(pd.wb_id_revenue) AS revenue_total,
+        sum(pd.wb_id_orders) AS orders_total,
+        round(sum(if(qpf.place <= 300, pd.wb_id_lost_revenue, 0))) AS lost_revenue_300,
+        round(sum(pd.wb_id_lost_revenue)) AS lost_revenue_total,
+        round(sum(pd.wb_id_lost_orders)) AS lost_orders,
+        sum(if(qpf.place <= 100, qpf.advert, 0)) AS advert,
+        sum(if(qpf.place <= 100, rex.ex, 0)) AS ex_advert,
+        round(coalesce(avg(if(pd.ratio > 0, pd.ratio, NULL)), 0)) AS ratio,
+        round(coalesce(avg(if(pd.rating > 0, pd.rating, NULL)), 0), 1) AS rating,
+        round(coalesce(avg(if(pd.root_feedbacks > 0, pd.root_feedbacks, NULL)), 0)) AS reviews,
+        round(coalesce(avg(if(pd.wb_id_potential_revenue > 0, pd.wb_id_potential_revenue, NULL)), 0)) AS potential_revenue,
+        round(coalesce(avg(if(pd.wb_id_potential_orders > 0, pd.wb_id_potential_orders, NULL)), 0)) AS potential_orders,
+        round(sum(pd.wb_id_orders) / sum(pd.root_feedbacks), 1) AS opr,
+        any(pd.sub_id) as subject_id,
+        groupUniqArray(pd.sub_id) AS subjects,
+        groupUniqArray(pd.supl_id) AS suppliers,
+        groupUniqArray(pd.b_id) AS brands,
+        sum(if(pd.wb_id_revenue > 0, 1, 0)) as with_sales_ids,
+        count() as all_ids,
+        sum(if(pd.wb_id_revenue > 0 and qpf.place <= 300, 1, 0)) as with_sales_ids_300,
+        sum(if(qpf.place <= 300, 1, 0)) as total_ids_300
+    FROM radar.query_product_flat AS qpf
+    INNER JOIN
+    (
         SELECT
-            pd.wb_id,
-            pd.size,
-            max(pd.supplier_id) AS supplier,
-            max(pd.subject_id) AS subject,
-            max(pd.brand_id) AS brand,
-            sum(pd.revenue) AS rev,
-            sum(pd.a_orders) AS ord,
-            avg(pd.a_price) AS prc,
-            coalesce(avgIf(pd.revenue, toUInt8(pd.full_day = 1 AND pd.revenue > 0)), 0) AS avg_day_rev,
-            coalesce(avgIf(pd.a_orders, toUInt8(pd.full_day = 1 AND pd.a_orders > 0)), 0) AS avg_day_ord,
-            sum(pd.zero_day) * avgIf(pd.revenue, toUInt8(pd.full_day = 1)) AS lost_rev,
-            sum(pd.zero_day) * avgIf(pd.a_orders, toUInt8(pd.full_day = 1)) AS lost_ord
-        FROM (
-            SELECT 
-                wb_id,
-                date,
-                size,
-                max(supplier_id) AS supplier_id,
-                max(subject_id) AS subject_id,
-                max(brand_id) AS brand_id,
-                sum(price * orders) / 100 AS revenue,
-                sum(orders) AS a_orders,
-                sum(quantity) AS a_quantity,
-                avg(price) AS a_price,
-                if(sum(quantity) = 0, 1, 0) AS zero_day,
-                if(sum(quantity) = 0, 0, 1) AS full_day
-            FROM product_data
-            WHERE 
-                wb_id IN %(v1)s
-                AND date BETWEEN %(v2)s AND %(v3)s
-                AND price > 0
-            GROUP BY wb_id, date, size
-        ) AS pd
-        GROUP BY pd.wb_id, pd.size
-    ) AS pdd
-    GROUP BY wb_id
-) AS pdd
-LEFT OUTER JOIN (
-    SELECT 
-        wb_id,
-        max(rating) AS rating,
-        max(root_feedbacks) AS feedbacks,
-        max(root_feedbacks) - min(root_feedbacks) AS period_feedbacks
-    FROM product_meta
-    WHERE 
-        date BETWEEN %(v2)s AND %(v3)s
-        AND wb_id IN %(v1)s
-    GROUP BY wb_id
-) AS pm ON pm.wb_id = pdd.wb_id"""
-            top_300_q = await client.query(top_300_stmt, parameters=top_300_params)
-            top_300_res = list(top_300_q.result_rows)
-            print(f"Достаём пиздец: {(datetime.now() - start).total_seconds()}")
-            top_300_res = top_300_res[0] if top_300_res and top_300_res[0] else [0 for _ in range(16)]
-            (
-                avg_price,
-                full_revenue,
-                avg_id_rev,
-                full_orders,
-                lost_rev,
-                lost_ord,
-                median_price,
-                suppliers,
-                subjects,
-                brands,
-                feedback,
-                ratings,
-                avg_potential_revenue,
-                avg_potential_orders,
-                avg_daily_rev,
-                orders_per_feedback
-             ) = top_300_res
-            revenue = round(full_revenue)
-            lost_revenue = round(lost_rev) if (not math.isnan(lost_rev) and lost_rev) else 0
-            potential_revenue = round(avg_potential_revenue)
-            avg_revenue = round(avg_id_rev)
-            avg_with_sales_revenue = round(avg_id_rev)
-            avg_daily_revenue = round(avg_daily_rev) if not math.isnan(avg_daily_rev) else round(avg_potential_revenue / 30)
-            lost_revenue_percent = round(lost_revenue * 100 / full_revenue) if full_revenue else 0
-            monopoly_percent = round(top_30_revenue * 100 / top_100_revenue) if top_100_revenue else 0
-            orders = full_orders
-            lost_orders = round(lost_ord) if (not math.isnan(lost_ord) and lost_ord) else 0
-            lost_orders_percent = round(lost_orders * 100 / full_orders) if full_orders else 0
-            potential_orders = round(avg_potential_orders)
-            avg_price = round(avg_price)
-            median_price = round(median_price)
-            advert_percent = round(advert_total * 100 / len(top_100)) if top_100 else 0
-            external_advert_percent = round(external_result * 100 / len(top_100)) if top_100 else 0
-            goods_quantity = total_products
-            top_goods_quantity = top_1200_count
-            freq_per_good = round(frequency_30 / total_products, 1)
-            goods_with_sales_quantity = len(top_300)
-            goods_with_sales_percent = 100
-            suppliers_with_sales_percent = 100
-            suppliers = suppliers or [0]
-            suppliers_quantity = len(suppliers)
-            avg_rating = round(ratings, 1)
-            brands_list = brands or [0]
-            suppliers_list = suppliers or []
-            subjects_list = subjects or [subject_id]
-            avg_reviews = round(feedback)
-            order_per_review = round(orders_per_feedback)
-            buyout_stmt = """SELECT coalesce(avg(if(ratio > 0, ratio, NULL)), 0) FROM supplier_history WHERE id IN %(v1)s AND date = %(v2)s"""
-            buyout_params = {
-                "v1": suppliers_list,
-                "v2": end_date - timedelta(days=1)
+            wb_id,
+            wb_id_revenue,
+            wb_id_orders,
+            wb_id_price,
+            wb_id_avg_daily_revenue,
+            wb_id_avg_daily_orders,
+            wb_id_lost_revenue,
+            wb_id_lost_orders,
+            wb_id_potential_revenue,
+            wb_id_potential_orders,
+            sub_id,
+            supl_id,
+            b_id,
+            rating,
+            root_feedbacks,
+            ratio
+        FROM wb_id_extended_local
+        WHERE wb_id IN (
+            SELECT DISTINCT product
+            FROM query_product_flat
+            WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date >= 133)
+        )
+    ) AS pd ON pd.wb_id = qpf.product
+    LEFT OUTER JOIN (select query, 1 as ex from request WHERE match(query, '^[0-9]+$')) as rex on rex.query = toString(pd.wb_id) 
+    WHERE ((qpf.query >= 1) AND (qpf.query <= %(v2)s)) AND (qpf.date = 162)
+    GROUP BY qpf.query
+    ORDER BY qpf.query ASC
+) as qpf2 
+INNER JOIN
+    (
+        SELECT
+            query,
+            countDistinct(product) AS dpc
+        FROM radar.query_product_flat
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date >= 133)
+        GROUP BY query
+    ) AS qpf1 ON qpf2.q = qpf1.query
+    INNER JOIN
+    (
+        SELECT
+            query_id,
+            sum(if(date >= (yesterday() - 29), frequency, 0)) AS sum_30,
+            sum(if(date >= (yesterday() - 59), frequency, 0)) AS sum_60,
+            sum(frequency) AS sum_90
+        FROM request_frequency
+        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date >= (yesterday() - 89))
+        GROUP BY query_id
+    ) AS rf ON rf.query_id = qpf2.q
+    INNER JOIN
+    (
+        SELECT
+            query_id,
+            g30,
+            g60,
+            g90
+        FROM request_growth
+        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date = yesterday())
+    ) AS rg ON rg.query_id = qpf2.q
+    INNER JOIN
+    (
+        SELECT
+            id,
+            query,
+        FROM request
+        WHERE ((id >= %(v1)s) AND (id <= %(v2)s))
+    ) AS r ON r.id = qpf2.q
+WHERE qpf2.ratio > 0
+"""
+    left = 0
+    right = 10300000
+    step = 25000
+    async with get_async_connection(send_receive_timeout=3600) as client:
+        for i in range(left, right, step):
+            params = {
+                "v1": left,
+                "v2": left + step - 1
             }
-            buyout_q = await client.query(buyout_stmt, parameters=buyout_params)
-            print(f"Достаём выкуп: {(datetime.now() - start).total_seconds()}")
-            buyout_percent = buyout_q.result_rows[0][0] if buyout_q.result_rows and buyout_q.result_rows[0] else 0
-            buyout_percent = buyout_percent if not math.isnan(buyout_percent) else 0
-            fbo_commission = 0
-            fbs_commission = 0
-            dbs_commission = 0
-            dbs_express_commission = 0
-            rating = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue)
-            i_res = (
-                i,
-                query,
-                rating,
-                subject_id,
-                frequency_30,
-                frequency_60,
-                frequency_90,
-                g30,
-                g60,
-                g90,
-                revenue,
-                lost_revenue,
-                potential_revenue,
-                avg_revenue,
-                avg_with_sales_revenue,
-                avg_daily_revenue,
-                lost_revenue_percent,
-                monopoly_percent,
-                orders,
-                lost_orders,
-                lost_orders_percent,
-                potential_orders,
-                avg_price,
-                median_price,
-                advert_percent,
-                external_advert_percent,
-                goods_quantity,
-                top_goods_quantity,
-                freq_per_good,
-                goods_with_sales_quantity,
-                goods_with_sales_percent,
-                suppliers_with_sales_percent,
-                suppliers_quantity,
-                avg_rating,
-                avg_reviews,
-                buyout_percent,
-                fbo_commission,
-                fbs_commission,
-                dbs_commission,
-                dbs_express_commission,
-                brands_list,
-                subjects_list,
-                order_per_review,
-            )
-            result.append(i_res)
-            if len(result) >= 10:
-                await client.insert(table="monitoring_oracle", column_names=[
+            q = await client.query(stmt, parameters=params)
+            data = []
+            for row in q.result_rows:
+                query_id = row[0]
+                query = row[1]
+                subject_id = row[2]
+                frequency_30 = row[3]
+                frequency_60 = row[4]
+                frequency_90 = row[5]
+                g30 = row[6]
+                g60 = row[7]
+                g90 = row[8]
+                revenue_total = row[9]
+                revenue_300 = row[10]
+                lost_revenue_total = row[11]
+                lost_revenue_300 = row[12]
+                potential_revenue = row[13]
+                potential_orders = row[14]
+                avg_revenue_total = row[15]
+                avg_revenue_300 = row[16]
+                avg_with_sales_revenue = row[17]
+                avg_daily_revenue = row[18]
+                avg_daily_wb_id_revenue = row[19]
+                lost_revenue_percent_total = row[20]
+                lost_revenue_percent_300 = row[21]
+                monopoly_percent = row[22]
+                orders_total = row[23]
+                orders_300 = row[24]
+                lost_orders = row[25]
+                lost_orders_percent = row[26]
+                avg_price_total = row[27]
+                avg_price_300 = row[28]
+                median_price = row[29]
+                advert_percent = row[30]
+                external_advert_percent = row[31]
+                goods_quantity = row[32]
+                top_goods_quantity = row[33]
+                freq_per_good = row[34]
+                goods_with_sales_percent_total = row[35]
+                goods_with_sales_quantity_total = row[36]
+                goods_with_sales_percent_300 = row[37]
+                goods_with_sales_quantity_300 = row[38]
+                suppliers_quantity = row[39]
+                avg_reviews = row[40]
+                avg_rating = row[41]
+                order_per_review = row[42]
+                buyout_percent = row[43]
+                brands_list = row[44]
+                subjects_list = row[45]
+                rating = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue_300 / 100)
+                data.append((
+                    query_id,
+                    query,
+                    subject_id,
+                    frequency_30,
+                    frequency_60,
+                    frequency_90,
+                    g30,
+                    g60,
+                    g90,
+                    revenue_total,
+                    revenue_300,
+                    lost_revenue_total,
+                    lost_revenue_300,
+                    potential_revenue,
+                    potential_orders,
+                    avg_revenue_total,
+                    avg_revenue_300,
+                    avg_with_sales_revenue,
+                    avg_daily_revenue,
+                    avg_daily_wb_id_revenue,
+                    lost_revenue_percent_total,
+                    lost_revenue_percent_300,
+                    monopoly_percent,
+                    orders_total,
+                    orders_300,
+                    lost_orders,
+                    lost_orders_percent,
+                    avg_price_total,
+                    avg_price_300,
+                    median_price,
+                    advert_percent,
+                    external_advert_percent,
+                    goods_quantity,
+                    top_goods_quantity,
+                    freq_per_good,
+                    goods_with_sales_percent_total,
+                    goods_with_sales_quantity_total,
+                    goods_with_sales_percent_300,
+                    goods_with_sales_quantity_300,
+                    suppliers_quantity,
+                    avg_reviews,
+                    avg_rating,
+                    order_per_review,
+                    buyout_percent,
+                    brands_list,
+                    subjects_list,
+                    rating,
+                ))
+
+            await client.insert(
+                table="monitoring_oracle_very_new",
+                column_names=[
                     "query_id",
                     "query",
-                    "rating",
                     "subject_id",
                     "frequency_30",
                     "frequency_60",
@@ -349,44 +359,135 @@ LEFT OUTER JOIN (
                     "g30",
                     "g60",
                     "g90",
-                    "revenue",
-                    "lost_revenue",
+                    "revenue_total",
+                    "revenue_300",
+                    "lost_revenue_total",
+                    "lost_revenue_300",
                     "potential_revenue",
-                    "avg_revenue",
+                    "potential_orders",
+                    "avg_revenue_total",
+                    "avg_revenue_300",
                     "avg_with_sales_revenue",
                     "avg_daily_revenue",
-                    "lost_revenue_percent",
+                    "avg_daily_wb_id_revenue",
+                    "lost_revenue_percent_total",
+                    "lost_revenue_percent_300",
                     "monopoly_percent",
-                    "orders",
+                    "orders_total",
+                    "orders_300",
                     "lost_orders",
                     "lost_orders_percent",
-                    "potential_orders",
-                    "avg_price",
+                    "avg_price_total",
+                    "avg_price_300",
                     "median_price",
                     "advert_percent",
                     "external_advert_percent",
                     "goods_quantity",
                     "top_goods_quantity",
                     "freq_per_good",
-                    "goods_with_sales_quantity",
-                    "goods_with_sales_percent",
-                    "suppliers_with_sales_percent",
+                    "goods_with_sales_percent_total",
+                    "goods_with_sales_quantity_total",
+                    "goods_with_sales_percent_300",
+                    "goods_with_sales_quantity_300",
                     "suppliers_quantity",
-                    "avg_rating",
                     "avg_reviews",
+                    "avg_rating",
+                    "order_per_review",
                     "buyout_percent",
-                    "fbo_commision",
-                    "fbs_commision",
-                    "dbs_commision",
-                    "dbs_express_commision",
                     "brands_list",
                     "subjects_list",
-                    "order_per_review"
+                    "rating",
                 ],
-                                    data=result)
-                result = []
-
+                data=data
+            )
 
 
 if __name__ == '__main__':
     asyncio.run(main())
+
+
+#     """CREATE TABLE radar.monitoring_oracle_very_new
+# (
+#     `query_id` UInt32 CODEC(LZ4HC(0)),
+#     `query` String CODEC(LZ4HC(0)),
+#
+#     `subject_id` UInt32 CODEC(LZ4HC(0)),
+#
+#     `rating` UInt32 CODEC(LZ4HC(0)),
+#
+#     `frequency_30` UInt32 CODEC(LZ4HC(0)),
+#     `frequency_60` UInt32 CODEC(LZ4HC(0)),
+#     `frequency_90` UInt32 CODEC(LZ4HC(0)),
+#
+#     `g30` Int32 CODEC(LZ4HC(0)),
+#     `g60` Int32 CODEC(LZ4HC(0)),
+#     `g90` Int32 CODEC(LZ4HC(0)),
+#
+#     `revenue_total` UInt64 CODEC(LZ4HC(0)),
+#     `revenue_300` UInt64 CODEC(LZ4HC(0)),
+#
+#     `lost_revenue_total` UInt32 CODEC(LZ4HC(0)),
+#     `lost_revenue_300` UInt32 CODEC(LZ4HC(0)),
+#
+#     `potential_revenue` UInt32 CODEC(LZ4HC(0)),
+#     `potential_orders` UInt32 CODEC(LZ4HC(0)),
+#
+#     `avg_revenue_total` UInt32 CODEC(LZ4HC(0)),
+#     `avg_revenue_300` UInt32 CODEC(LZ4HC(0)),
+#
+#     `avg_with_sales_revenue` UInt32 CODEC(LZ4HC(0)),
+#
+#     `avg_daily_revenue` UInt32 CODEC(LZ4HC(0)),
+#     `avg_daily_wb_id_revenue` UInt32 CODEC(LZ4HC(0)),
+#
+#     `lost_revenue_percent_total` UInt32 CODEC(LZ4HC(0)),
+#     `lost_revenue_percent_300` UInt32 CODEC(LZ4HC(0)),
+#
+#     `monopoly_percent` UInt32 CODEC(LZ4HC(0)),
+#
+#     `orders_total` UInt32 CODEC(LZ4HC(0)),
+#     `orders_300` UInt32 CODEC(LZ4HC(0)),
+#
+#     `lost_orders` UInt32 CODEC(LZ4HC(0)),
+#     `lost_orders_percent` UInt32 CODEC(LZ4HC(0)),
+#
+#     `avg_price_total` UInt32 CODEC(LZ4HC(0)),
+#     `avg_price_300` UInt32 CODEC(LZ4HC(0)),
+#
+#     `median_price` UInt32 CODEC(LZ4HC(0)),
+#     `advert_percent` UInt32 CODEC(LZ4HC(0)),
+#     `external_advert_percent` UInt32 CODEC(LZ4HC(0)),
+#     `goods_quantity` UInt32 CODEC(LZ4HC(0)),
+#     `top_goods_quantity` UInt32 CODEC(LZ4HC(0)),
+#     `freq_per_good` Float32 CODEC(LZ4HC(0)),
+#
+#     `goods_with_sales_quantity_total` UInt32 CODEC(LZ4HC(0)),
+#     `goods_with_sales_percent_total` UInt32 CODEC(LZ4HC(0)),
+#
+#     `goods_with_sales_quantity_300` UInt32 CODEC(LZ4HC(0)),
+#     `goods_with_sales_percent_300` UInt32 CODEC(LZ4HC(0)),
+#
+#     `suppliers_with_sales_percent` UInt32 DEFAULT 100 CODEC(LZ4HC(0)),
+#
+#     `suppliers_quantity` UInt32 CODEC(LZ4HC(0)),
+#
+#     `avg_reviews` UInt32 CODEC(LZ4HC(0)),
+#     `avg_rating` Float32 CODEC(LZ4HC(0)),
+#
+#     `order_per_review` UInt32 CODEC(LZ4HC(0)),
+#     `buyout_percent` UInt32 CODEC(LZ4HC(0)),
+#
+#     `fbo_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
+#     `fbs_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
+#     `dbs_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
+#     `dbs_express_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
+#
+#     `brands_list` Array(UInt32) CODEC(LZ4HC(0)),
+#     `subjects_list` Array(UInt32) CODEC(LZ4HC(0)),
+#
+#     `updated` DateTime DEFAULT now()
+# )
+# ENGINE = ReplacingMergeTree(updated)
+# ORDER BY query_id
+# SETTINGS index_granularity = 8192
+# ;"""
