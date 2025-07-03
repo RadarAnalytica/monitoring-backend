@@ -405,7 +405,7 @@ WHERE qpf2.ratio > 0
                     "buyout_percent",
                     "brands_list",
                     "subjects_list",
-                    "rating",
+                    "niche_rating",
                 ],
                 data=data
             )
