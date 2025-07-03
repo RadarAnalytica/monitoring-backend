@@ -190,7 +190,7 @@ FROM
         WHERE wb_id IN (
             SELECT DISTINCT product
             FROM query_product_flat
-            WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date >= 133)
+            WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN 133 AND 162)
         )
     ) AS pd ON pd.wb_id = qpf.product
     LEFT OUTER JOIN (select query, 1 as ex from request WHERE match(query, '^[0-9]+$')) as rex on rex.query = toString(pd.wb_id) 
@@ -204,7 +204,7 @@ INNER JOIN
             query,
             countDistinct(product) AS dpc
         FROM radar.query_product_flat
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date >= 133)
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN 133 AND 162)
         GROUP BY query
     ) AS qpf1 ON qpf2.q = qpf1.query
     INNER JOIN
@@ -226,7 +226,7 @@ INNER JOIN
             g60,
             g90
         FROM request_growth
-        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date = yesterday())
+        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date = yesterday() - 1)
     ) AS rg ON rg.query_id = qpf2.q
     INNER JOIN
     (
@@ -242,13 +242,13 @@ INNER JOIN
             query,
             total_products
         FROM query_history
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND date = yesterday()
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND date = yesterday() - 1
     ) AS qh ON qh.query = qpf2.q
 WHERE qpf2.ratio > 0
 """
-    left = 0
+    left = 5025000
     right = 10300000
-    step = 25000
+    step = 50000
     async with get_async_connection(send_receive_timeout=3600) as client:
         for i in range(left, right, step):
             logger.info(f"batch {i}")
