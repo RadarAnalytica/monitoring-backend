@@ -246,9 +246,9 @@ INNER JOIN
     ) AS qh ON qh.query = qpf2.q
 WHERE qpf2.ratio > 0
 """
-    left = 5025000
+    left = 8524676
     right = 10300000
-    step = 50000
+    step = 100000
     async with get_async_connection(send_receive_timeout=3600) as client:
         for i in range(left, right, step):
             logger.info(f"batch {i}")
