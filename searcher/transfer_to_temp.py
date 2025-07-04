@@ -480,7 +480,7 @@ WHERE qpf2.ratio > 0
             )
 
 async def migrate_monitoring_oracle_data():
-    async with get_async_connection() as client:
+    async with get_async_connection(send_receive_timeout=3600) as client:
         # Получаем все строки
         query = "SELECT * FROM radar.monitoring_oracle_new"
         columns = await client.query("DESCRIBE TABLE radar.monitoring_oracle_new")
