@@ -490,6 +490,7 @@ async def migrate_monitoring_oracle_data():
         new_rows = []
         new_column_names = column_names.copy()
         new_column_names.insert(idx['niche_rating'] + 1, 'competition_level')
+        logger.info("BEGINNING")
         for row in rows.result_rows:
             demand = row[idx['freq_per_good']]
             monopoly = row[idx['monopoly_percent']]
@@ -506,6 +507,7 @@ async def migrate_monitoring_oracle_data():
 
             new_rows.append(tuple(row))
             if len(new_rows) > 10000:
+                logger.info("WRITE")
                 await client.insert(
                     'radar.monitoring_oracle_new_2',
                     new_rows,
