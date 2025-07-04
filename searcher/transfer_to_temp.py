@@ -8,13 +8,74 @@ from server.funcs.upload_requests_data import recount_growth_by_date
 from settings import logger
 
 
+# def get_score(value, thresholds):
+#     for i, (low, high, score) in enumerate(thresholds):
+#         if low <= value < high:
+#             return score
+#     return thresholds[-1][2]
+#
+# def evaluate_niche(demand_coef, monopoly_pct, advert_pct, buyout_pct, revenue):
+#     demand_thresholds = [
+#         (40, float('inf'), 4),
+#         (30, 40, 3),
+#         (10, 30, 2),
+#         (0, 10, 1),
+#     ]
+#     monopoly_thresholds = [
+#         (0, 25, 4),
+#         (25, 40, 3),
+#         (40, 60, 2),
+#         (60, float('inf'), 1),
+#     ]
+#     advert_thresholds = [
+#         (0, 30, 4),
+#         (30, 60, 3),
+#         (60, 80, 2),
+#         (80, float('inf'), 1),
+#     ]
+#     buyout_thresholds = [
+#         (80, float('inf'), 4),
+#         (40, 80, 3),
+#         (20, 40, 2),
+#         (0, 20, 1),
+#     ]
+#     revenue_thresholds = [
+#         (1_000_000, float('inf'), 4),
+#         (600_000, 1_000_000, 3),
+#         (200_000, 600_000, 2),
+#         (0, 200_000, 1),
+#     ]
+#
+#     scores = [
+#         get_score(demand_coef, demand_thresholds) * 2,
+#         get_score(monopoly_pct, monopoly_thresholds) * 2,
+#         get_score(advert_pct, advert_thresholds) * 0.5,
+#         get_score(buyout_pct, buyout_thresholds) * 0.5,
+#         get_score(revenue, revenue_thresholds) * 0.5,
+#     ]
+#
+#     avg_score = sum(scores) / len(scores)
+#     nice_level = round(avg_score)
+#
+#     return nice_level
+
+
 def get_score(value, thresholds):
-    for i, (low, high, score) in enumerate(thresholds):
+    for low, high, score in thresholds:
         if low <= value < high:
             return score
     return thresholds[-1][2]
 
+
+def normalize(weights_and_scores):
+    weighted = sum(w * s for w, s in weights_and_scores)
+    min_score = sum(w * 1 for w, _ in weights_and_scores)
+    max_score = sum(w * 4 for w, _ in weights_and_scores)
+    normalized = 1 + (weighted - min_score) / (max_score - min_score) * 3
+    return round(normalized)
+
 def evaluate_niche(demand_coef, monopoly_pct, advert_pct, buyout_pct, revenue):
+    # Пороговые значения
     demand_thresholds = [
         (40, float('inf'), 4),
         (30, 40, 3),
@@ -40,24 +101,32 @@ def evaluate_niche(demand_coef, monopoly_pct, advert_pct, buyout_pct, revenue):
         (0, 20, 1),
     ]
     revenue_thresholds = [
-        (1_000_000, float('inf'), 4),
-        (600_000, 1_000_000, 3),
-        (200_000, 600_000, 2),
-        (0, 200_000, 1),
+        (10_000_000, float('inf'), 4),
+        (1_000_000, 10_000_000, 3),
+        (500_000, 1_000_000, 2),
+        (0, 500_000, 1),
     ]
 
-    scores = [
-        get_score(demand_coef, demand_thresholds),
-        get_score(monopoly_pct, monopoly_thresholds),
-        get_score(advert_pct, advert_thresholds),
-        get_score(buyout_pct, buyout_thresholds),
-        get_score(revenue, revenue_thresholds),
+    # Основной рейтинг с 5 метриками
+    full_weights_and_scores = [
+        (2, get_score(demand_coef, demand_thresholds)),
+        (2, get_score(monopoly_pct, monopoly_thresholds)),
+        (0.5, get_score(advert_pct, advert_thresholds)),
+        (0.5, get_score(buyout_pct, buyout_thresholds)),
+        (0.5, get_score(revenue, revenue_thresholds)),
     ]
 
-    avg_score = sum(scores) / len(scores)
-    difficulty_level = round(avg_score)
+    # Рейтинг без buyout и revenue
+    base_weights_and_scores = [
+        (2, get_score(demand_coef, demand_thresholds)),
+        (2, get_score(monopoly_pct, monopoly_thresholds)),
+        (0.5, get_score(advert_pct, advert_thresholds)),
+    ]
 
-    return difficulty_level
+    niche_level = normalize(full_weights_and_scores)
+    competition_level = normalize(base_weights_and_scores)
+
+    return niche_level, competition_level
 
 async def main():
     stmt = """SELECT
@@ -410,68 +479,42 @@ WHERE qpf2.ratio > 0
                 data=data
             )
 
+async def migrate_monitoring_oracle_data():
+    async with get_async_connection() as client:
+        # Получаем все строки
+        query = "SELECT * FROM radar.monitoring_oracle_new"
+        columns = await client.query("DESCRIBE TABLE radar.monitoring_oracle_new")
+        column_names = [row[0] for row in columns.result_rows]
+        idx = {col: i for i, col in enumerate(column_names)}
+        rows = await client.query(query)
+        new_rows = []
+        for row in rows.result_rows:
+            demand = row[idx['freq_per_good']]
+            monopoly = row[idx['monopoly_percent']]
+            advert = row[idx['advert_percent']]
+            buyout = row[idx['buyout_percent']]
+            revenue = row[idx['avg_revenue_total']]
 
+            niche_rating, competition_level = evaluate_niche(demand, monopoly, advert, buyout, revenue)
+
+            row = list(row)
+            row.insert(idx['niche_rating'], niche_rating)
+            row.insert(idx['niche_rating'] + 1, competition_level)
+
+            new_rows.append(tuple(row))
+
+        # Обновим список колонок
+        new_column_names = column_names.copy()
+        new_column_names.insert(idx['niche_rating'], 'niche_rating')
+        new_column_names.insert(idx['niche_rating'] + 1, 'competition_level')
+
+        # Вставка в новую таблицу
+        await client.insert(
+            'radar.monitoring_oracle_new_2',
+            new_rows,
+            column_names=new_column_names
+        )
+
+# Запуск
 if __name__ == '__main__':
-    asyncio.run(main())
-
-
-    """CREATE TABLE radar.monitoring_oracle_new
-(
-    `query_id` UInt32 CODEC(LZ4HC(0)),
-    `query` String CODEC(LZ4HC(0)),
-    `subject_id` UInt32 CODEC(LZ4HC(0)),
-    `rating` UInt32 CODEC(LZ4HC(0)),
-    `frequency_30` UInt32 CODEC(LZ4HC(0)),
-    `frequency_60` UInt32 CODEC(LZ4HC(0)),
-    `frequency_90` UInt32 CODEC(LZ4HC(0)),
-    `g30` Int32 CODEC(LZ4HC(0)),
-    `g60` Int32 CODEC(LZ4HC(0)),
-    `g90` Int32 CODEC(LZ4HC(0)),
-    `revenue_total` UInt64 CODEC(LZ4HC(0)),
-    `revenue_300` UInt64 CODEC(LZ4HC(0)),
-    `lost_revenue_total` UInt64 CODEC(LZ4HC(0)),
-    `lost_revenue_300` UInt64 CODEC(LZ4HC(0)),
-    `potential_revenue` UInt64 CODEC(LZ4HC(0)),
-    `potential_orders` UInt64 CODEC(LZ4HC(0)),
-    `avg_revenue_total` UInt64 CODEC(LZ4HC(0)),
-    `avg_revenue_300` UInt64 CODEC(LZ4HC(0)),
-    `avg_with_sales_revenue` UInt64 CODEC(LZ4HC(0)),
-    `avg_daily_revenue` UInt64 CODEC(LZ4HC(0)),
-    `avg_daily_wb_id_revenue` UInt64 CODEC(LZ4HC(0)),
-    `lost_revenue_percent_total` UInt64 CODEC(LZ4HC(0)),
-    `lost_revenue_percent_300` UInt64 CODEC(LZ4HC(0)),
-    `monopoly_percent` UInt64 CODEC(LZ4HC(0)),
-    `orders_total` UInt64 CODEC(LZ4HC(0)),
-    `orders_300` UInt64 CODEC(LZ4HC(0)),
-    `lost_orders` UInt64 CODEC(LZ4HC(0)),
-    `lost_orders_percent` UInt64 CODEC(LZ4HC(0)),
-    `avg_price_total` UInt32 CODEC(LZ4HC(0)),
-    `avg_price_300` UInt32 CODEC(LZ4HC(0)),
-    `median_price` UInt64 CODEC(LZ4HC(0)),
-    `advert_percent` UInt64 CODEC(LZ4HC(0)),
-    `external_advert_percent` UInt64 CODEC(LZ4HC(0)),
-    `goods_quantity` UInt64 CODEC(LZ4HC(0)),
-    `top_goods_quantity` UInt64 CODEC(LZ4HC(0)),
-    `freq_per_good` Float64 CODEC(LZ4HC(0)),
-    `goods_with_sales_quantity_total` UInt64 CODEC(LZ4HC(0)),
-    `goods_with_sales_percent_total` UInt64 CODEC(LZ4HC(0)),
-    `goods_with_sales_quantity_300` UInt64 CODEC(LZ4HC(0)),
-    `goods_with_sales_percent_300` UInt64 CODEC(LZ4HC(0)),
-    `suppliers_with_sales_percent` UInt64 DEFAULT 100 CODEC(LZ4HC(0)),
-    `suppliers_quantity` UInt64 CODEC(LZ4HC(0)),
-    `avg_reviews` UInt64 CODEC(LZ4HC(0)),
-    `avg_rating` Float32 CODEC(LZ4HC(0)),
-    `order_per_review` Float32 CODEC(LZ4HC(0)),
-    `buyout_percent` UInt32 CODEC(LZ4HC(0)),
-    `fbo_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
-    `fbs_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
-    `dbs_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
-    `dbs_express_commision` UInt32 DEFAULT 0 CODEC(LZ4HC(0)),
-    `brands_list` Array(UInt32) CODEC(LZ4HC(0)),
-    `subjects_list` Array(UInt32) CODEC(LZ4HC(0)),
-    `updated` DateTime DEFAULT now()
-)
-ENGINE = ReplacingMergeTree(updated)
-ORDER BY query_id
-SETTINGS index_granularity = 8192
-;"""
+    asyncio.run(migrate_monitoring_oracle_data())
