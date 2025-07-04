@@ -498,6 +498,7 @@ async def migrate_monitoring_oracle_data():
             niche_rating, competition_level = evaluate_niche(demand, monopoly, advert, buyout, revenue)
 
             row = list(row)
+            row.pop(idx['niche_rating'])
             row.insert(idx['niche_rating'], niche_rating)
             row.insert(idx['niche_rating'] + 1, competition_level)
 
@@ -505,7 +506,6 @@ async def migrate_monitoring_oracle_data():
 
         # Обновим список колонок
         new_column_names = column_names.copy()
-        new_column_names.insert(idx['niche_rating'], 'niche_rating')
         new_column_names.insert(idx['niche_rating'] + 1, 'competition_level')
 
         # Вставка в новую таблицу
