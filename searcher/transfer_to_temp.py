@@ -522,6 +522,7 @@ async def form_lost_table():
     current_date = min_date
     async with get_async_connection(send_receive_timeout=3600) as client:
         while current_date <= max_date:
+            logger.info(str(current_date))
             stmt = f"""INSERT INTO request_frequency_temp
             SELECT 
                 r.query, 
@@ -534,6 +535,7 @@ async def form_lost_table():
             ON 
                 rf.query_id = r.id
             WHERE rf.date BETWEEN toDate('{min_date}') - 6 AND toDate({min_date})
+            GROUP BY r.query
             HAVING frequency >= 45 AND date = '{min_date}'
             """
             await client.command(stmt)
