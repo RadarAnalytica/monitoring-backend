@@ -534,7 +534,7 @@ async def form_lost_table():
                 request r 
             ON 
                 rf.query_id = r.id
-            WHERE rf.date BETWEEN toDate('{min_date}') - 6 AND toDate({min_date})
+            WHERE rf.date BETWEEN toDate('{min_date}') - 6 AND toDate('{min_date}')
             GROUP BY r.query
             HAVING frequency >= 45 AND date = '{min_date}'
             """
