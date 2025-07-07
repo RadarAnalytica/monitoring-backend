@@ -517,28 +517,45 @@ async def migrate_monitoring_oracle_data():
 
 
 async def form_lost_table():
-    min_date = date(year=2025, month=2, day=23)
+    min_date = date(year=2023, month=1, day=25)
     max_date = date(year=2025, month=3, day=18)
     current_date = min_date
     async with get_async_connection(send_receive_timeout=3600) as client:
+        q_id = await client.query("""SELECT max(id) FROM request""")
+        max_id = list(q_id.result_rows)[0][0]
         while current_date <= max_date:
-            logger.info(str(current_date))
-            stmt = f"""INSERT INTO request_frequency_temp
-            SELECT 
-                r.query, 
-                max(rf.date) as date, 
-                sum(rf.frequency) as frequency 
-            FROM 
-                request_frequency rf 
-            JOIN 
-                request r 
-            ON 
-                rf.query_id = r.id
-            WHERE rf.date BETWEEN toDate('{current_date}') - 6 AND toDate('{current_date}')
-            GROUP BY r.query
-            HAVING frequency >= 45 AND date = '{current_date}'
-            """
-            await client.command(stmt)
+            stmt_f = f"""SELECT coalesce(r.id, 0), rfc.frequency FROM request_frequency_cleaned rfc LEFT OUTER JOIN request r on r.query = rfc.query WHERE date = '{current_date}'"""
+            n_q = await client.query(stmt_f)
+            r = list(n_q.result_rows)
+            pd = current_date - timedelta(days=6)
+            stmt_fh = f"""SELECT query_id, sum(frequency) FROM request_frequency_very_new WHERE date BETWEEN '{pd}' AND '{current_date}' GROUP BY query_id"""
+            h_q = await client.query(stmt_fh)
+            p_r = dict(h_q.result_rows) if h_q.result_rows else dict()
+            new_rows = []
+            for row in r:
+                query_id = row[0]
+                frequency_new = row[1]
+                if not query_id:
+                    query_id = max_id
+                    max_id += 1
+                sum_6 = p_r.get(query_id, 0)
+                if not sum_6:
+                    dates_list = [current_date - timedelta(days=i) for i in range(7)]
+                    avg_f = round(frequency_new / 7)
+                    for d in dates_list:
+                        new_rows.append((query_id, d, avg_f))
+                else:
+                    new_f = frequency_new - sum_6
+                    if new_f <= 0:
+                        new_f = round(frequency_new / 14)
+                    new_rows.append((query_id, current_date, new_f))
+                if len(new_rows) > 10000:
+                    await client.insert(
+                        table="request_frequency_very_new",
+                        column_names=["query_id", "date", "frequency"],
+                        data=new_rows
+                    )
+                    new_rows = []
             current_date += timedelta(days=1)
 
 
