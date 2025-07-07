@@ -553,11 +553,11 @@ async def form_lost_table():
                 else:
                     new_f = frequency_new - sum_6
                     delimiter = round(frequency_new / 14)
-                    delimiter_plus = round((frequency_new / 7) * 1.5)
+                    delimiter_plus = round((frequency_new / 7) * 2)
                     if new_f <= 0 or new_f <= delimiter:
                         new_f = delimiter
                     if new_f >= delimiter_plus:
-                        diff = round((delimiter_plus - new_f) / 7)
+                        diff = round((new_f - delimiter_plus) / 7)
                         dates_list = [current_date - timedelta(days=i) for i in range(7)]
                         if diff > 0:
                             for d in dates_list:
