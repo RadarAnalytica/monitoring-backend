@@ -524,6 +524,7 @@ async def form_lost_table():
         q_id = await client.query("""SELECT max(id) FROM request""")
         max_id = list(q_id.result_rows)[0][0]
         while current_date <= max_date:
+            logger.info(f"DATE {current_date}")
             stmt_f = f"""SELECT coalesce(r.id, 0), rfc.frequency FROM request_frequency_cleaned rfc LEFT OUTER JOIN request r on r.query = rfc.query WHERE date = '{current_date}'"""
             n_q = await client.query(stmt_f)
             r = list(n_q.result_rows)
@@ -532,6 +533,7 @@ async def form_lost_table():
             h_q = await client.query(stmt_fh)
             p_r = dict(h_q.result_rows) if h_q.result_rows else dict()
             new_rows = []
+            logger.info("GOT FREQUENCY BOTH")
             for row in r:
                 query_id = row[0]
                 frequency_new = row[1]
@@ -550,12 +552,21 @@ async def form_lost_table():
                         new_f = round(frequency_new / 14)
                     new_rows.append((query_id, current_date, new_f))
                 if len(new_rows) > 10000:
+                    logger.info("Запись в БД")
                     await client.insert(
                         table="request_frequency_very_new",
                         column_names=["query_id", "date", "frequency"],
                         data=new_rows
                     )
                     new_rows = []
+            if new_rows:
+                logger.info("Запись в БД")
+                await client.insert(
+                    table="request_frequency_very_new",
+                    column_names=["query_id", "date", "frequency"],
+                    data=new_rows
+                )
+            logger.info(f"DATE FINISHED {current_date}")
             current_date += timedelta(days=1)
 
 
