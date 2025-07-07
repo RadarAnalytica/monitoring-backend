@@ -552,10 +552,11 @@ async def form_lost_table():
                         new_rows.append((query_id, d, avg_f))
                 else:
                     new_f = frequency_new - sum_6
-                    if new_f <= 0:
-                        new_f = round(frequency_new / 14)
+                    delimiter = round(frequency_new / 14)
+                    if new_f <= 0 or new_f <= delimiter:
+                        new_f = delimiter
                     new_rows.append((query_id, current_date, new_f))
-                if len(new_rows) > 10000:
+                if len(new_rows) > 20000:
                     logger.info("Запись в БД")
                     await client.insert(
                         table="request_frequency_very_new",
