@@ -1,7 +1,7 @@
 import asyncio
 import json
 import math
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
 
 from clickhouse_db.get_async_connection import get_async_connection
 from server.funcs.upload_requests_data import recount_growth_by_date
@@ -525,7 +525,7 @@ async def form_lost_table():
         max_id = list(q_id.result_rows)[0][0]
         while current_date <= max_date:
             logger.info(f"DATE {current_date}")
-            stmt_f = f"""SELECT coalesce(r.id, 0), rfc.frequency FROM request_frequency_cleaned rfc LEFT OUTER JOIN request r on r.query = rfc.query WHERE date = '{current_date}'"""
+            stmt_f = f"""SELECT coalesce(r.id, 0), rfc.frequency, rfc.query FROM request_frequency_cleaned rfc LEFT OUTER JOIN request r on r.query = rfc.query WHERE date = '{current_date}'"""
             n_q = await client.query(stmt_f)
             r = list(n_q.result_rows)
             pd = current_date - timedelta(days=6)
@@ -533,12 +533,16 @@ async def form_lost_table():
             h_q = await client.query(stmt_fh)
             p_r = dict(h_q.result_rows) if h_q.result_rows else dict()
             new_rows = []
+            new_queries = []
             logger.info("GOT FREQUENCY BOTH")
             for row in r:
                 query_id = row[0]
                 frequency_new = row[1]
+                query = row[2]
                 if not query_id:
                     query_id = max_id
+                    updated = datetime.combine(current_date, time(hour=1, minute=0, second=0))
+                    new_queries.append((query_id, query, frequency_new, 0, 0, updated))
                     max_id += 1
                 sum_6 = p_r.get(query_id, 0)
                 if not sum_6:
@@ -565,6 +569,13 @@ async def form_lost_table():
                     table="request_frequency_very_new",
                     column_names=["query_id", "date", "frequency"],
                     data=new_rows
+                )
+            if new_queries:
+                logger.info("Запись в БД квери")
+                await client.insert(
+                    table="request",
+                    column_names=["id", "query", "quantity", "subject_id", "total_products", "updated"],
+                    data=new_queries
                 )
             logger.info(f"DATE FINISHED {current_date}")
             current_date += timedelta(days=1)
