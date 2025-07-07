@@ -558,10 +558,10 @@ async def form_lost_table():
                         new_f = delimiter
                     if new_f >= delimiter_plus:
                         diff = round((delimiter_plus - new_f) / 7)
-                        logger.info(diff)
                         dates_list = [current_date - timedelta(days=i) for i in range(7)]
-                        for d in dates_list:
-                            new_rows.append((query_id, d, diff))
+                        if diff > 0:
+                            for d in dates_list:
+                                new_rows.append((query_id, d, diff))
                         new_f = delimiter_plus
                     new_rows.append((query_id, current_date, new_f))
                 if len(new_rows) > 20000:
