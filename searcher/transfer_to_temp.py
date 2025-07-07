@@ -553,7 +553,7 @@ async def form_lost_table():
                 else:
                     new_f = frequency_new - sum_6
                     delimiter = round(frequency_new / 14)
-                    delimiter_plus = round((frequency_new / 7) * 2)
+                    delimiter_plus = round((frequency_new / 7) * 1.5)
                     if new_f <= 0 or new_f <= delimiter:
                         new_f = delimiter
                     if new_f >= delimiter_plus:
