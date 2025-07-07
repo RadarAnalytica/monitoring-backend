@@ -517,7 +517,7 @@ async def migrate_monitoring_oracle_data():
 
 
 async def form_lost_table():
-    min_date = date(year=2023, month=1, day=25)
+    min_date = date(year=2025, month=2, day=23)
     max_date = date(year=2025, month=3, day=18)
     current_date = min_date
     async with get_async_connection(send_receive_timeout=3600) as client:
