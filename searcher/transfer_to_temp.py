@@ -515,6 +515,31 @@ async def migrate_monitoring_oracle_data():
                 )
                 new_rows = []
 
+
+async def form_lost_table():
+    min_date = date(year=2023, month=1, day=26)
+    max_date = date(year=2025, month=3, day=18)
+    current_date = min_date
+    async with get_async_connection(send_receive_timeout=3600) as client:
+        while current_date <= max_date:
+            stmt = f"""INSERT INTO request_frequency_temp
+            SELECT 
+                r.query, 
+                max(rf.date) as date, 
+                sum(rf.frequency) as frequency 
+            FROM 
+                request_frequency rf 
+            JOIN 
+                request r 
+            ON 
+                rf.query_id = r.id
+            WHERE rf.date BETWEEN toDate('{min_date}') - 6 AND toDate({min_date})
+            HAVING frequency >= 45 AND date = '{min_date}'
+            """
+            await client.command(stmt)
+            current_date += timedelta(days=1)
+
+
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(migrate_monitoring_oracle_data())
+    asyncio.run(form_lost_table())
