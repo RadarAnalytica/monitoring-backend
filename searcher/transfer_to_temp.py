@@ -311,7 +311,7 @@ INNER JOIN
             query,
             total_products
         FROM query_history
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND date = yesterday()
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date = yesterday())
     ) AS qh ON qh.query = qpf2.q
 WHERE qpf2.ratio > 0
 """
@@ -324,7 +324,7 @@ FROM (
         SELECT
             query_id as id,
             row_number() OVER (ORDER BY id) AS rn
-        FROM request_growth where date = yesterday() - 1
+        FROM request_growth WHERE date = yesterday()
     ) AS sorted_ids
 
 GROUP BY group_num
