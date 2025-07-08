@@ -259,11 +259,11 @@ FROM
         WHERE wb_id IN (
             SELECT DISTINCT product
             FROM query_product_flat
-            WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN 133 AND 162)
+            WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         )
     ) AS pd ON pd.wb_id = qpf.product
     LEFT OUTER JOIN (select query, 1 as ex from request WHERE match(query, '^[0-9]+$')) as rex on rex.query = toString(pd.wb_id) 
-    WHERE ((qpf.query >= 1) AND (qpf.query <= %(v2)s)) AND (qpf.date = 162)
+    WHERE ((qpf.query >= %(v1)s) AND (qpf.query <= %(v2)s)) AND (SELECT id FROM dates WHERE date = yesterday())
     GROUP BY qpf.query
     ORDER BY qpf.query ASC
 ) as qpf2 
@@ -273,7 +273,7 @@ INNER JOIN
             query,
             countDistinct(product) AS dpc
         FROM radar.query_product_flat
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN 133 AND 162)
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         GROUP BY query
     ) AS qpf1 ON qpf2.q = qpf1.query
     INNER JOIN
@@ -295,7 +295,7 @@ INNER JOIN
             g60,
             g90
         FROM request_growth
-        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date = yesterday() - 1)
+        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date = yesterday())
     ) AS rg ON rg.query_id = qpf2.q
     INNER JOIN
     (
@@ -311,19 +311,32 @@ INNER JOIN
             query,
             total_products
         FROM query_history
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND date = yesterday() - 1
+        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND date = yesterday()
     ) AS qh ON qh.query = qpf2.q
 WHERE qpf2.ratio > 0
 """
-    left = 8524676
-    right = 10300000
-    step = 100000
+    stmt_dia = """SELECT
+    intDiv(rn - 1, 25000) AS group_num,
+    min(id) AS min_id,
+    max(id) AS max_id,
+    count(*) AS cnt
+FROM (
+        SELECT
+            query_id as id,
+            row_number() OVER (ORDER BY id) AS rn
+        FROM request_growth where date = yesterday() - 1
+    ) AS sorted_ids
+
+GROUP BY group_num
+ORDER BY group_num"""
     async with get_async_connection(send_receive_timeout=3600) as client:
-        for i in range(left, right, step):
-            logger.info(f"batch {i}")
+        q_dia = await client.query(stmt_dia)
+        l_r = [(row[1], row[2]) for row in q_dia.result_rows]
+        for left, right in l_r:
+            logger.info(f"batch {left} - {right}")
             params = {
-                "v1": i,
-                "v2": i + step - 1
+                "v1": left,
+                "v2": right
             }
             q = await client.query(stmt, parameters=params)
             data = []
@@ -374,7 +387,7 @@ WHERE qpf2.ratio > 0
                 buyout_percent = row[43]
                 brands_list = row[44]
                 subjects_list = row[45]
-                rating = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue_300 / 100)
+                rating, competition_level = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue_300 / 100)
                 data.append((
                     query_id,
                     query,
@@ -423,10 +436,11 @@ WHERE qpf2.ratio > 0
                     brands_list,
                     subjects_list,
                     rating,
+                    competition_level
                 ))
 
             await client.insert(
-                table="monitoring_oracle_new",
+                table="monitoring_oracle_new_stage",
                 column_names=[
                     "query_id",
                     "query",
@@ -475,13 +489,18 @@ WHERE qpf2.ratio > 0
                     "brands_list",
                     "subjects_list",
                     "niche_rating",
+                    "competition_level"
                 ],
                 data=data
             )
+        await client.command("RENAME TABLE monitoring_oracle_new TO monitoring_oracle_old")
+        await client.command("RENAME TABLE monitoring_oracle_stage TO monitoring_oracle_new_2")
+        await client.command("RENAME TABLE monitoring_oracle_old TO monitoring_oracle_stage")
+        await client.command("TRUNCATE TABLE monitoring_oracle_stage")
+
 
 async def migrate_monitoring_oracle_data():
     async with get_async_connection(send_receive_timeout=3600) as client:
-        # Получаем все строки
         query = "SELECT * FROM radar.monitoring_oracle_new"
         columns = await client.query("DESCRIBE TABLE radar.monitoring_oracle_new")
         column_names = [row[0] for row in columns.result_rows]
@@ -514,6 +533,14 @@ async def migrate_monitoring_oracle_data():
                     column_names=new_column_names
                 )
                 new_rows = []
+        if new_rows:
+            logger.info("WRITE")
+            await client.insert(
+                'radar.monitoring_oracle_new_2',
+                new_rows,
+                column_names=new_column_names
+            )
+
 
 
 async def form_lost_table():
@@ -592,4 +619,4 @@ async def form_lost_table():
 
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(form_lost_table())
+    asyncio.run(main())
