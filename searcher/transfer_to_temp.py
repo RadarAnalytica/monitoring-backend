@@ -263,7 +263,7 @@ FROM
         )
     ) AS pd ON pd.wb_id = qpf.product
     LEFT OUTER JOIN (select query, 1 as ex from request WHERE match(query, '^[0-9]+$')) as rex on rex.query = toString(pd.wb_id) 
-    WHERE ((qpf.query >= %(v1)s) AND (qpf.query <= %(v2)s)) AND (SELECT id FROM dates WHERE date = yesterday())
+    WHERE ((qpf.query >= %(v1)s) AND (qpf.query <= %(v2)s)) AND (qpf.date = (SELECT id FROM dates WHERE date = yesterday()))
     GROUP BY qpf.query
     ORDER BY qpf.query ASC
 ) as qpf2 
