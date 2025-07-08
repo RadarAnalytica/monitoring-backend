@@ -440,7 +440,7 @@ ORDER BY group_num"""
                 ))
 
             await client.insert(
-                table="monitoring_oracle_new_stage",
+                table="monitoring_oracle_stage",
                 column_names=[
                     "query_id",
                     "query",
