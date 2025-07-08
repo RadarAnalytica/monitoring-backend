@@ -284,7 +284,7 @@ INNER JOIN
             sum(if(date >= (yesterday() - 59), frequency, 0)) AS sum_60,
             sum(frequency) AS sum_90
         FROM request_frequency
-        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date >= (yesterday() - 89))
+        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date >= yesterday() - 89)
         GROUP BY query_id
     ) AS rf ON rf.query_id = qpf2.q
     INNER JOIN
