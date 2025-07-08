@@ -493,7 +493,7 @@ ORDER BY group_num"""
                 ],
                 data=data
             )
-        await client.command("RENAME TABLE monitoring_oracle_new TO monitoring_oracle_old")
+        await client.command("RENAME TABLE monitoring_oracle_new_2 TO monitoring_oracle_old")
         await client.command("RENAME TABLE monitoring_oracle_stage TO monitoring_oracle_new_2")
         await client.command("RENAME TABLE monitoring_oracle_old TO monitoring_oracle_stage")
         await client.command("TRUNCATE TABLE monitoring_oracle_stage")
