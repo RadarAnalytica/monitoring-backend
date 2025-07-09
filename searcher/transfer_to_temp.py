@@ -3,6 +3,7 @@ import json
 import math
 from datetime import date, timedelta, datetime, time
 
+from actions.requests_parse import transfer_aggregates
 from clickhouse_db.get_async_connection import get_async_connection
 from server.funcs.upload_requests_data import recount_growth_by_date
 from settings import logger
@@ -127,6 +128,11 @@ def evaluate_niche(demand_coef, monopoly_pct, advert_pct, buyout_pct, revenue):
     competition_level = normalize(base_weights_and_scores)
 
     return niche_level, competition_level
+
+async def transfer_aggregates_to_local():
+    stmt = """INSERT INTO wb_id_extended_local SELECT * FROM wb_id_extended"""
+    async with get_async_connection(send_receive_timeout=3600) as client:
+        await client.command(stmt)
 
 async def main():
     stmt = """SELECT
@@ -619,4 +625,4 @@ async def form_lost_table():
 
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(main())
+    transfer_aggregates.delay()

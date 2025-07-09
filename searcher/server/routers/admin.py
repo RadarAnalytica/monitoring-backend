@@ -2,8 +2,11 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
 from datetime import datetime, date as date_type
 from urllib.parse import quote
+
+from actions.requests_parse import transfer_aggregates
 from server.funcs.get_trends_report import get_report_download_bytes, MONTH_NAMES
 from server.funcs.get_wb_id_external_report import get_external_report_download_bytes
+from settings import SECRET_KEY
 
 router = APIRouter()
 
@@ -48,3 +51,14 @@ async def get_advert_download(date_: date_type):
     except Exception as e:
         print(f"Ошибка: {e}")
         return JSONResponse(status_code=500, content="Ошибка")
+
+
+@router.get("/get-wb-aggr", include_in_schema=False)
+async def get_advert_download(password: str):
+    """
+    Перекачивание данных
+    """
+    if password != SECRET_KEY:
+        return JSONResponse(status_code=403, content="NOT AUTHORIZED")
+    transfer_aggregates.delay()
+    return JSONResponse(status_code=200, content="ok")

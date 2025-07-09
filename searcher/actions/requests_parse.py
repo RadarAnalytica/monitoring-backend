@@ -14,6 +14,7 @@ from parser.get_query_subject import get_queries_subjects
 from parser.parser_main import get_city_result
 from parser.optimize_tables import optimize_table_final, optimize_request_product_partition
 from celery_main import celery_app
+from server.funcs.transfer_to_local import transfer_aggregates_to_local
 from settings import logger
 
 
@@ -116,3 +117,8 @@ def fire_requests_subject():
 @celery_app.task(name="get_today_subjects_dict")
 def get_today_subjects_dict():
     asyncio.run(collect_subject_ids_names())
+
+
+@celery_app.task(name="transfer_aggregates")
+def transfer_aggregates():
+    asyncio.run(transfer_aggregates_to_local())
