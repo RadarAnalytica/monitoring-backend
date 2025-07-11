@@ -625,4 +625,4 @@ async def form_lost_table():
 
 # Запуск
 if __name__ == '__main__':
-    transfer_aggregates.delay()
+    asyncio.run(main())
