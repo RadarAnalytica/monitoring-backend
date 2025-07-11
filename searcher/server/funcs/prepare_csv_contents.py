@@ -436,6 +436,6 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
         requests_data.extend(new_queries_meta)
 
     logger.info("Data prepared")
-    if len(requests_data) < 750000:
+    if len(requests_data) < 95000:
         raise ValueError
     return requests_data, error_rows
