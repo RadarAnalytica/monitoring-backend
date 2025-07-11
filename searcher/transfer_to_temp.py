@@ -135,6 +135,7 @@ async def transfer_aggregates_to_local():
         await client.command(stmt)
 
 async def main():
+    logger.info("начинаем")
     stmt = """SELECT
         qpf2.q as query_id,
         r.query as query,
@@ -330,7 +331,7 @@ FROM (
         SELECT
             query_id as id,
             row_number() OVER (ORDER BY id) AS rn
-        FROM request_growth WHERE date = yesterday()
+        FROM request_growth WHERE date = yesterday() - 2
     ) AS sorted_ids
 
 GROUP BY group_num
