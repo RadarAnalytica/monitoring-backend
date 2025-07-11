@@ -1,7 +1,8 @@
 from datetime import datetime, date
 
 from clickhouse_db.get_async_connection import get_async_connection
-from server.funcs.prepare_csv_contents import prepare_request_frequency, recount_request_frequency, get_request_frequency_by_date
+from server.funcs.prepare_csv_contents import prepare_request_frequency, recount_request_frequency, \
+    get_request_frequency_by_date, prepare_request_frequency_excel
 from settings import logger
 
 
@@ -122,3 +123,41 @@ async def recount_growth_by_date(date_: date):
         await upload_request_growth_worker(client=client, requests_slice=growth_rows)
     logger.info(f"GROWTH ROWS FOR DATE {date_} UPLOADED ")
 
+
+
+
+async def upload_requests_excel_bg(requests_data: list):
+    logger.info("Uploading requests data")
+    async with get_async_connection() as client:
+        slice_1 = requests_data[:250000]
+        slice_2 = requests_data[250000:500000]
+        slice_3 = requests_data[500000:750000]
+        slice_4 = requests_data[750000:]
+
+        await upload_requests_worker(slice_1, client)
+        await upload_requests_worker(slice_2, client)
+        await upload_requests_worker(slice_3, client)
+        await upload_requests_worker(slice_4, client)
+        await client.command("OPTIMIZE TABLE request FINAL")
+        logger.info("Requests uploaded")
+        frequency_rows_1, growth_rows_1 = await prepare_request_frequency_excel(slice_1, client)
+        if frequency_rows_1:
+            await upload_request_frequency_worker(frequency_rows_1, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_1)
+        logger.info("Slice 1 ready")
+        frequency_rows_2, growth_rows_2 = await prepare_request_frequency_excel(slice_2, client)
+        if frequency_rows_2:
+            await upload_request_frequency_worker(frequency_rows_2, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_2)
+        logger.info("Slice 2 ready")
+        frequency_rows_3, growth_rows_3 = await prepare_request_frequency_excel(slice_3, client)
+        if frequency_rows_3:
+            await upload_request_frequency_worker(frequency_rows_3, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_3)
+        logger.info("Slice 3 ready")
+        frequency_rows_4, growth_rows_4 = await prepare_request_frequency_excel(slice_4, client)
+        if frequency_rows_4:
+            await upload_request_frequency_worker(frequency_rows_4, client)
+            await upload_request_growth_worker(client=client, requests_slice=growth_rows_4)
+        logger.info("Slice 4 ready")
+    logger.warning("DB renewal complete")

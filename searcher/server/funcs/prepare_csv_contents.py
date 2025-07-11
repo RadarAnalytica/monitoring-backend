@@ -5,12 +5,32 @@ from parser.get_init_data import (
     get_requests_id_download_data,
     get_requests_id_download_data_new,
     get_requests_max_id,
-    get_request_frequency_download_data_new,
+    get_request_frequency_download_data_new, get_requests_id_download_data_excel,
 )
-from parser.get_query_subject import get_query_prio_subject, get_query_list_prio_subjects
+from parser.get_query_subject import get_query_prio_subject, get_query_list_prio_subjects, get_query_list_totals
 from settings import logger
 from aiohttp import ClientSession
 import unicodedata
+
+
+def unnest_subjects_list(subjects_list: list):
+    result = dict()
+    for subject_data in subjects_list:
+        s_id = str(subject_data.get("id"))
+        s_name = strip_invisible(subject_data.get("name", "").strip().lower())
+        children = subject_data.get("childs", [])
+        result[s_name] = s_id
+        result.update(unnest_subjects_list(children))
+    return result
+
+
+async def get_today_subjects_dict():
+    url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
+    async with ClientSession() as http_session:
+        async with http_session.get(url) as resp:
+            result = await resp.json()
+    subjects_dict = unnest_subjects_list(result)
+    return subjects_dict
 
 
 def strip_invisible(s):
@@ -168,6 +188,82 @@ async def prepare_request_frequency(rows, client):
     return frequency_rows, growth_rows
 
 
+
+async def prepare_request_frequency_excel(rows, client):
+    frequency_rows = []
+    growth_rows = []
+    queries_ids = tuple(sorted([row[0] for row in rows]))
+    queries_parts = []
+    step = 1000
+    new_date: date = rows[0][5].date()
+    start_week = new_date - timedelta(days=6)
+    end_week = new_date - timedelta(days=1)
+    days_179 = new_date - timedelta(days=179)
+    days_119 = new_date - timedelta(days=119)
+    days_90 = new_date - timedelta(days=90)
+    days_89 = new_date - timedelta(days=89)
+    days_60 = new_date - timedelta(days=60)
+    days_59 = new_date - timedelta(days=59)
+    days_30 = new_date - timedelta(days=30)
+    days_29 = new_date - timedelta(days=29)
+    for i in range(300):
+        queries_parts.append(queries_ids[i * step : (step * i) + step])
+    query_1 = f"""SELECT 
+                query_id, 
+                (sum(if(date between '{str(start_week)}' and '{str(end_week)}', frequency, 0)) as freq_last,
+                sum(if(date between '{str(days_179)}' and '{str(days_90)}', frequency, 0)) as freq_old_90,
+                sum(if(date between '{str(days_89)}' and '{str(new_date)}', frequency, 0)) as freq_new_90,
+                sum(if(date between '{str(days_119)}' and '{str(days_60)}', frequency, 0)) as freq_old_60,
+                sum(if(date between '{str(days_59)}' and '{str(new_date)}', frequency, 0)) as freq_new_60,
+                sum(if(date between '{str(days_59)}' and '{str(days_30)}', frequency, 0)) as freq_old_30,
+                sum(if(date between '{str(days_29)}' and '{str(new_date)}', frequency, 0)) as freq_new_30)
+            FROM request_frequency
+            WHERE query_id IN %(v1)s 
+            AND date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
+            GROUP BY query_id"""
+    queries_frequency = dict()
+    print("getting query ids")
+    for queries_part in queries_parts:
+        if not queries_part:
+            continue
+        params = {"v1": queries_part}
+        query_ids_query = await client.query(query_1, parameters=params)
+        query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
+        queries_frequency.update(query_ids_temp)
+    for row in rows:
+        query_id = int(row[0])
+        new_freq = int(row[2])
+        subject_id = int(row[3])
+        try:
+            (
+                prev_query_sum,
+                freq_old_90,
+                freq_new_90,
+                freq_old_60,
+                freq_new_60,
+                freq_old_30,
+                freq_new_30
+            ) = queries_frequency.get(query_id, (0, 0, 0, 0, 0, 0, 0))
+            if not prev_query_sum:
+                sum_30 = new_freq
+                g30 = 100 if sum_30 > 0 else 0
+                g60 = 100 if sum_30 > 0 else 0
+                g90 = 100 if sum_30 > 0 else 0
+            else:
+                freq_new_30 += new_freq
+                freq_new_60 += new_freq
+                freq_new_90 += new_freq
+                sum_30 = freq_new_30
+                g30 = (int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100) if sum_30 > 0 else 0
+                g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_30 > 0 else 0
+                g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_30 > 0 else 0
+            frequency_rows.append((query_id, new_freq, new_date))
+            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, subject_id))
+        except (ValueError, TypeError, IndexError):
+            logger.error("SHIT REQUESTS OMGGGG")
+    return frequency_rows, growth_rows
+
+
 async def recount_request_frequency(rows, client):
     frequency_rows = []
     queries_ids = tuple(sorted([row[0] for row in rows]))
@@ -294,3 +390,52 @@ async def get_request_frequency_by_date(date_, client):
             logger.error("SHIT REQUESTS OMGGGG")
     return growth_rows
 
+
+
+
+async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename: str):
+    file_date = date.fromisoformat(filename.strip().replace(".xlsx", ""))
+    now_date = datetime(
+        year=file_date.year,
+        month=file_date.month,
+        day=file_date.day,
+        hour=1,
+        minute=2,
+        second=0,
+        microsecond=0,
+    )
+    max_query_id = await get_requests_max_id()
+    queries_dict = await get_requests_id_download_data_excel()
+    subjects_dict = await get_today_subjects_dict()
+    requests_data = []
+    error_rows = []
+    new_queries = []
+    new_query_scaler = 1
+
+    async with ClientSession() as http_session:
+        for row in contents:
+            try:
+                query_raw, quantity, subject_name = row
+                subject_name = strip_invisible(subject_name.strip().lower())
+                subject_id = subjects_dict.get(subject_name, 0)
+                query = strip_invisible(str(query_raw).strip().strip("!#").lower())
+                if not query:
+                    continue
+                query_id, total_products = queries_dict.get(query, (0, 0))
+                if not query_id:
+                    query_id = max_query_id + new_query_scaler
+                    new_query_scaler += 1
+                    logger.info(f"GETTING SUBJECT FOR {query}")
+                    new_queries.append((query_id, query, now_date, quantity, subject_id))
+                else:
+                    requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
+            except (ValueError, TypeError, IndexError) as e:
+                error_rows.append(row)
+
+        new_queries_meta = await get_query_list_totals(http_session=http_session, queries=new_queries)
+        requests_data.extend(new_queries_meta)
+
+    logger.info("Data prepared")
+    if len(requests_data) < 750000:
+        raise ValueError
+    return requests_data, error_rows
