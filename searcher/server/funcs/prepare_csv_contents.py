@@ -415,9 +415,9 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
     async with ClientSession() as http_session:
         for i, row in enumerate(contents):
             try:
+                query_raw, quantity, subject_name = row
                 if i == 0:
                     print(query_raw)
-                query_raw, quantity, subject_name = row
                 subject_name = strip_invisible(subject_name.strip().lower())
                 subject_id = subjects_dict.get(subject_name, 0)
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
