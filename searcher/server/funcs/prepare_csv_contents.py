@@ -413,8 +413,10 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
     new_query_scaler = 1
 
     async with ClientSession() as http_session:
-        for row in contents:
+        for i, row in enumerate(contents):
             try:
+                if i == 0:
+                    print(query_raw)
                 query_raw, quantity, subject_name = row
                 subject_name = strip_invisible(subject_name.strip().lower())
                 subject_id = subjects_dict.get(subject_name, 0)

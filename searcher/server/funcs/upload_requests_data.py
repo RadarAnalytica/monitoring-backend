@@ -167,5 +167,5 @@ async def upload_requests_excel_bg(requests_data: list):
             if frequency_rows_4:
                 await upload_request_frequency_worker(frequency_rows_4, client)
                 await upload_request_growth_worker(client=client, requests_slice=growth_rows_4)
-        logger.info("Slice 4 ready")
+            logger.info("Slice 4 ready")
     logger.warning("DB renewal complete")
