@@ -84,7 +84,7 @@ async def upload_excel(
     if not check_jwt_token(token):
         return JSONResponse(status_code=403, content="Unauthorized")
     try:
-        df = pd.read_excel(file.file, sheet_name=2, skiprows=2, engine="openpyxl")
+        df = pd.read_excel(file.file, sheet_name=2, skiprows=1, engine="openpyxl")
         df = df.rename(columns={
             df.columns[0]: 'query',
             df.columns[1]: 'query_count',
