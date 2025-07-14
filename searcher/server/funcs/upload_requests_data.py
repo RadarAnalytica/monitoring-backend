@@ -134,10 +134,14 @@ async def upload_requests_excel_bg(requests_data: list):
         slice_3 = requests_data[500000:750000]
         slice_4 = requests_data[750000:]
 
-        await upload_requests_worker(slice_1, client)
-        await upload_requests_worker(slice_2, client)
-        await upload_requests_worker(slice_3, client)
-        await upload_requests_worker(slice_4, client)
+        if slice_1:
+            await upload_requests_worker(slice_1, client)
+        if slice_2:
+            await upload_requests_worker(slice_2, client)
+        if slice_3:
+            await upload_requests_worker(slice_3, client)
+        if slice_4:
+            await upload_requests_worker(slice_4, client)
         await client.command("OPTIMIZE TABLE request FINAL")
         logger.info("Requests uploaded")
         frequency_rows_1, growth_rows_1 = await prepare_request_frequency_excel(slice_1, client)
