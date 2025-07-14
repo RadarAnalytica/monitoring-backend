@@ -144,24 +144,28 @@ async def upload_requests_excel_bg(requests_data: list):
             await upload_requests_worker(slice_4, client)
         await client.command("OPTIMIZE TABLE request FINAL")
         logger.info("Requests uploaded")
-        frequency_rows_1, growth_rows_1 = await prepare_request_frequency_excel(slice_1, client)
-        if frequency_rows_1:
-            await upload_request_frequency_worker(frequency_rows_1, client)
-            await upload_request_growth_worker(client=client, requests_slice=growth_rows_1)
-        logger.info("Slice 1 ready")
-        frequency_rows_2, growth_rows_2 = await prepare_request_frequency_excel(slice_2, client)
-        if frequency_rows_2:
-            await upload_request_frequency_worker(frequency_rows_2, client)
-            await upload_request_growth_worker(client=client, requests_slice=growth_rows_2)
-        logger.info("Slice 2 ready")
-        frequency_rows_3, growth_rows_3 = await prepare_request_frequency_excel(slice_3, client)
-        if frequency_rows_3:
-            await upload_request_frequency_worker(frequency_rows_3, client)
-            await upload_request_growth_worker(client=client, requests_slice=growth_rows_3)
-        logger.info("Slice 3 ready")
-        frequency_rows_4, growth_rows_4 = await prepare_request_frequency_excel(slice_4, client)
-        if frequency_rows_4:
-            await upload_request_frequency_worker(frequency_rows_4, client)
-            await upload_request_growth_worker(client=client, requests_slice=growth_rows_4)
+        if slice_1:
+            frequency_rows_1, growth_rows_1 = await prepare_request_frequency_excel(slice_1, client)
+            if frequency_rows_1:
+                await upload_request_frequency_worker(frequency_rows_1, client)
+                await upload_request_growth_worker(client=client, requests_slice=growth_rows_1)
+            logger.info("Slice 1 ready")
+        if slice_2:
+            frequency_rows_2, growth_rows_2 = await prepare_request_frequency_excel(slice_2, client)
+            if frequency_rows_2:
+                await upload_request_frequency_worker(frequency_rows_2, client)
+                await upload_request_growth_worker(client=client, requests_slice=growth_rows_2)
+            logger.info("Slice 2 ready")
+        if slice_3:
+            frequency_rows_3, growth_rows_3 = await prepare_request_frequency_excel(slice_3, client)
+            if frequency_rows_3:
+                await upload_request_frequency_worker(frequency_rows_3, client)
+                await upload_request_growth_worker(client=client, requests_slice=growth_rows_3)
+            logger.info("Slice 3 ready")
+        if slice_4:
+            frequency_rows_4, growth_rows_4 = await prepare_request_frequency_excel(slice_4, client)
+            if frequency_rows_4:
+                await upload_request_frequency_worker(frequency_rows_4, client)
+                await upload_request_growth_worker(client=client, requests_slice=growth_rows_4)
         logger.info("Slice 4 ready")
     logger.warning("DB renewal complete")
