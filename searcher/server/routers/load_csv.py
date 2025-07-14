@@ -6,7 +6,7 @@ from server.auth_token.check_token import check_jwt_token
 from server.auth_token.token_scheme import oauth2_scheme
 from server.funcs.prepare_csv_contents import prepare_csv_contents, prepare_update_month_csv_contents, \
     prepare_excel_contents
-from server.funcs.upload_requests_data import upload_requests_csv_bg, recount_requests_csv_bg
+from server.funcs.upload_requests_data import upload_requests_csv_bg, recount_requests_csv_bg, upload_requests_excel_bg
 import pandas as pd
 from settings import logger
 
@@ -98,7 +98,7 @@ async def upload_excel(
             return {"message": "Error with file name, must be {YYYY-MM-DD}.xlsx"}
 
         logger.info("Loading to background")
-        background_tasks.add_task(upload_requests_csv_bg, requests_data)
+        background_tasks.add_task(upload_requests_excel_bg, requests_data)
     except Exception as e:
         logger.error(f"{e}")
         return {"message": "There was an error uploading the Excel file"}
