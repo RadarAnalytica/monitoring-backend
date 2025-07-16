@@ -409,6 +409,7 @@ ORDER BY group_num"""
                     top_supplier_revenue = supplier_revenue[0]
                     all_suppliers_revenue = sum(supplier_revenue)
                     monopoly_percent = round(top_supplier_revenue * 100 / all_suppliers_revenue) if all_suppliers_revenue else 0
+                    print(monopoly_percent)
                 rating, competition_level = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue_300 / 100)
                 data.append((
                     query_id,
