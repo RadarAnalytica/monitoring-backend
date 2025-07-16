@@ -1,6 +1,7 @@
 import asyncio
 import json
 import math
+from collections import defaultdict
 from datetime import date, timedelta, datetime, time
 
 from actions.requests_parse import transfer_aggregates
@@ -203,7 +204,8 @@ async def main():
         qpf2.ratio as buyout_percent,
         
         qpf2.brands as brands_list,
-        qpf2.subjects as subjects_list
+        qpf2.subjects as subjects_list,
+        qpf2.suppler_wb_id_revenue as suppler_revenue
         
 FROM
 (
@@ -241,7 +243,8 @@ FROM
         sum(if(pd.wb_id_revenue > 0, 1, 0)) as with_sales_ids,
         count() as all_ids,
         sum(if(pd.wb_id_revenue > 0 and qpf.place <= 300, 1, 0)) as with_sales_ids_300,
-        sum(if(qpf.place <= 300, 1, 0)) as total_ids_300
+        sum(if(qpf.place <= 300, 1, 0)) as total_ids_300,
+        groupArrayIf((pd.supl_id, pd.wb_id_revenue), qpf.place <= 100) as suppler_wb_id_revenue
     FROM radar.query_product_flat AS qpf
     INNER JOIN
     (
@@ -394,6 +397,18 @@ ORDER BY group_num"""
                 buyout_percent = row[43]
                 brands_list = row[44]
                 subjects_list = row[45]
+                supplier_revenue = row[46]
+                suppliers_dict = defaultdict(int)
+                for s_id_revenue in supplier_revenue:
+                    s_id = s_id_revenue[0]
+                    s_revenue = s_id_revenue[1]
+                    suppliers_dict[s_id] += s_revenue
+                supplier_revenue = list(suppliers_dict.values())
+                supplier_revenue.sort(reverse=True)
+                if supplier_revenue and len(supplier_revenue) > 1:
+                    top_supplier_revenue = supplier_revenue[0]
+                    all_suppliers_revenue = sum(supplier_revenue)
+                    monopoly_percent = round(top_supplier_revenue * 100 / all_suppliers_revenue) if all_suppliers_revenue else 0
                 rating, competition_level = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue_300 / 100)
                 data.append((
                     query_id,
