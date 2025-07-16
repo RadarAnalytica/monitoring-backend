@@ -269,7 +269,12 @@ FROM
         WHERE wb_id IN (
             SELECT DISTINCT product
             FROM query_product_flat
-            WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
+            WHERE query IN (
+            SELECT DISTINCT query 
+            FROM query_product_flat 
+            WHERE date = (SELECT max(date) FROM dates) 
+            AND query BETWEEN %(v1)s AND %(v2)s
+        ) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         )
     ) AS pd ON pd.wb_id = qpf.product
     LEFT OUTER JOIN (select query, 1 as ex from request WHERE match(query, '^[0-9]+$')) as rex on rex.query = toString(pd.wb_id) 
@@ -283,18 +288,28 @@ INNER JOIN
             query,
             countDistinct(product) AS dpc
         FROM radar.query_product_flat
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
+        WHERE query IN (
+            SELECT DISTINCT query 
+            FROM query_product_flat 
+            WHERE date = (SELECT max(date) FROM dates) 
+            AND query BETWEEN %(v1)s AND %(v2)s
+        ) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         GROUP BY query
     ) AS qpf1 ON qpf2.q = qpf1.query
     INNER JOIN
     (
         SELECT
             query_id,
-            sum(if(date >= (yesterday() - 31), frequency, 0)) AS sum_30,
-            sum(if(date >= (yesterday() - 61), frequency, 0)) AS sum_60,
+            sum(if(date >= (yesterday() - 29), frequency, 0)) AS sum_30,
+            sum(if(date >= (yesterday() - 59), frequency, 0)) AS sum_60,
             sum(frequency) AS sum_90
         FROM request_frequency
-        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date >= yesterday() - 91)
+        WHERE query_id IN (
+            SELECT DISTINCT query 
+            FROM query_product_flat 
+            WHERE date = (SELECT max(date) FROM dates) 
+            AND query BETWEEN %(v1)s AND %(v2)s
+        ) AND (date >= yesterday() - 89)
         GROUP BY query_id
     ) AS rf ON rf.query_id = qpf2.q
     INNER JOIN
@@ -305,7 +320,12 @@ INNER JOIN
             g60,
             g90
         FROM request_growth
-        WHERE ((query_id >= %(v1)s) AND (query_id <= %(v2)s)) AND (date = yesterday() - 2)
+        WHERE query_id IN (
+            SELECT DISTINCT query 
+            FROM query_product_flat 
+            WHERE date = (SELECT max(date) FROM dates) 
+            AND query BETWEEN %(v1)s AND %(v2)s
+        ) AND (date = yesterday())
     ) AS rg ON rg.query_id = qpf2.q
     INNER JOIN
     (
@@ -313,7 +333,12 @@ INNER JOIN
             id,
             query,
         FROM request
-        WHERE ((id >= %(v1)s) AND (id <= %(v2)s))
+        WHERE id IN (
+            SELECT DISTINCT query 
+            FROM query_product_flat 
+            WHERE date = (SELECT max(date) FROM dates) 
+            AND query BETWEEN %(v1)s AND %(v2)s
+        )
     ) AS r ON r.id = qpf2.q
     INNER JOIN
     (
@@ -321,7 +346,12 @@ INNER JOIN
             query,
             total_products
         FROM query_history
-        WHERE ((query >= %(v1)s) AND (query <= %(v2)s)) AND (date = yesterday())
+        WHERE query IN (
+            SELECT DISTINCT query 
+            FROM query_product_flat 
+            WHERE date = (SELECT max(date) FROM dates) 
+            AND query BETWEEN %(v1)s AND %(v2)s
+        ) AND (date = yesterday())
     ) AS qh ON qh.query = qpf2.q
 WHERE qpf2.ratio > 0
 """
