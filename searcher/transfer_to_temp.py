@@ -272,7 +272,7 @@ FROM
             WHERE query IN (
             SELECT DISTINCT query 
             FROM query_product_flat 
-            WHERE date = (SELECT max(date) FROM dates) 
+            WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         )
@@ -291,7 +291,7 @@ INNER JOIN
         WHERE query IN (
             SELECT DISTINCT query 
             FROM query_product_flat 
-            WHERE date = (SELECT max(date) FROM dates) 
+            WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         GROUP BY query
@@ -307,7 +307,7 @@ INNER JOIN
         WHERE query_id IN (
             SELECT DISTINCT query 
             FROM query_product_flat 
-            WHERE date = (SELECT max(date) FROM dates) 
+            WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date >= yesterday() - 89)
         GROUP BY query_id
@@ -323,7 +323,7 @@ INNER JOIN
         WHERE query_id IN (
             SELECT DISTINCT query 
             FROM query_product_flat 
-            WHERE date = (SELECT max(date) FROM dates) 
+            WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date = yesterday())
     ) AS rg ON rg.query_id = qpf2.q
@@ -336,7 +336,7 @@ INNER JOIN
         WHERE id IN (
             SELECT DISTINCT query 
             FROM query_product_flat 
-            WHERE date = (SELECT max(date) FROM dates) 
+            WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         )
     ) AS r ON r.id = qpf2.q
@@ -349,7 +349,7 @@ INNER JOIN
         WHERE query IN (
             SELECT DISTINCT query 
             FROM query_product_flat 
-            WHERE date = (SELECT max(date) FROM dates) 
+            WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date = yesterday())
     ) AS qh ON qh.query = qpf2.q
