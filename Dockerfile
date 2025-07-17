@@ -1,13 +1,13 @@
-FROM python:3.13-alpine
+FROM python:3.13
 
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-RUN apk add build-base
-RUN apk add python3-dev
-RUN apk add musl-dev
-RUN apk add linux-headers
+#RUN apk add build-base
+#RUN apk add python3-dev
+#RUN apk add musl-dev
+#RUN apk add linux-headers
 RUN pip install poetry
 COPY pyproject.toml ./
 RUN poetry config virtualenvs.create false \
