@@ -438,6 +438,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
             except (ValueError, TypeError, IndexError) as e:
                 error_rows.append(row)
+                logger.error(f"ERROR ROW: {row}")
 
         new_queries_meta = await get_query_list_totals(http_session=http_session, queries=new_queries)
         new_queries_subject_meta = await get_query_list_prio_subjects_batched(http_session=http_session, queries=new_queries_need_subject)
