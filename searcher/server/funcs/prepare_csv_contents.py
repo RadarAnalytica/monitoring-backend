@@ -420,6 +420,8 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     print(query_raw)
                 subject_name = strip_invisible(subject_name.strip().lower())
                 subject_id = subjects_dict.get(subject_name, 0)
+                if subject_id < 0 or not subject_id:
+                    logger.warning(f"MISSING SUBJECT NAME: {subject_name}")
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
                 if not query:
                     continue
