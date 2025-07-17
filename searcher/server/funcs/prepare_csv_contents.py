@@ -422,6 +422,11 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     print(query_raw)
                 subject_name = strip_invisible(subject_name.strip().lower())
                 subject_id = subjects_dict.get(subject_name, 0)
+                if isinstance(subject_id, str):
+                    try:
+                        subject_id = int(subject_id)
+                    except:
+                        subject_id = 0
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
                 if not query:
                     logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
@@ -432,7 +437,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     new_query_scaler += 1
                     logger.info(f"GETTING SUBJECT FOR {query}")
                     new_queries.append((query_id, query, now_date, quantity, subject_id))
-                elif not subject_id or subject_id < 0:
+                elif not subject_id:
                     new_queries_need_subject.append((query_id, query, now_date, quantity))
                 else:
                     requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
