@@ -7,7 +7,8 @@ from parser.get_init_data import (
     get_requests_max_id,
     get_request_frequency_download_data_new, get_requests_id_download_data_excel,
 )
-from parser.get_query_subject import get_query_prio_subject, get_query_list_prio_subjects, get_query_list_totals
+from parser.get_query_subject import get_query_prio_subject, get_query_list_prio_subjects, get_query_list_totals, \
+    get_query_list_prio_subjects_batched
 from settings import logger
 from aiohttp import ClientSession
 import unicodedata
@@ -423,6 +424,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                 subject_id = subjects_dict.get(subject_name, 0)
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
                 if not query:
+                    logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
                     continue
                 query_id, total_products = queries_dict.get(query, (0, 0))
                 if not query_id:
@@ -438,11 +440,12 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                 error_rows.append(row)
 
         new_queries_meta = await get_query_list_totals(http_session=http_session, queries=new_queries)
-        new_queries_subject_meta = await get_query_list_prio_subjects(http_session=http_session, queries=new_queries)
+        new_queries_subject_meta = await get_query_list_prio_subjects_batched(http_session=http_session, queries=new_queries)
         requests_data.extend(new_queries_meta)
         requests_data.extend(new_queries_subject_meta)
 
     logger.info("Data prepared")
     if len(requests_data) < 95000:
+        logger.info(f"FILE LENGTH {len(requests_data)}")
         raise IndexError
     return requests_data, error_rows

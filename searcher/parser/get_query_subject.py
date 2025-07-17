@@ -157,6 +157,21 @@ async def get_query_list_prio_subjects(http_session: ClientSession, queries: lis
     return result
 
 
+async def get_query_list_prio_subjects_batched(http_session: ClientSession, queries: list[tuple[int, str, date, int]], batch_size=50):
+    batches = []
+    for i in range(0, len(queries) + 1, batch_size):
+        batch = queries[i: i + batch_size]
+        if batch:
+            batches.append(batch)
+    result = []
+    for batch in batches:
+        batch_result = await get_query_list_prio_subjects(http_session=http_session, queries=batch)
+        if batch_result:
+            result.extend(batch_result)
+    return result
+
+
+
 async def get_query_list_totals(http_session: ClientSession, queries: list[tuple[int, str, date, int, int]]):
     tasks = [
         asyncio.create_task(get_query_total(http_session=http_session, query_data=query_data))
