@@ -440,7 +440,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                 error_rows.append(row)
 
         new_queries_meta = await get_query_list_totals(http_session=http_session, queries=new_queries)
-        new_queries_subject_meta = await get_query_list_prio_subjects_batched(http_session=http_session, queries=new_queries)
+        new_queries_subject_meta = await get_query_list_prio_subjects_batched(http_session=http_session, queries=new_queries_need_subject)
         requests_data.extend(new_queries_meta)
         requests_data.extend(new_queries_subject_meta)
 
