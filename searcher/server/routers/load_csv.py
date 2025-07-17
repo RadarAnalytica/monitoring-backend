@@ -96,6 +96,8 @@ async def upload_excel(
             requests_data, error_rows = await prepare_excel_contents(contents, filename=file.filename)
         except ValueError:
             return {"message": "Error with file name, must be {YYYY-MM-DD}.xlsx"}
+        except IndexError:
+            return {"message": "Incomplete file!"}
 
         logger.info("Loading to background")
         background_tasks.add_task(upload_requests_excel_bg, requests_data)

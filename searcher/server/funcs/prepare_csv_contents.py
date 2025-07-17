@@ -410,6 +410,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
     requests_data = []
     error_rows = []
     new_queries = []
+    new_queries_need_subject = []
     new_query_scaler = 1
 
     async with ClientSession() as http_session:
@@ -420,8 +421,6 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     print(query_raw)
                 subject_name = strip_invisible(subject_name.strip().lower())
                 subject_id = subjects_dict.get(subject_name, 0)
-                if subject_id < 0 or not subject_id:
-                    logger.warning(f"MISSING SUBJECT NAME: {subject_name}")
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
                 if not query:
                     continue
@@ -431,15 +430,19 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     new_query_scaler += 1
                     logger.info(f"GETTING SUBJECT FOR {query}")
                     new_queries.append((query_id, query, now_date, quantity, subject_id))
+                elif not subject_id or subject_id < 0:
+                    new_queries_need_subject.append((query_id, query, now_date, quantity))
                 else:
                     requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
             except (ValueError, TypeError, IndexError) as e:
                 error_rows.append(row)
 
         new_queries_meta = await get_query_list_totals(http_session=http_session, queries=new_queries)
+        new_queries_subject_meta = await get_query_list_prio_subjects(http_session=http_session, queries=new_queries)
         requests_data.extend(new_queries_meta)
+        requests_data.extend(new_queries_subject_meta)
 
     logger.info("Data prepared")
     if len(requests_data) < 95000:
-        raise ValueError
+        raise IndexError
     return requests_data, error_rows
