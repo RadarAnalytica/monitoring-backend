@@ -435,11 +435,15 @@ ORDER BY group_num"""
                     suppliers_dict[s_id] += s_revenue
                 supplier_revenue = list(suppliers_dict.values())
                 supplier_revenue.sort(reverse=True)
-                if supplier_revenue and len(supplier_revenue) > 1:
+                suppliers_with_sales = []
+                if supplier_revenue and len(supplier_revenue) > 0:
                     top_supplier_revenue = supplier_revenue[0]
+                    zero_sales_suppliers = sum([1 for sr in supplier_revenue if not sr])
+                    suppliers_with_sales_percent = round((len(supplier_revenue) - zero_sales_suppliers) * 100 / len(supplier_revenue))
                     all_suppliers_revenue = sum(supplier_revenue)
                     monopoly_percent = abs(round(top_supplier_revenue * 100 / all_suppliers_revenue)) if all_suppliers_revenue else 0
                 else:
+                    suppliers_with_sales_percent = 0
                     monopoly_percent = 0
                 rating, competition_level = evaluate_niche(demand_coef=freq_per_good, monopoly_pct=monopoly_percent, advert_pct=advert_percent, buyout_pct=buyout_percent, revenue=revenue_300 / 100)
                 data.append((
@@ -490,7 +494,8 @@ ORDER BY group_num"""
                     brands_list,
                     subjects_list,
                     rating,
-                    competition_level
+                    competition_level,
+                    suppliers_with_sales_percent
                 ))
 
             await client.insert(
@@ -543,7 +548,8 @@ ORDER BY group_num"""
                     "brands_list",
                     "subjects_list",
                     "niche_rating",
-                    "competition_level"
+                    "competition_level",
+                    "suppliers_with_sales_percent",
                 ],
                 data=data
             )
