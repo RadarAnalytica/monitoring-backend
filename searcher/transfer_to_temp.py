@@ -300,8 +300,8 @@ INNER JOIN
     (
         SELECT
             query_id,
-            sum(if(date >= (yesterday() - 29), frequency, 0)) AS sum_30,
-            sum(if(date >= (yesterday() - 59), frequency, 0)) AS sum_60,
+            sum(if(date >= (yesterday() - 30), frequency, 0)) AS sum_30,
+            sum(if(date >= (yesterday() - 60), frequency, 0)) AS sum_60,
             sum(frequency) AS sum_90
         FROM request_frequency
         WHERE query_id IN (
@@ -309,7 +309,7 @@ INNER JOIN
             FROM query_product_flat 
             WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
-        ) AND (date >= yesterday() - 89)
+        ) AND (date >= yesterday() - 90)
         GROUP BY query_id
     ) AS rf ON rf.query_id = qpf2.q
     INNER JOIN
@@ -325,7 +325,7 @@ INNER JOIN
             FROM query_product_flat 
             WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
-        ) AND (date = yesterday())
+        ) AND (date = yesterday() - 1)
     ) AS rg ON rg.query_id = qpf2.q
     INNER JOIN
     (
@@ -364,7 +364,7 @@ FROM (
         SELECT
             query_id as id,
             row_number() OVER (ORDER BY id) AS rn
-        FROM request_growth WHERE date = yesterday() - 2
+        FROM request_growth WHERE date = yesterday() - 1
     ) AS sorted_ids
 
 GROUP BY group_num
