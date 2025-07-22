@@ -370,6 +370,24 @@ FROM (
 GROUP BY group_num
 ORDER BY group_num"""
     async with get_async_connection(send_receive_timeout=3600) as client:
+        await client.command("""delete from wb_id_extended_local where wb_id_price > 30000000 and sub_id not in (
+        8241,
+        8827,
+        8996,
+        8668,
+        8670,
+        8665,
+        8669,
+        8662,
+        8667,
+        8661,
+        8663,
+        8696,
+        8664,
+        8666,
+        8743,
+        8897
+        )""")
         q_dia = await client.query(stmt_dia)
         l_r = [(row[1], row[2]) for row in q_dia.result_rows]
         for left, right in l_r:
@@ -557,6 +575,32 @@ ORDER BY group_num"""
         await client.command("RENAME TABLE monitoring_oracle_stage TO monitoring_oracle_new_2")
         await client.command("RENAME TABLE monitoring_oracle_old TO monitoring_oracle_stage")
         await client.command("TRUNCATE TABLE monitoring_oracle_stage")
+        await client.command("""delete from monitoring_oracle_new_2 where subject_id in (
+                6380,
+                6383,
+                6381,
+                6375,
+                6379,
+                6376,
+                6378,
+                3030,
+                6373,
+                3032,
+                6377,
+                6387,
+                6384,
+                6374,
+                6385,
+                6382,
+                3038,
+                6388,
+                3039,
+                8970,
+                3042,
+                6386,
+                6389,
+                3044,
+                30""")
 
 
 async def migrate_monitoring_oracle_data():
