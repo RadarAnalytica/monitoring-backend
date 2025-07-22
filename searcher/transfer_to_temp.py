@@ -158,12 +158,12 @@ async def main():
         qpf2.potential_revenue as potential_revenue,
         qpf2.potential_orders as potential_orders,
         
-        round(if(qpf2.all_ids > 0, qpf2.revenue_total / qpf2.all_ids, 0)) as avg_revenue_total,
-        round(if(qpf2.total_ids_300 > 0, qpf2.top_300 / qpf2.total_ids_300, 0)) as avg_revenue_300,
+        round(if(qpf2.all_ids > 0, qpf2.revenue_total / qpf2.all_ids, 0), -2) as avg_revenue_total,
+        round(if(qpf2.total_ids_300 > 0, qpf2.top_300 / qpf2.total_ids_300, 0), -2) as avg_revenue_300,
         
         qpf2.avg_with_sales as avg_with_sales_revenue,
         
-        round(qpf2.revenue_total / 30) as avg_daily_revenue,
+        round(qpf2.revenue_total / 30, -2) as avg_daily_revenue,
         qpf2.avg_daily_wb_id_revenue,
         
         round(if(qpf2.revenue_total > 0, qpf2.lost_revenue_total * 100 / qpf2.revenue_total, 0)) as lost_revenue_percent_total,
