@@ -150,7 +150,9 @@ async def main():
         rg.g90 AS g90,
         
         qpf2.revenue_total as revenue_total,
+        qpf2.revenue_total_spp as revenue_total_spp,
         qpf2.top_300 as revenue_300,
+        qpf2.top_300_spp as revenue_300_spp,
         
         qpf2.lost_revenue_total as lost_revenue_total,
         qpf2.lost_revenue_300 as lost_revenue_300,
@@ -160,6 +162,7 @@ async def main():
         
         round(if(qpf2.all_ids > 0, qpf2.revenue_total / qpf2.all_ids, 0), -2) as avg_revenue_total,
         round(if(qpf2.total_ids_300 > 0, qpf2.top_300 / qpf2.total_ids_300, 0), -2) as avg_revenue_300,
+        round(if(qpf2.total_ids_300 > 0, qpf2.top_300_spp / qpf2.total_ids_300, 0), -2) as avg_revenue_300_spp,
         
         qpf2.avg_with_sales as avg_with_sales_revenue,
         
@@ -180,6 +183,8 @@ async def main():
         
         qpf2.avg_price_total as avg_price_total,
         qpf2.avg_price_300 as avg_price_300,
+        qpf2.avg_price_total_spp as avg_price_total_spp,
+        qpf2.avg_price_300_spp as avg_price_300_spp,
         
         qpf2.median_price as median_price,
         qpf2.advert as advert_percent,
@@ -212,11 +217,13 @@ FROM
     SELECT
         qpf.query as q,
         round(avg(if(pd.wb_id_price > 0, pd.wb_id_price, NULL)), -2) AS avg_price_total,
+        round(avg(if(pd.wb_id_price_spp > 0, pd.wb_id_price_spp, NULL)), -2) AS avg_price_total_spp,
         round(avg(if(qpf.place <= 300 AND pd.wb_id_price > 0, pd.wb_id_price, NULL)), -2) AS avg_price_300,
+        round(avg(if(qpf.place <= 300 AND pd.wb_id_price_spp > 0, pd.wb_id_price_spp, NULL)), -2) AS avg_price_300_spp,
         round(median(if(pd.wb_id_price > 0, pd.wb_id_price, NULL)), -2) as median_price,
         round(sum(if(qpf.place <= 30, pd.wb_id_revenue, 0)), -2) AS top_30,
         round(sum(if(qpf.place <= 100, pd.wb_id_revenue, 0)), -2) AS top_100,
-        round(sum(if(qpf.place <= 300, pd.wb_id_revenue, 0)), -2) AS top_300,
+        round(sum(if(qpf.place <= 300, pd.wb_id_revenue_spp, 0)), -2) AS top_300_spp,
         sum(if(qpf.place <= 300, pd.wb_id_orders, 0)) AS top_300_orders,
         round(sum(pd.wb_id_avg_daily_revenue), -2) as avg_daily_revenue,
         round(sum(if(qpf.place <= 300, pd.wb_id_avg_daily_revenue, 0)), -2) as avg_daily_revenue_300,
@@ -224,6 +231,7 @@ FROM
         round(coalesce(avg(if(pd.wb_id_revenue > 0, pd.wb_id_revenue, NULL)), 0), -2) as avg_with_sales,
         round(coalesce(avg(if(pd.wb_id_avg_daily_revenue > 0, pd.wb_id_avg_daily_revenue, NULL)), 0), -2) as avg_daily_wb_id_revenue,
         round(sum(pd.wb_id_revenue), -2) AS revenue_total,
+        round(sum(pd.wb_id_revenue_spp), -2) AS revenue_total_spp,
         sum(pd.wb_id_orders) AS orders_total,
         round(sum(if(qpf.place <= 300, pd.wb_id_lost_revenue, 0)), -2) AS lost_revenue_300,
         round(sum(pd.wb_id_lost_revenue), -2) AS lost_revenue_total,
