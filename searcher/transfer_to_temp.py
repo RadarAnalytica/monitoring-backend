@@ -150,9 +150,7 @@ async def main():
         rg.g90 AS g90,
         
         qpf2.revenue_total as revenue_total,
-        qpf2.revenue_total_spp as revenue_total_spp,
         qpf2.top_300 as revenue_300,
-        qpf2.top_300_spp as revenue_300_spp,
         
         qpf2.lost_revenue_total as lost_revenue_total,
         qpf2.lost_revenue_300 as lost_revenue_300,
@@ -162,7 +160,6 @@ async def main():
         
         round(if(qpf2.all_ids > 0, qpf2.revenue_total / qpf2.all_ids, 0), -2) as avg_revenue_total,
         round(if(qpf2.total_ids_300 > 0, qpf2.top_300 / qpf2.total_ids_300, 0), -2) as avg_revenue_300,
-        round(if(qpf2.total_ids_300 > 0, qpf2.top_300_spp / qpf2.total_ids_300, 0), -2) as avg_revenue_300_spp,
         
         qpf2.avg_with_sales as avg_with_sales_revenue,
         
@@ -183,8 +180,6 @@ async def main():
         
         qpf2.avg_price_total as avg_price_total,
         qpf2.avg_price_300 as avg_price_300,
-        qpf2.avg_price_total_spp as avg_price_total_spp,
-        qpf2.avg_price_300_spp as avg_price_300_spp,
         
         qpf2.median_price as median_price,
         qpf2.advert as advert_percent,
@@ -210,7 +205,18 @@ async def main():
         
         qpf2.brands as brands_list,
         qpf2.subjects as subjects_list,
-        qpf2.suppler_wb_id_revenue as suppler_revenue
+        qpf2.suppler_wb_id_revenue as suppler_revenue,
+        
+        qpf2.revenue_total_spp as revenue_total_spp,
+
+        qpf2.top_300_spp as revenue_300_spp,
+
+        round(if(qpf2.total_ids_300 > 0, qpf2.top_300_spp / qpf2.total_ids_300, 0), -2) as avg_revenue_300_spp,
+
+        qpf2.avg_price_total_spp as avg_price_total_spp,
+
+        qpf2.avg_price_300_spp as avg_price_300_spp
+
         
 FROM
 (
@@ -457,6 +463,11 @@ ORDER BY group_num"""
                 brands_list = row[44]
                 subjects_list = row[45]
                 supplier_revenue = row[46]
+                revenue_total_spp = row[47]
+                revenue_300_spp = row[48]
+                avg_revenue_300_spp = row[49]
+                avg_price_total_spp = row[50]
+                avg_price_300_spp = row[51]
                 suppliers_dict = defaultdict(int)
                 for s_id_revenue in supplier_revenue:
                     s_id = s_id_revenue[0]
@@ -464,7 +475,6 @@ ORDER BY group_num"""
                     suppliers_dict[s_id] += s_revenue
                 supplier_revenue = list(suppliers_dict.values())
                 supplier_revenue.sort(reverse=True)
-                suppliers_with_sales = []
                 if supplier_revenue and len(supplier_revenue) > 0:
                     top_supplier_revenue = supplier_revenue[0]
                     zero_sales_suppliers = sum([1 for sr in supplier_revenue if not sr])
@@ -524,7 +534,12 @@ ORDER BY group_num"""
                     subjects_list,
                     rating,
                     competition_level,
-                    suppliers_with_sales_percent
+                    suppliers_with_sales_percent,
+                    revenue_total_spp,
+                    revenue_300_spp,
+                    avg_revenue_300_spp,
+                    avg_price_total_spp,
+                    avg_price_300_spp,
                 ))
 
             await client.insert(
@@ -579,6 +594,11 @@ ORDER BY group_num"""
                     "niche_rating",
                     "competition_level",
                     "suppliers_with_sales_percent",
+                    "revenue_total_spp",
+                    "revenue_300_spp",
+                    "avg_revenue_300_spp",
+                    "avg_price_total_spp",
+                    "avg_price_300_spp",
                 ],
                 data=data
             )
