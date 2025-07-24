@@ -253,6 +253,8 @@ FROM
             round(wb_id_revenue, -2) as wb_id_revenue,
             wb_id_orders,
             round(wb_id_price, -2) as wb_id_price,
+            round(wb_id_revenue_spp, -2) as wb_id_revenue_spp,
+            round(wb_id_price_spp, -2) as wb_id_price_spp,
             round(wb_id_avg_daily_revenue, -2) as wb_id_avg_daily_revenue,
             wb_id_avg_daily_orders,
             round(wb_id_lost_revenue, -2) as wb_id_lost_revenue,
