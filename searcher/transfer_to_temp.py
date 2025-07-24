@@ -223,6 +223,7 @@ FROM
         round(median(if(pd.wb_id_price > 0, pd.wb_id_price, NULL)), -2) as median_price,
         round(sum(if(qpf.place <= 30, pd.wb_id_revenue, 0)), -2) AS top_30,
         round(sum(if(qpf.place <= 100, pd.wb_id_revenue, 0)), -2) AS top_100,
+        round(sum(if(qpf.place <= 300, pd.wb_id_revenue, 0)), -2) AS top_300,
         round(sum(if(qpf.place <= 300, pd.wb_id_revenue_spp, 0)), -2) AS top_300_spp,
         sum(if(qpf.place <= 300, pd.wb_id_orders, 0)) AS top_300_orders,
         round(sum(pd.wb_id_avg_daily_revenue), -2) as avg_daily_revenue,
