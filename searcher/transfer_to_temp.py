@@ -754,8 +754,7 @@ async def form_lost_table():
 
 
 async def hot_patch():
-    start = date(year=2025, month=7, day=28)
-    end = date(year=2025, month=7, day=28)
+    start_date = date.today() - timedelta(days=1)
     stmt = """INSERT INTO radar.supplier_query_aggregates
 SELECT
     rp.supplier_id,
@@ -807,13 +806,10 @@ WHERE rp.date = (
 GROUP BY
     rp.supplier_id,
     d.date;"""
-    curr_date = end
     async with get_async_connection(send_receive_timeout=3600) as client:
-        while curr_date >= start:
-            logger.info(f"DATE {curr_date}")
-            execute = stmt % {"v1": str(curr_date)}
-            await client.command(execute)
-            curr_date -= timedelta(days=1)
+        logger.info(f"DATE {start_date}")
+        execute = stmt % {"v1": str(start_date)}
+        await client.command(execute)
 
 # Запуск
 if __name__ == '__main__':
