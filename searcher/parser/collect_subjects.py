@@ -1,3 +1,5 @@
+import json
+
 from aiohttp import ClientSession
 
 from clickhouse_db.get_async_connection import get_async_connection
@@ -30,3 +32,19 @@ async def collect_subject_ids_names():
         await client.insert(table="subjects_dict", column_names=["id", "name"], data=subjects_data_list)
         await client.command("OPTIMIZE TABLE subjects_dict FINAL")
     logger.info("Предметы есть")
+
+
+async def get_today_subjects_raw():
+    url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
+    async with ClientSession() as http_session:
+        async with http_session.get(url) as resp:
+            result = await resp.json()
+    return result
+
+
+async def write_subjects_raw():
+    subjects = await get_today_subjects_raw()
+    data = (('subjects', json.dumps(subjects)),)
+    async with get_async_connection() as client:
+        await client.insert(table="json_store_string", data=data, column_names=["name", "data"])
+    logger.info("RAW SUBJECTS FINISH")
