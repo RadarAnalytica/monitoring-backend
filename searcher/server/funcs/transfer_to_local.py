@@ -354,6 +354,7 @@ ORDER BY group_num"""
             q = await client.query(stmt, parameters=params)
             data = []
             for row in q.result_rows:
+                print(row)
                 query_id = row[0]
                 query = row[1]
                 subject_id = row[2]
