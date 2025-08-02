@@ -42,7 +42,7 @@ async def get_today_suppliers_data():
                         "kpp",
                         "unn",
                         "unp",
-                        "bin_",
+                        "bin",
                     ],
                     client=client,
                 )
