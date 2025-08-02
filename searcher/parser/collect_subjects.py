@@ -46,5 +46,6 @@ async def write_subjects_raw():
     subjects = await get_today_subjects_raw()
     data = (('subjects', json.dumps(subjects)),)
     async with get_async_connection() as client:
+        await client.command("TRUNCATE TABLE json_store_string")
         await client.insert(table="json_store_string", data=data, column_names=["name", "data"])
     logger.info("RAW SUBJECTS FINISH")
