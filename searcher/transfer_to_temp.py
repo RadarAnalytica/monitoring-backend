@@ -812,6 +812,11 @@ GROUP BY
         execute = stmt % {"v1": str(start_date)}
         await client.command(execute)
 
+
+async def main_task():
+    await write_subjects_raw()
+    await hot_patch()
+
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(write_subjects_raw())
+    asyncio.run(main_task())
