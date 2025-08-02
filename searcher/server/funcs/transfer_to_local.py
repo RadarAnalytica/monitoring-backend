@@ -483,7 +483,7 @@ ORDER BY group_num"""
                     avg_price_total_spp,
                     avg_price_300_spp,
                 ))
-
+            print(len(data))
             await client.insert(
                 table="monitoring_oracle_stage",
                 column_names=[
