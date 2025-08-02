@@ -7,6 +7,7 @@ from datetime import date, timedelta, datetime, time
 from actions.requests_parse import transfer_aggregates
 from clickhouse_db.get_async_connection import get_async_connection
 from parser.collect_subjects import write_subjects_raw
+from server.funcs.transfer_to_local import recount_oracle
 from server.funcs.upload_requests_data import recount_growth_by_date
 from settings import logger
 
@@ -819,4 +820,4 @@ async def main_task():
 
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(main_task())
+    asyncio.run(recount_oracle())
