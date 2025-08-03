@@ -821,4 +821,4 @@ async def main_task():
 
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(get_today_suppliers_data())
+    asyncio.run(main_task())
