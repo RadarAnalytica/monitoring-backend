@@ -84,7 +84,6 @@ async def get_today_suppliers_data():
                 *http_tasks, supplier_history_task, supplier_meta_save_task
             )
             await send_log_message("Закончился сбор по поставщикам")
-            await client.command("OPTIMIZE TABLE supplier_meta FINAL")
     except Exception as e:
         await send_log_message(
             "Ошибка при сборе по поставщикам. Последний id: {i}", ex=e

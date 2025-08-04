@@ -818,6 +818,7 @@ GROUP BY
 async def main_task():
     await write_subjects_raw()
     await hot_patch()
+    await get_today_suppliers_data()
 
 # Запуск
 if __name__ == '__main__':
