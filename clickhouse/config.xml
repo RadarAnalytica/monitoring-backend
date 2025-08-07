@@ -936,7 +936,7 @@
                     <host>185.250.46.103</host>
                     <port>9000</port>
                     <user>radar</user>
-                    <password><![CDATA[radar!oNFi+XFw6kB4Ykbd]]></password>
+                    <password from_env="CLICKHOUSE_PASSWORD"/>
                 </replica>
             </shard>
         </widget>

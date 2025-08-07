@@ -822,4 +822,4 @@ async def main_task():
 
 # Запуск
 if __name__ == '__main__':
-    asyncio.run(recount_oracle())
+    asyncio.run(main_task())
