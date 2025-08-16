@@ -3,6 +3,7 @@ from datetime import datetime, date
 import pytz
 from celery.exceptions import SoftTimeLimitExceeded
 
+from parser.aggregate_supplier import aggregate_supplier
 from parser.collect_subjects import collect_subject_ids_names
 from parser.get_init_data import (
     get_cities_data,
@@ -122,3 +123,10 @@ def get_today_subjects_dict():
 @celery_app.task(name="transfer_aggregates")
 def transfer_aggregates():
     asyncio.run(transfer_aggregates_to_local())
+
+
+
+@celery_app.task(name="aggregate_supplier_task")
+def aggregate_supplier_task():
+    asyncio.run(aggregate_supplier())
+
