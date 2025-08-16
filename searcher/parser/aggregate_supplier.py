@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from log_alert import log_alert
+from service.log_alert import log_alert
 from settings import logger
 from clickhouse_db.get_async_connection import get_async_connection
 
