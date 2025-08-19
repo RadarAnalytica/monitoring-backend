@@ -423,6 +423,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
     subjects_dict = await get_today_subjects_dict_db()
     requests_data = []
     error_rows = []
+    seen_queries = set()
     new_queries = []
     new_queries_need_subject = []
     new_query_scaler = 1
@@ -431,8 +432,6 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
         for i, row in enumerate(contents):
             try:
                 query_raw, quantity, subject_name = row
-                if i == 0:
-                    print(query_raw)
                 subject_name = strip_invisible(subject_name.strip().lower())
                 subject_id = subjects_dict.get(subject_name, 0)
                 if isinstance(subject_id, str):
@@ -444,14 +443,23 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                 if not query:
                     logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
                     continue
-                query_id, total_products = queries_dict.get(query, (0, 0))
+                query_id, total_products, old_subject_id = queries_dict.get(query, (0, 0, 0))
+                if query_id in seen_queries:
+                    continue
+                if query_id:
+                    seen_queries.add(query_id)
                 if not query_id:
                     query_id = max_query_id + new_query_scaler
+                    queries_dict[query] = (query_id, total_products)
+                    seen_queries.add(query_id)
                     new_query_scaler += 1
                     logger.info(f"GETTING SUBJECT FOR {query}")
                     new_queries.append((query_id, query, now_date, quantity, subject_id))
                 elif not subject_id:
-                    new_queries_need_subject.append((query_id, query, now_date, quantity))
+                    if old_subject_id:
+                        requests_data.append((query_id, query, quantity, old_subject_id, total_products, now_date))
+                    else:
+                        new_queries_need_subject.append((query_id, query, now_date, quantity))
                 else:
                     requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
             except (ValueError, TypeError, IndexError) as e:

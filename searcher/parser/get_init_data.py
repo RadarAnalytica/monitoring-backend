@@ -42,7 +42,7 @@ async def get_requests_id_download_data_excel():
     logger.info("GETTING ALL QUERIES IDS")
     start = datetime.now()
     async with get_async_connection() as client:
-        query = f"""SELECT query, (id, total_products) FROM request FINAL ORDER BY id;"""
+        query = f"""SELECT query, (id, total_products, subject_id) FROM request FINAL ORDER BY id;"""
         q = await client.query(query)
     logger.info(f"QUERIES IDS ENDED IN {(datetime.now() - start).total_seconds()}")
     return dict(q.result_rows)
