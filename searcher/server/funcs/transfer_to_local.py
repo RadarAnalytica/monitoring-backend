@@ -372,7 +372,7 @@ ORDER BY group_num"""
                 potential_revenue = row[13]
                 potential_orders = row[14]
                 avg_revenue_total = row[15]
-                avg_revenue_300 = row[16]
+                avg_revenue_300 = row[16] or 0
                 avg_with_sales_revenue = row[17]
                 avg_daily_revenue = row[18]
                 avg_daily_wb_id_revenue = row[19]
@@ -405,7 +405,8 @@ ORDER BY group_num"""
                 supplier_revenue = row[46]
                 revenue_total_spp = row[47]
                 revenue_300_spp = row[48]
-                avg_revenue_300_spp = row[49]
+                avg_revenue_300_spp = row[49] or 0
+
                 avg_price_total_spp = row[50]
                 avg_price_300_spp = row[51]
                 suppliers_dict = defaultdict(int)
