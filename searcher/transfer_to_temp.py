@@ -820,6 +820,22 @@ async def main_task():
     await hot_patch()
     # await get_today_suppliers_data()
 
-# Запуск
+
+async def main_shit_2():
+    async with get_async_connection() as client:
+        dates = [i for i in range(1, 211)]
+        dates.sort(reverse=True)
+        for d in dates:
+            logger.info(f"DATE: {d}")
+            await client.command(f"""INSERT INTO radar.request_subject_temp (query_id, date, subjects_list)
+SELECT
+    query       AS query_id,
+    date        AS date,
+    groupArrayDistinct(subject_id) AS subjects_list
+FROM radar.request_product
+WHERE date = {d}
+GROUP BY query, date;""")
+
+
 if __name__ == '__main__':
-    asyncio.run(main_task())
+    asyncio.run(main_shit_2())
