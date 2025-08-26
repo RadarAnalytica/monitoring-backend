@@ -325,6 +325,7 @@ FROM (
 GROUP BY group_num
 ORDER BY group_num"""
     async with get_async_connection(send_receive_timeout=3600) as client:
+        await client.command("TRUNCATE TABLE monitoring_oracle_stage")
         await client.command("""delete from wb_id_extended_local where wb_id_price > 30000000 and sub_id not in (
         8241,
         8827,

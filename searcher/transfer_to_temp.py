@@ -903,4 +903,4 @@ LEFT JOIN
             await client.command(stmt % {"date_start": d})
 
 if __name__ == '__main__':
-    asyncio.run(main_shit_3())
+    asyncio.run(recount_oracle())
