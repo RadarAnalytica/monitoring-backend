@@ -823,7 +823,7 @@ async def main_task():
 
 async def main_shit_2():
     async with get_async_connection() as client:
-        dates = [i for i in range(1, 211)]
+        dates = [i for i in range(1, 218)]
         dates.sort(reverse=True)
         for d in dates:
             logger.info(f"DATE: {d}")
