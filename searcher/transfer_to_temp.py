@@ -833,7 +833,7 @@ SELECT
     date        AS date,
     groupArrayDistinct(subject_id) AS subjects_list
 FROM radar.request_product
-WHERE date = {d}
+WHERE date = {d} AND place <= 100
 GROUP BY query, date;""")
 
 
