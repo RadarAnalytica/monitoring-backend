@@ -408,6 +408,8 @@ ORDER BY group_num"""
                 avg_price_total_spp = row[50]
                 avg_price_300_spp = row[51]
                 suppliers_dict = defaultdict(int)
+                if any([r is None for r in row]):
+                    continue
                 for s_id_revenue in supplier_revenue:
                     s_id = s_id_revenue[0]
                     s_revenue = s_id_revenue[1]
