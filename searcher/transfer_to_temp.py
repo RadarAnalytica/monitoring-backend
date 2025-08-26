@@ -837,5 +837,70 @@ WHERE date = {d} AND place <= 100
 GROUP BY query, date;""")
 
 
+async def main_shit_3():
+    async with get_async_connection() as client:
+        date_start = date.today() - timedelta(days=2)
+        date_end = date(year=2023, month=4, day=29)
+        dates = []
+        curr = date_start
+        stmt = """INSERT INTO request_growth_new
+SELECT
+    rg.query_id,
+    rg.date,
+    rg.g30,
+    rg.g60,
+    rg.g90,
+    rg.sum30,
+    coalesce(rf.sum60, 0) AS sum60,
+    coalesce(rf.sum90, 0) AS sum90,
+    rg.subject_id,
+    coalesce(rs.subjects_list, []) AS subjects_list,
+    now() AS updated
+FROM
+(
+    SELECT *
+    FROM request_growth
+    WHERE date = toDate('%(date_start)s')
+) AS rg
+LEFT JOIN
+(
+    SELECT
+        rst.*,
+        d.date AS iso_date
+    FROM request_subject_temp AS rst
+    JOIN dates AS d
+        ON d.id = rst.date
+    WHERE rst.date = (
+        SELECT id
+        FROM dates
+        WHERE date = toDate('%(date_start)s')
+    )
+) AS rs
+    ON rs.iso_date = rg.date
+   AND rs.query_id = rg.query_id
+LEFT JOIN
+(
+    SELECT
+        query_id,
+        sumIf(frequency, date >= toDate('%(date_start)s') - 59) AS sum60,
+        sum(frequency) AS sum90
+    FROM request_frequency
+    WHERE query_id IN
+    (
+        SELECT DISTINCT query_id
+        FROM request_growth
+        WHERE date = toDate('%(date_start)s')
+    )
+      AND date BETWEEN toDate('%(date_start)s') - 89 AND toDate('%(date_start)s')
+    GROUP BY query_id
+) AS rf
+    ON rf.query_id = rg.query_id;"""
+        while curr >= date_end:
+            dates.append(curr)
+            curr -= timedelta(days=1)
+        for d in dates:
+            logger.info(f"DATE: {d}")
+            await client.command(stmt % {"date_start": d})
+
 if __name__ == '__main__':
-    asyncio.run(main_shit_2())
+    asyncio.run(main_shit_3())
