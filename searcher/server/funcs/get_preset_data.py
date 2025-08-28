@@ -117,7 +117,7 @@ async def get_preset_by_id_db_data(
             return result
         norm_query = norm_query_rows[0][0]
         result["preset"] = norm_query
-        norm_query = " ".join(norm_query.split()[:2])
+        norm_query = " ".join(norm_query.split(' ')[:2])
         nq_stmt = f"%{norm_query}%"
         params = {
             "v1": nq_stmt,
