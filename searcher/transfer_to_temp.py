@@ -823,7 +823,7 @@ async def main_task():
 
 async def main_shit_2():
     async with get_async_connection() as client:
-        dates = [i for i in range(1, 218)]
+        dates = [i for i in range(1, 224)]
         dates.sort(reverse=True)
         for d in dates:
             logger.info(f"DATE: {d}")
@@ -833,7 +833,7 @@ SELECT
     date        AS date,
     groupArrayDistinct(subject_id) AS subjects_list
 FROM radar.request_product
-WHERE date = {d} AND place <= 100
+WHERE date BETWEEN {d} - 30 AND {d} AND place <= 300
 GROUP BY query, date;""")
 
 
@@ -858,7 +858,16 @@ SELECT
     now() AS updated
 FROM
 (
-    SELECT *
+    SELECT 
+        query_id,
+        date,
+        g30,
+        g60,
+        g90,
+        sum30,
+        sum60,
+        sum90,
+        subject_id
     FROM request_growth
     WHERE date = toDate('%(date_start)s')
 ) AS rg
@@ -902,5 +911,10 @@ LEFT JOIN
             logger.info(f"DATE: {d}")
             await client.command(stmt % {"date_start": d})
 
+
+async def main_shit_all():
+    await main_shit_2()
+    await main_shit_3()
+
 if __name__ == '__main__':
-    asyncio.run(recount_oracle())
+    asyncio.run(main_shit_all())
