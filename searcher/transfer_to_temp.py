@@ -823,6 +823,8 @@ async def main_task():
 
 async def main_shit_2():
     async with get_async_connection() as client:
+        await client.command("TRUNCATE TABLE request_subject_temp")
+        await client.command("TRUNCATE TABLE request_growth_new")
         dates = [i for i in range(1, 224)]
         dates.sort(reverse=True)
         for d in dates:
