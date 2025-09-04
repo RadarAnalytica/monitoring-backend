@@ -580,6 +580,7 @@ ORDER BY group_num"""
             3044,
             3045
             ])""")
+        await client.command("DELETE FROM monitoring_oracle_new_2 WHERE lengthUTF8(query) < 3")
 
 async def transfer_aggregates_to_local():
     await send_log_message(message="Начинается обработка ниш")
