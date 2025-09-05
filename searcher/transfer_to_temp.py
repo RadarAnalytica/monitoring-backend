@@ -957,9 +957,9 @@ async def new_horrible_shit():
                 GROUP BY query_id, date
             ),
             daily_all AS (
-                SELECT query_id, date, sum(frequency) AS f
+                SELECT date, sum(frequency) AS total_f
                 FROM radar.request_frequency
-                GROUP BY query_id, date
+                GROUP BY date
             ),
 
             mon_all_batch AS (
@@ -980,7 +980,7 @@ async def new_horrible_shit():
             mon_all_global AS (
                 SELECT
                     toStartOfMonth(date) AS month_start,
-                    arrayReduce('avg', groupArray(f)) AS mu_global
+                    avg(total_f) AS mu_global
                 FROM daily_all
                 GROUP BY month_start
             ),
@@ -1014,13 +1014,13 @@ async def new_horrible_shit():
 
             mom_base AS (
                 SELECT
-                    query_id,
-                    month_start,
+                    qid AS query_id,
+                    mstart AS month_start,
                     arrayReduce('quantileExact(0.5)', groupArray(g_prev)) AS med_prev_g
                 FROM (
                     SELECT
-                        c.query_id AS query_id,
-                        c.month_start AS month_start,
+                        c.query_id AS qid,
+                        c.month_start AS mstart,
                         prev.month_start AS month_prev,
                         (log(greatest(prev.mu,1e-12)) - log(greatest(prevprev.mu,1e-12))) AS g_prev
                     FROM mon_cur c
@@ -1031,38 +1031,39 @@ async def new_horrible_shit():
                            ON prevprev.query_id = c.query_id
                           AND prevprev.month_start = addYears(prev.month_start, -1)
                     WHERE prev.month_start IS NOT NULL AND prevprev.month_start IS NOT NULL
-                    ORDER BY c.query_id, c.month_start, prev.month_start DESC
-                    LIMIT k_mom BY c.query_id, c.month_start
-                ) AS t
+                    ORDER BY qid, mstart, prev.month_start DESC
+                    LIMIT k_mom BY qid, mstart
+                ) AS s
                 GROUP BY query_id, month_start
             ),
 
             labeled AS (
                 SELECT
-                    p.query_id,
-                    p.month_start,
-                    p.n_days, p.n_days_prev,
-                    p.g,
-                    (exp(p.g) - 1)                  AS pct,
-                    (p.mu - p.mu_prev)              AS abs_delta,
-                    p.g - p.g_global                AS g_excess,
-                    (exp(g_excess) - 1)             AS pct_excess,
-                    ifNull(mb.med_prev_g, 0)        AS med_prev_g,
-                    p.g - ifNull(mb.med_prev_g, 0)  AS g_adj,
-                    (exp(g_adj) - 1)                AS pct_adj,
+                    pr.query_id,
+                    pr.month_start,
+                    pr.n_days,
+                    pr.n_days_prev,
+                    pr.g,
+                    (exp(pr.g) - 1)                  AS pct,
+                    (pr.mu - pr.mu_prev)             AS abs_delta,
+                    pr.g - pr.g_global               AS g_excess,
+                    (exp(pr.g - pr.g_global) - 1)    AS pct_excess,
+                    ifNull(mb.med_prev_g, 0)         AS med_prev_g,
+                    pr.g - ifNull(mb.med_prev_g, 0)  AS g_adj,
+                    (exp(pr.g - ifNull(mb.med_prev_g, 0)) - 1) AS pct_adj,
                     multiIf(
-                      p.n_days < min_days OR p.n_days_prev < min_days, 'недостаточно данных',
-                      NOT (pct >= mde_pct AND abs_delta >= mde_abs), 'без изменений',
-                      (excess_pct > 0 AND pct_excess < excess_pct), 'без изменений',
-                      (mom_pct > 0 AND pct_adj < mom_pct), 'без изменений',
-                      pct >= 0.15, 'сильный рост',
-                      pct <= -0.05, 'падение',
+                      pr.n_days < min_days OR pr.n_days_prev < min_days, 'недостаточно данных',
+                      NOT ((exp(pr.g) - 1) >= mde_pct AND (pr.mu - pr.mu_prev) >= mde_abs), 'без изменений',
+                      (excess_pct > 0 AND (exp(pr.g - pr.g_global) - 1) < excess_pct), 'без изменений',
+                      (mom_pct > 0 AND (exp(pr.g - ifNull(mb.med_prev_g, 0)) - 1) < mom_pct), 'без изменений',
+                      (exp(pr.g) - 1) >= 0.15, 'сильный рост',
+                      (exp(pr.g) - 1) <= -0.05, 'падение',
                       'рост'
                     ) AS label
-                FROM pairs p
+                FROM (SELECT * FROM pairs) AS pr
                 LEFT JOIN mom_base mb
-                       ON mb.query_id = p.query_id
-                      AND mb.month_start = p.month_start
+                       ON mb.query_id = pr.query_id
+                      AND mb.month_start = pr.month_start
             )
 
             SELECT
