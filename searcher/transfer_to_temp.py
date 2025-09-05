@@ -1014,13 +1014,13 @@ async def new_horrible_shit():
 
             mom_base AS (
                 SELECT
-                    q.query_id,
-                    q.month_start,
+                    query_id,
+                    month_start,
                     arrayReduce('quantileExact(0.5)', groupArray(g_prev)) AS med_prev_g
                 FROM (
                     SELECT
-                        c.query_id,
-                        c.month_start,
+                        c.query_id AS query_id,
+                        c.month_start AS month_start,
                         prev.month_start AS month_prev,
                         (log(greatest(prev.mu,1e-12)) - log(greatest(prevprev.mu,1e-12))) AS g_prev
                     FROM mon_cur c
@@ -1033,7 +1033,7 @@ async def new_horrible_shit():
                     WHERE prev.month_start IS NOT NULL AND prevprev.month_start IS NOT NULL
                     ORDER BY c.query_id, c.month_start, prev.month_start DESC
                     LIMIT k_mom BY c.query_id, c.month_start
-                ) AS q
+                ) AS t
                 GROUP BY query_id, month_start
             ),
 
