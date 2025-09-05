@@ -396,12 +396,12 @@ ORDER BY group_num"""
                 goods_quantity = row[32]
                 top_goods_quantity = row[33]
                 freq_per_good = row[34]
-                goods_with_sales_percent_total = row[35] if row[35] <= 100 else 100
+                goods_with_sales_percent_total = int(row[35] if row[35] <= 100 else 100)
                 if goods_with_sales_percent_total <= 0:
                     continue
                 logger.info(f"goods_with_sales_percent_total {goods_with_sales_percent_total}")
                 goods_with_sales_quantity_total = row[36]
-                goods_with_sales_percent_300 = row[37] if row[37] <= 100 else 100
+                goods_with_sales_percent_300 = int(row[37] if row[37] <= 100 else 100)
                 if goods_with_sales_percent_300 <= 0:
                     continue
                 logger.info(f"goods_with_sales_percent_300 {goods_with_sales_percent_300}")
