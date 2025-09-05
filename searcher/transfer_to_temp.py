@@ -931,30 +931,38 @@ async def new_horrible_shit():
             MIN_DAYS = 24
             MDE_PCT = 0.05
             MDE_ABS = 20
+            EXCESS_PCT = 0.03
+            MOM_PCT = 0.02
+            K_MOM = 6
 
             sql = f"""
             INSERT INTO radar.request_month_marks
             WITH
-                {MIN_DAYS} AS min_days,
-                {MDE_PCT}  AS mde_pct,
-                {MDE_ABS}  AS mde_abs,
+                {MIN_DAYS}   AS min_days,
+                {MDE_PCT}    AS mde_pct,
+                {MDE_ABS}    AS mde_abs,
+                {EXCESS_PCT} AS excess_pct,
+                {MOM_PCT}    AS mom_pct,
+                {K_MOM}      AS k_mom,
                 toStartOfMonth(addMonths(today(), -1)) AS last_full_month,
                 toMonth(last_full_month) AS cut_m,
                 toYear(last_full_month)  AS cut_y,
                 toUInt32({ID_FROM}) AS id_from,
                 toUInt32({ID_TO})   AS id_to
-        
-            , daily AS (
-                SELECT
-                    query_id,
-                    date,
-                    sum(frequency) AS f
+
+            , daily_batch AS (
+                SELECT query_id, date, sum(frequency) AS f
                 FROM radar.request_frequency
                 WHERE query_id BETWEEN id_from AND id_to
                 GROUP BY query_id, date
-            )
-        
-            , mon_all AS (
+            ),
+            daily_all AS (
+                SELECT query_id, date, sum(frequency) AS f
+                FROM radar.request_frequency
+                GROUP BY query_id, date
+            ),
+
+            mon_all_batch AS (
                 SELECT
                     query_id,
                     toStartOfMonth(date) AS month_start,
@@ -965,20 +973,28 @@ async def new_horrible_shit():
                     arrayReduce('quantileExact(0.99)', arr) AS q_hi,
                     1.4826 * arrayReduce('quantileExact(0.5)', arrayMap(x -> abs(x - med), arr)) AS mad,
                     arrayReduce('avg', arrayMap(x -> least(greatest(x, q_lo), q_hi), arr)) AS mu
-                FROM daily
+                FROM daily_batch
                 GROUP BY query_id, month_start
-            )
-        
-            , mon_cur AS (
+            ),
+
+            mon_all_global AS (
+                SELECT
+                    toStartOfMonth(date) AS month_start,
+                    arrayReduce('avg', groupArray(f)) AS mu_global
+                FROM daily_all
+                GROUP BY month_start
+            ),
+
+            mon_cur AS (
                 SELECT *
-                FROM mon_all
+                FROM mon_all_batch
                 WHERE
                     (toYear(month_start) = cut_y   AND toMonth(month_start) <= cut_m)
                     OR
                     (toYear(month_start) = cut_y-1 AND toMonth(month_start) >  cut_m)
-            )
-        
-            , labeled AS (
+            ),
+
+            pairs AS (
                 SELECT
                     c.query_id,
                     c.month_start,
@@ -986,27 +1002,69 @@ async def new_horrible_shit():
                     p.n_days AS n_days_prev,
                     c.mu,
                     p.mu AS mu_prev,
-                    (log(greatest(c.mu, 1e-12)) - log(greatest(p.mu, 1e-12))) AS g_log,
-                    (exp(g_log) - 1)               AS pct,
-                    (c.mu - p.mu)                  AS abs_delta,
-                    (c.med - p.med)
-                      / sqrt(
-                          pow(greatest(c.mad, 1e-9), 2) / c.n_days
-                        + pow(greatest(p.mad, 1e-9), 2) / p.n_days
-                      ) AS z_robust,
-                    multiIf(
-                      c.n_days < min_days OR p.n_days < min_days, 'недостаточно данных',
-                      (pct >= 0.15 AND abs_delta >= mde_abs AND z_robust > 2),     'сильный рост',
-                      (pct >= mde_pct AND abs_delta >= mde_abs AND z_robust > 2),  'рост',
-                      (pct <= -0.05 AND z_robust > 2),                             'падение',
-                      'без изменений'
-                    ) AS label
+                    (log(greatest(c.mu,1e-12)) - log(greatest(p.mu,1e-12))) AS g,
+                    (log(greatest(g1.mu_global,1e-12)) - log(greatest(g0.mu_global,1e-12))) AS g_global
                 FROM mon_cur c
-                INNER JOIN mon_all p
+                INNER JOIN mon_all_batch p
                     ON p.query_id = c.query_id
                    AND p.month_start = addYears(c.month_start, -1)
+                INNER JOIN mon_all_global g1 ON g1.month_start = c.month_start
+                INNER JOIN mon_all_global g0 ON g0.month_start = addYears(c.month_start, -1)
+            ),
+
+            mom_base AS (
+                SELECT
+                    q.query_id,
+                    q.month_start,
+                    arrayReduce('quantileExact(0.5)', groupArray(g_prev)) AS med_prev_g
+                FROM (
+                    SELECT
+                        c.query_id,
+                        c.month_start,
+                        prev.month_start AS month_prev,
+                        (log(greatest(prev.mu,1e-12)) - log(greatest(prevprev.mu,1e-12))) AS g_prev
+                    FROM mon_cur c
+                    LEFT JOIN mon_all_batch AS prev
+                           ON prev.query_id = c.query_id
+                          AND prev.month_start <  c.month_start
+                    LEFT JOIN mon_all_batch AS prevprev
+                           ON prevprev.query_id = c.query_id
+                          AND prevprev.month_start = addYears(prev.month_start, -1)
+                    WHERE prev.month_start IS NOT NULL AND prevprev.month_start IS NOT NULL
+                    ORDER BY c.query_id, c.month_start, prev.month_start DESC
+                    LIMIT k_mom BY c.query_id, c.month_start
+                ) AS q
+                GROUP BY query_id, month_start
+            ),
+
+            labeled AS (
+                SELECT
+                    p.query_id,
+                    p.month_start,
+                    p.n_days, p.n_days_prev,
+                    p.g,
+                    (exp(p.g) - 1)                  AS pct,
+                    (p.mu - p.mu_prev)              AS abs_delta,
+                    p.g - p.g_global                AS g_excess,
+                    (exp(g_excess) - 1)             AS pct_excess,
+                    ifNull(mb.med_prev_g, 0)        AS med_prev_g,
+                    p.g - ifNull(mb.med_prev_g, 0)  AS g_adj,
+                    (exp(g_adj) - 1)                AS pct_adj,
+                    multiIf(
+                      p.n_days < min_days OR p.n_days_prev < min_days, 'недостаточно данных',
+                      NOT (pct >= mde_pct AND abs_delta >= mde_abs), 'без изменений',
+                      (excess_pct > 0 AND pct_excess < excess_pct), 'без изменений',
+                      (mom_pct > 0 AND pct_adj < mom_pct), 'без изменений',
+                      pct >= 0.15, 'сильный рост',
+                      pct <= -0.05, 'падение',
+                      'рост'
+                    ) AS label
+                FROM pairs p
+                LEFT JOIN mom_base mb
+                       ON mb.query_id = p.query_id
+                      AND mb.month_start = p.month_start
             )
-        
+
             SELECT
                 query_id,
                 arraySort(arrayDistinct(groupArrayIf(toMonth(month_start), label IN ('рост','сильный рост')))) AS months_grow,
