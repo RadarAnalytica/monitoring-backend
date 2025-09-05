@@ -236,6 +236,8 @@ FROM
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         )
+        ORDER BY updated DESC
+        LIMIT 1 BY wb_id
     ) AS pd ON pd.wb_id = qpf.product
     LEFT OUTER JOIN (select query, 1 as ex from request WHERE match(query, '^[0-9]+$')) as rex on rex.query = toString(pd.wb_id) 
     WHERE ((qpf.query >= %(v1)s) AND (qpf.query <= %(v2)s)) AND (qpf.date = (SELECT id FROM dates WHERE date = yesterday()))
@@ -286,6 +288,7 @@ INNER JOIN
             WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date = yesterday() - 1)
+        LIMIT 1 BY query_id
     ) AS rg ON rg.query_id = qpf2.q
     INNER JOIN
     (
@@ -299,6 +302,7 @@ INNER JOIN
             WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         )
+        LIMIT 1 BY id
     ) AS r ON r.id = qpf2.q
     INNER JOIN
     (
@@ -312,8 +316,9 @@ INNER JOIN
             WHERE date = (SELECT max(id) FROM dates) 
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date = yesterday())
+        LIMIT 1 BY query
     ) AS qh ON qh.query = qpf2.q
-LEFT OUTER JOIN (SELECT * FROM request_month_marks WHERE query_id BETWEEN %(v1)s AND %(v2)s) rmm ON rmm.query_id = qpf2.q
+LEFT OUTER JOIN (SELECT * FROM request_month_marks WHERE query_id BETWEEN %(v1)s AND %(v2)s LIMIT 1 BY query_id) rmm ON rmm.query_id = qpf2.q
 WHERE qpf2.ratio > 0
 """
     stmt_dia = """SELECT
