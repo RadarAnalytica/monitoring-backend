@@ -932,68 +932,75 @@ async def new_horrible_shit():
             lo = i
             hi = i + batch - 1
             print(f"BATCH {lo} - {hi}")
+            cap_grow = 12
+            cap_fall = 11
+
             sql = f"""
             WITH
                 {mde_pct} AS mde_pct,
                 {mde_abs} AS mde_abs,
                 {min_days} AS min_days,
-                {cap_months} AS cap_months
+                {cap_grow} AS cap_grow,
+                {cap_fall} AS cap_fall
             INSERT INTO radar.request_month_marks (query_id, months_grow, months_fall, updated)
             SELECT
                 query_id,
-                CASE WHEN length(mg) > cap_months THEN arraySlice(mg, 1, cap_months) ELSE mg END AS months_grow,
-                CASE WHEN length(mf) > cap_months THEN arraySlice(mf, 1, cap_months) ELSE mf END AS months_fall,
-                now() AS updated
+                CASE WHEN length(mg) > cap_grow THEN arraySlice(mg, 1, cap_grow) ELSE mg END AS months_grow,
+                CASE WHEN length(mf) > cap_fall THEN arraySlice(mf, 1, cap_fall) ELSE mf END AS months_fall,
+                now()
             FROM
             (
                 SELECT
-                    cur.query_id AS query_id,
-                    arraySort(
-                        groupUniqArrayIf(
-                            cur.m,
-                            cur.mu > prev.mu
-                            AND (cur.mu / nullIf(prev.mu, 0) - 1) >= mde_pct
-                            AND (cur.mu - prev.mu) >= mde_abs
-                        )
-                    ) AS mg,
-                    arraySort(
-                        groupUniqArrayIf(
-                            cur.m,
-                            cur.mu < prev.mu
-                            AND (1 - cur.mu / nullIf(prev.mu, 0)) >= mde_pct
-                            AND (prev.mu - cur.mu) >= mde_abs
-                        )
-                    ) AS mf
+                    query_id,
+                    arraySort(groupArrayIf(m, cnt_grow > cnt_fall)) AS mg,
+                    arraySort(groupArrayIf(m, cnt_fall > cnt_grow)) AS mf
                 FROM
                 (
                     SELECT
-                        query_id,
-                        toYear(date)  AS y,
-                        toMonth(date) AS m,
-                        avg(frequency) AS mu,
-                        count()        AS n_days
-                    FROM radar.request_frequency
-                    WHERE query_id BETWEEN {lo} AND {hi}
-                    GROUP BY query_id, y, m
-                ) AS cur
-                INNER JOIN
-                (
-                    SELECT
-                        query_id,
-                        toYear(date)  AS y,
-                        toMonth(date) AS m,
-                        avg(frequency) AS mu,
-                        count()        AS n_days
-                    FROM radar.request_frequency
-                    WHERE query_id BETWEEN {lo} AND {hi}
-                    GROUP BY query_id, y, m
-                ) AS prev
-                    ON cur.query_id = prev.query_id
-                   AND cur.m = prev.m
-                   AND cur.y = prev.y + 1
-                WHERE cur.n_days >= min_days AND prev.n_days >= min_days AND prev.mu != 0
-                GROUP BY cur.query_id
-            ) AS t
+                        cur.query_id AS query_id,
+                        cur.m AS m,
+                        sum(
+                            cur.mu > prev.mu
+                            AND (cur.mu / nullIf(prev.mu, 0) - 1) >= mde_pct
+                            AND (cur.mu - prev.mu) >= mde_abs
+                        ) AS cnt_grow,
+                        sum(
+                            cur.mu < prev.mu
+                            AND (1 - cur.mu / nullIf(prev.mu, 0)) >= mde_pct
+                            AND (prev.mu - cur.mu) >= mde_abs
+                        ) AS cnt_fall
+                    FROM
+                    (
+                        SELECT
+                            query_id,
+                            toYear(date) AS y,
+                            toMonth(date) AS m,
+                            avg(frequency) AS mu,
+                            count() AS n_days
+                        FROM radar.request_frequency
+                        WHERE query_id BETWEEN {lo} AND {hi}
+                        GROUP BY query_id, y, m
+                    ) AS cur
+                    INNER JOIN
+                    (
+                        SELECT
+                            query_id,
+                            toYear(date) AS y,
+                            toMonth(date) AS m,
+                            avg(frequency) AS mu,
+                            count() AS n_days
+                        FROM radar.request_frequency
+                        WHERE query_id BETWEEN {lo} AND {hi}
+                        GROUP BY query_id, y, m
+                    ) AS prev
+                        ON cur.query_id = prev.query_id
+                       AND cur.m = prev.m
+                       AND cur.y = prev.y + 1
+                    WHERE cur.n_days >= min_days AND prev.n_days >= min_days
+                    GROUP BY cur.query_id, cur.m
+                )
+                GROUP BY query_id
+            ) t
             """
             await client.command(sql)
 
