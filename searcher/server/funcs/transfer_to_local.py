@@ -398,8 +398,10 @@ ORDER BY group_num"""
                 top_goods_quantity = row[33]
                 freq_per_good = row[34]
                 goods_with_sales_percent_total = row[35] if row[35] <= 100 else 100
+                logger.info(f"goods_with_sales_percent_total {goods_with_sales_percent_total}")
                 goods_with_sales_quantity_total = row[36]
                 goods_with_sales_percent_300 = row[37] if row[37] <= 100 else 100
+                logger.info(f"goods_with_sales_percent_300 {goods_with_sales_percent_300}")
                 goods_with_sales_quantity_300 = row[38]
                 suppliers_quantity = row[39]
                 avg_reviews = row[40]
