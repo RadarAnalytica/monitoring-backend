@@ -918,5 +918,106 @@ async def main_shit_all():
     await main_shit_2()
     await main_shit_3()
 
+
+async def new_horrible_shit():
+    async with get_async_connection(send_receive_timeout=3600) as client:
+        left = 0
+        right = 12000000
+        batch = 1000000
+        for i in range(left, right, batch):
+
+            ID_FROM = i
+            ID_TO = i + batch - 1
+            MIN_DAYS = 24
+            MDE_PCT = 0.05
+            MDE_ABS = 20
+
+            sql = f"""
+            INSERT INTO radar.request_month_marks
+            WITH
+                {MIN_DAYS} AS min_days,
+                {MDE_PCT}  AS mde_pct,
+                {MDE_ABS}  AS mde_abs,
+                toStartOfMonth(addMonths(today(), -1)) AS last_full_month,
+                toMonth(last_full_month) AS cut_m,
+                toYear(last_full_month)  AS cut_y,
+                toUInt32({ID_FROM}) AS id_from,
+                toUInt32({ID_TO})   AS id_to
+        
+            , daily AS (
+                SELECT
+                    query_id,
+                    date,
+                    sum(frequency) AS f
+                FROM radar.request_frequency
+                WHERE query_id BETWEEN id_from AND id_to
+                GROUP BY query_id, date
+            )
+        
+            , mon_all AS (
+                SELECT
+                    query_id,
+                    toStartOfMonth(date) AS month_start,
+                    count() AS n_days,
+                    groupArray(f) AS arr,
+                    arrayReduce('quantileExact(0.5)', arr)  AS med,
+                    arrayReduce('quantileExact(0.01)', arr) AS q_lo,
+                    arrayReduce('quantileExact(0.99)', arr) AS q_hi,
+                    1.4826 * arrayReduce('quantileExact(0.5)', arrayMap(x -> abs(x - med), arr)) AS mad,
+                    arrayReduce('avg', arrayMap(x -> least(greatest(x, q_lo), q_hi), arr)) AS mu
+                FROM daily
+                GROUP BY query_id, month_start
+            )
+        
+            , mon_cur AS (
+                SELECT *
+                FROM mon_all
+                WHERE
+                    (toYear(month_start) = cut_y   AND toMonth(month_start) <= cut_m)
+                    OR
+                    (toYear(month_start) = cut_y-1 AND toMonth(month_start) >  cut_m)
+            )
+        
+            , labeled AS (
+                SELECT
+                    c.query_id,
+                    c.month_start,
+                    c.n_days,
+                    p.n_days AS n_days_prev,
+                    c.mu,
+                    p.mu AS mu_prev,
+                    (log(greatest(c.mu, 1e-12)) - log(greatest(p.mu, 1e-12))) AS g_log,
+                    (exp(g_log) - 1)               AS pct,
+                    (c.mu - p.mu)                  AS abs_delta,
+                    (c.med - p.med)
+                      / sqrt(
+                          pow(greatest(c.mad, 1e-9), 2) / c.n_days
+                        + pow(greatest(p.mad, 1e-9), 2) / p.n_days
+                      ) AS z_robust,
+                    multiIf(
+                      c.n_days < min_days OR p.n_days < min_days, 'недостаточно данных',
+                      (pct >= 0.15 AND abs_delta >= mde_abs AND z_robust > 2),     'сильный рост',
+                      (pct >= mde_pct AND abs_delta >= mde_abs AND z_robust > 2),  'рост',
+                      (pct <= -0.05 AND z_robust > 2),                             'падение',
+                      'без изменений'
+                    ) AS label
+                FROM mon_cur c
+                INNER JOIN mon_all p
+                    ON p.query_id = c.query_id
+                   AND p.month_start = addYears(c.month_start, -1)
+            )
+        
+            SELECT
+                query_id,
+                arraySort(arrayDistinct(groupArrayIf(toMonth(month_start), label IN ('рост','сильный рост')))) AS months_grow,
+                arraySort(arrayDistinct(groupArrayIf(toMonth(month_start), label = 'падение'))) AS months_fall,
+                now() AS updated
+            FROM labeled
+            WHERE label IN ('рост','сильный рост','падение')
+            GROUP BY query_id;
+            """
+            await client.command(sql)
+
+
 if __name__ == '__main__':
-    asyncio.run(main_shit_all())
+    asyncio.run(new_horrible_shit())

@@ -593,6 +593,8 @@ async def transfer_aggregates_to_local():
     await send_log_message(message="Обработка ниш завершена")
 
 
+
+
 # async def hot_patch():
 #     stmt_clear = """TRUNCATE TABLE wb_id_extended_local"""
 #     stmt = """INSERT INTO wb_id_extended_local SELECT * FROM wb_id_extended"""
