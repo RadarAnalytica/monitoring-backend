@@ -925,83 +925,43 @@ async def new_horrible_shit():
         right = 12000000
         batch = 1000000
         for i in range(left, right, batch):
-            mde_pct = 0.05
-            mde_abs = 20
-            min_days = 24
-            cap_months = 10
-            lo = i
-            hi = i + batch - 1
-            print(f"BATCH {lo} - {hi}")
-            cap_grow = 3
-            cap_fall = 3
+            l = i
+            r = i + batch - 1
 
-            sql = f"""
-            WITH
-                {mde_pct} AS mde_pct,
-                {mde_abs} AS mde_abs,
-                {min_days} AS min_days,
-                {cap_grow} AS cap_grow,
-                {cap_fall} AS cap_fall
-            INSERT INTO radar.request_month_marks (query_id, months_grow, months_fall, updated)
-            SELECT
-                query_id,
-                CASE WHEN length(mg) > cap_grow THEN arraySlice(mg, 1, cap_grow) ELSE mg END AS months_grow,
-                CASE WHEN length(mf) > cap_fall THEN arraySlice(mf, 1, cap_fall) ELSE mf END AS months_fall,
-                now()
-            FROM
-            (
-                SELECT
-                    query_id,
-                    arraySort(groupArrayIf(m, cnt_grow > cnt_fall)) AS mg,
-                    arraySort(groupArrayIf(m, cnt_fall > cnt_grow)) AS mf
-                FROM
-                (
-                    SELECT
-                        cur.query_id AS query_id,
-                        cur.m AS m,
-                        sum(
-                            cur.mu > prev.mu
-                            AND (cur.mu / nullIf(prev.mu, 0) - 1) >= mde_pct
-                            AND (cur.mu - prev.mu) >= mde_abs
-                        ) AS cnt_grow,
-                        sum(
-                            cur.mu < prev.mu
-                            AND (1 - cur.mu / nullIf(prev.mu, 0)) >= mde_pct
-                            AND (prev.mu - cur.mu) >= mde_abs
-                        ) AS cnt_fall
-                    FROM
-                    (
-                        SELECT
-                            query_id,
-                            toYear(date) AS y,
-                            toMonth(date) AS m,
-                            avg(frequency) AS mu,
-                            count() AS n_days
-                        FROM radar.request_frequency
-                        WHERE query_id BETWEEN {lo} AND {hi}
-                        GROUP BY query_id, y, m
-                    ) AS cur
-                    INNER JOIN
-                    (
-                        SELECT
-                            query_id,
-                            toYear(date) AS y,
-                            toMonth(date) AS m,
-                            avg(frequency) AS mu,
-                            count() AS n_days
-                        FROM radar.request_frequency
-                        WHERE query_id BETWEEN {lo} AND {hi}
-                        GROUP BY query_id, y, m
-                    ) AS prev
-                        ON cur.query_id = prev.query_id
-                       AND cur.m = prev.m
-                       AND cur.y = prev.y + 1
-                    WHERE cur.n_days >= min_days AND prev.n_days >= min_days
-                    GROUP BY cur.query_id, cur.m
-                )
-                GROUP BY query_id
-            ) t
-            """
+            sql = f"""WITH
+    toStartOfMonth(today()) AS m0, addMonths(m0, -12) as m12
+SELECT query_id, groupUniqArrayIf(toMonth(month), res > 0) as grow, groupUniqArrayIf(toMonth(month), res < 0) as fall from (SELECT query_id,
+    month,
+    s,
+    round(avg_prev3),
+    multiIf(
+        isNull(avg_prev3) OR avg_prev3 = 0, 0,
+        s / avg_prev3 > 1.25, 1,
+        s / avg_prev3 < 0.75, -1,
+        0
+    ) AS res
+FROM
+(
+    SELECT query_id, 
+        month,
+        s,
+        avg(s) OVER (
+            ORDER BY query_id, month
+            ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING
+        ) AS avg_prev3
+    FROM
+    (
+        SELECT query_id, 
+            toStartOfMonth(date) AS month,
+            sum(frequency) AS s
+        FROM request_frequency
+        WHERE query_id BETWEEN {l} AND {r}
+          AND month >= addMonths(m0, -15)
+          AND month < m0
+        GROUP BY query_id, month
+    )
+) WHERE month >= m12
+ORDER BY query_id, month) group by query_id"""
             await client.command(sql)
 
 
