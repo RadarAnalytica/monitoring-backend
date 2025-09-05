@@ -1061,7 +1061,9 @@ async def new_horrible_shit():
                       'рост'
                     ) AS label
                 FROM pairs AS p
-                LEFT JOIN mom_base AS mb USING (query_id, month_start)
+                LEFT JOIN mom_base AS mb
+                  ON mb.query_id = p.query_id
+                 AND mb.month_start = p.month_start
             )
 
             SELECT
