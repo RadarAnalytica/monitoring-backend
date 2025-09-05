@@ -932,8 +932,8 @@ async def new_horrible_shit():
             lo = i
             hi = i + batch - 1
             print(f"BATCH {lo} - {hi}")
-            cap_grow = 12
-            cap_fall = 11
+            cap_grow = 3
+            cap_fall = 3
 
             sql = f"""
             WITH
