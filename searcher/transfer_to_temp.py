@@ -1039,31 +1039,29 @@ async def new_horrible_shit():
 
             labeled AS (
                 SELECT
-                    pr.query_id,
-                    pr.month_start,
-                    pr.n_days,
-                    pr.n_days_prev,
-                    pr.g,
-                    (exp(pr.g) - 1)                  AS pct,
-                    (pr.mu - pr.mu_prev)             AS abs_delta,
-                    pr.g - pr.g_global               AS g_excess,
-                    (exp(pr.g - pr.g_global) - 1)    AS pct_excess,
-                    ifNull(mb.med_prev_g, 0)         AS med_prev_g,
-                    pr.g - ifNull(mb.med_prev_g, 0)  AS g_adj,
-                    (exp(pr.g - ifNull(mb.med_prev_g, 0)) - 1) AS pct_adj,
+                    p.query_id,
+                    p.month_start,
+                    p.n_days,
+                    p.n_days_prev,
+                    p.g,
+                    (exp(p.g) - 1)               AS pct,
+                    (p.mu - p.mu_prev)           AS abs_delta,
+                    p.g - p.g_global             AS g_excess,
+                    (exp(p.g - p.g_global) - 1)  AS pct_excess,
+                    ifNull(mb.med_prev_g, 0)     AS med_prev_g,
+                    p.g - ifNull(mb.med_prev_g, 0)            AS g_adj,
+                    (exp(p.g - ifNull(mb.med_prev_g, 0)) - 1) AS pct_adj,
                     multiIf(
-                      pr.n_days < min_days OR pr.n_days_prev < min_days, 'недостаточно данных',
-                      NOT ((exp(pr.g) - 1) >= mde_pct AND (pr.mu - pr.mu_prev) >= mde_abs), 'без изменений',
-                      (excess_pct > 0 AND (exp(pr.g - pr.g_global) - 1) < excess_pct), 'без изменений',
-                      (mom_pct > 0 AND (exp(pr.g - ifNull(mb.med_prev_g, 0)) - 1) < mom_pct), 'без изменений',
-                      (exp(pr.g) - 1) >= 0.15, 'сильный рост',
-                      (exp(pr.g) - 1) <= -0.05, 'падение',
+                      p.n_days < min_days OR p.n_days_prev < min_days, 'недостаточно данных',
+                      NOT ((exp(p.g) - 1) >= mde_pct AND (p.mu - p.mu_prev) >= mde_abs), 'без изменений',
+                      (excess_pct > 0 AND (exp(p.g - p.g_global) - 1) < excess_pct), 'без изменений',
+                      (mom_pct > 0 AND (exp(p.g - ifNull(mb.med_prev_g, 0)) - 1) < mom_pct), 'без изменений',
+                      (exp(p.g) - 1) >= 0.15, 'сильный рост',
+                      (exp(p.g) - 1) <= -0.05, 'падение',
                       'рост'
                     ) AS label
-                FROM (SELECT * FROM pairs) AS pr
-                LEFT JOIN mom_base mb
-                       ON mb.query_id = pr.query_id
-                      AND mb.month_start = pr.month_start
+                FROM pairs AS p
+                LEFT JOIN mom_base AS mb USING (query_id, month_start)
             )
 
             SELECT
