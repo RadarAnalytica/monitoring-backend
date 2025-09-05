@@ -1,7 +1,8 @@
 from clickhouse_db.get_async_connection import get_async_connection
 from service.log_alert import log_alert, send_log_message
 from settings import logger
-from collections import defaultdict
+from collections import defaultdict, Counter
+
 
 def get_score(value, thresholds):
     for low, high, score in thresholds:
@@ -153,7 +154,11 @@ async def recount_oracle():
 
         qpf2.avg_price_total_spp as avg_price_total_spp,
 
-        qpf2.avg_price_300_spp as avg_price_300_spp
+        qpf2.avg_price_300_spp as avg_price_300_spp,
+        
+        coalesce(rmm.months_grow, []) as months_grow,
+        
+        coalesce(rmm.months_fall, []) as months_fall
 
 
 FROM
@@ -190,7 +195,7 @@ FROM
         round(coalesce(avg(if(pd.wb_id_potential_orders > 0, pd.wb_id_potential_orders, NULL)), 0)) AS potential_orders,
         round(sum(pd.wb_id_orders) / sum(pd.root_feedbacks), 1) AS opr,
         any(pd.sub_id) as subject_id,
-        groupUniqArray(pd.sub_id) AS subjects,
+        groupArrayIf(pd.sub_id, qpf.place <= 300) AS subjects,
         groupUniqArray(pd.supl_id) AS suppliers,
         groupUniqArray(pd.b_id) AS brands,
         sum(if(pd.wb_id_revenue > 0, 1, 0)) as with_sales_ids,
@@ -308,6 +313,7 @@ INNER JOIN
             AND query BETWEEN %(v1)s AND %(v2)s
         ) AND (date = yesterday())
     ) AS qh ON qh.query = qpf2.q
+LEFT OUTER JOIN (SELECT * FROM request_month_marks WHERE query_id BETWEEN %(v1)s AND %(v2)s) rmm ON rmm.query_id = qpf2.q
 WHERE qpf2.ratio > 0
 """
     stmt_dia = """SELECT
@@ -402,6 +408,16 @@ ORDER BY group_num"""
                 buyout_percent = row[43]
                 brands_list = row[44]
                 subjects_list = row[45]
+                total_subjects = len(subjects_list)
+                counted_subjects = Counter(subjects_list)
+                subjects_set = set(subjects_list)
+                if len(subjects_set) == 1:
+                    filtered_subjects = list(subjects_set)
+                elif not subjects_set:
+                    continue
+                else:
+                    filtered_subjects = [x for x in subjects_set if counted_subjects[x] / total_subjects >= 0.10]
+                    filtered_subjects.sort()
                 supplier_revenue = row[46]
                 revenue_total_spp = row[47]
                 revenue_300_spp = row[48]
@@ -409,6 +425,8 @@ ORDER BY group_num"""
 
                 avg_price_total_spp = row[50]
                 avg_price_300_spp = row[51]
+                months_grow = row[52]
+                months_fall = row[53]
                 suppliers_dict = defaultdict(int)
                 if any([r is None for r in row]):
                     continue
@@ -478,7 +496,7 @@ ORDER BY group_num"""
                     order_per_review,
                     buyout_percent,
                     brands_list,
-                    subjects_list,
+                    filtered_subjects,
                     rating,
                     competition_level,
                     suppliers_with_sales_percent,
@@ -487,6 +505,8 @@ ORDER BY group_num"""
                     avg_revenue_300_spp,
                     avg_price_total_spp,
                     avg_price_300_spp,
+                    months_grow,
+                    months_fall
                 ))
             print(len(data))
             await client.insert(
@@ -546,6 +566,8 @@ ORDER BY group_num"""
                     "avg_revenue_300_spp",
                     "avg_price_total_spp",
                     "avg_price_300_spp",
+                    "months_grow",
+                    "months_fall"
                 ],
                 data=data
             )
