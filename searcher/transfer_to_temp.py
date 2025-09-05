@@ -967,4 +967,4 @@ ORDER BY query_id, month) group by query_id"""
 
 
 if __name__ == '__main__':
-    asyncio.run(new_horrible_shit())
+    asyncio.run(recount_oracle())
