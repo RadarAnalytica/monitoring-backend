@@ -930,7 +930,8 @@ async def new_horrible_shit():
 
             sql = f"""WITH
     toStartOfMonth(today()) AS m0, addMonths(m0, -12) as m12
-SELECT query_id, groupUniqArrayIf(toMonth(month), res > 0) as grow, groupUniqArrayIf(toMonth(month), res < 0) as fall from (SELECT query_id,
+    INSERT INTO request_month_marks(query_id, months_grow, months_fall)
+SELECT query_id, groupUniqArrayIf(toMonth(month), res > 0) as months_grow, groupUniqArrayIf(toMonth(month), res < 0) as months_fall from (SELECT query_id,
     month,
     s,
     round(avg_prev3),
