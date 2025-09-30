@@ -84,16 +84,12 @@ async def get_r_data(
             for i, p in enumerate(full_res, 1):
                 if not p.get("id"):
                     continue
-                log = p.get("log", {})
+                log = p.get("logs", None)
                 brand_id = abs(p.get("brandId", 0) or 0)
                 subject_id = abs(p.get("subjectId", 0) or 0)
                 supplier_id = abs(p.get("supplierId", 0) or 0)
-                natural_place = log.get("position", 0) or 0
-                if natural_place > 65535:
-                    natural_place = 65535
-                cpm = log.get("cpm", 0)
-                if cpm > 65535:
-                    cpm = 65535
+                natural_place = 0
+                cpm = 0
                 request_products.append(
                     (
                         p.get("id"),
@@ -101,7 +97,7 @@ async def get_r_data(
                         date[0],
                         r[0],
                         i + page_increment,
-                        log.get("tp", "z"),
+                        "b" if log else "z",
                         natural_place,
                         cpm,
                         brand_id,
