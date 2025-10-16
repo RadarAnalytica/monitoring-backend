@@ -26,7 +26,7 @@ async def get_keywords_db_data(products, city=1):
             AND date >= today() - 30
             GROUP BY query_id
         ) AS rf ON rf.query_id = r.id
-        WHERE WHERE r.id IN query_ids
+        WHERE r.id IN query_ids
         ORDER BY rf.freq_sum DESC;"""
         query_result = await client.query(query, parameters=params)
         return query_result.result_rows
