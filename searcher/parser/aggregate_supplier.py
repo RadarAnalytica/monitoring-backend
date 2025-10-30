@@ -56,7 +56,7 @@ AND
     rp.date = (
         SELECT id
         FROM dates
-        WHERE date = toDate('%(v1)s')
+        WHERE date = toDate('%(v1)s')   
         LIMIT 1
     )
 

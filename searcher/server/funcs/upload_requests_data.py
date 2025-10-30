@@ -1,5 +1,6 @@
 from datetime import datetime, date
 
+from actions.requests_parse import aggregate_supplier_task
 from clickhouse_db.get_async_connection import get_async_connection
 from server.funcs.prepare_csv_contents import prepare_request_frequency, recount_request_frequency, \
     get_request_frequency_by_date, prepare_request_frequency_excel
@@ -168,4 +169,6 @@ async def upload_requests_excel_bg(requests_data: list):
                 await upload_request_frequency_worker(frequency_rows_4, client)
                 await upload_request_growth_worker(client=client, requests_slice=growth_rows_4)
             logger.info("Slice 4 ready")
+    excel_date = slice_1[0][5].date()
+    aggregate_supplier_task.delay(start_date=excel_date)
     logger.warning("DB renewal complete")

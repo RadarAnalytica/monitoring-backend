@@ -127,6 +127,6 @@ def transfer_aggregates():
 
 
 @celery_app.task(name="aggregate_supplier_task")
-def aggregate_supplier_task():
-    asyncio.run(aggregate_supplier())
+def aggregate_supplier_task(start_date=None):
+    asyncio.run(aggregate_supplier(start_date=start_date))
 
