@@ -6,6 +6,7 @@ from datetime import date, timedelta, datetime, time
 
 from actions.requests_parse import transfer_aggregates
 from clickhouse_db.get_async_connection import get_async_connection
+from parser.aggregate_supplier import aggregate_supplier
 from parser.collect_subjects import write_subjects_raw
 from server.funcs.transfer_to_local import recount_oracle
 from server.funcs.upload_requests_data import recount_growth_by_date
@@ -966,5 +967,15 @@ ORDER BY query_id, month) group by query_id"""
             await client.command(sql)
 
 
+async def recount_suppliers():
+    async with get_async_connection(send_receive_timeout=3600) as client:
+        d_stmt = """SELECT DISTINCT date FROM dates ORDER BY date DESC"""
+        d_q = await client.query(d_stmt)
+        dates = list([row[0] for row in d_q.result_rows])
+    for d in dates:
+        print(f"COUNTING DATE: {d}")
+        await aggregate_supplier(start_date=d)
+
+
 if __name__ == '__main__':
-    asyncio.run(recount_oracle())
+    asyncio.run(recount_suppliers())

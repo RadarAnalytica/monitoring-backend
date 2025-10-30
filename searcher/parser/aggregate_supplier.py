@@ -6,8 +6,9 @@ from clickhouse_db.get_async_connection import get_async_connection
 
 
 @log_alert(message="Начинаются аггрегаты поставщика", end_message="Завершены аггрегаты поставщика", track_error=True)
-async def aggregate_supplier():
-    start_date = date.today() - timedelta(days=1)
+async def aggregate_supplier(start_date: date | None = None):
+    if not start_date:
+        start_date = date.today() - timedelta(days=1)
     stmt = """INSERT INTO radar.supplier_query_aggregates
 SELECT
     rp.supplier_id,
@@ -49,12 +50,15 @@ JOIN (
     LIMIT 1
 ) AS d ON d.id = rp.date
 
-WHERE rp.date = (
-    SELECT id
-    FROM dates
-    WHERE date = toDate('%(v1)s')
-    LIMIT 1
-)
+WHERE 
+    rp.city = 1 
+AND 
+    rp.date = (
+        SELECT id
+        FROM dates
+        WHERE date = toDate('%(v1)s')
+        LIMIT 1
+    )
 
 GROUP BY
     rp.supplier_id,
