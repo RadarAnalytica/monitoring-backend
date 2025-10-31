@@ -81,9 +81,9 @@ async def recount_oracle():
         r.query as query,
         qpf2.subject_id as subject_id,
 
-        rf.sum_30 AS frequency_30,
-        rf.sum_60 AS frequency_60,
-        rf.sum_90 AS frequency_90,
+        rg.sum_30 AS frequency_30,
+        rg.sum_60 AS frequency_60,
+        rg.sum_90 AS frequency_90,
         rg.g30 AS g30,
         rg.g60 AS g60,
         rg.g90 AS g90,
@@ -125,7 +125,7 @@ async def recount_oracle():
         qpf2.ex_advert as external_advert_percent,
         qh.total_products AS goods_quantity,
         qpf1.dpc as top_goods_quantity,        
-        round(if(qpf1.dpc > 0, rf.sum_30 / qh.total_products, 0), 3) AS freq_per_good,
+        round(if(qpf1.dpc > 0, rg.sum_30 / qh.total_products, 0), 3) AS freq_per_good,
 
         round(if(qpf2.all_ids > 0, qpf2.with_sales_ids * 100 / qpf2.all_ids, 0)) as goods_with_sales_percent_total,
         qpf2.with_sales_ids as goods_with_sales_quantity_total,
@@ -258,66 +258,53 @@ INNER JOIN
         ) AND (date BETWEEN (SELECT id FROM dates WHERE date = yesterday() - 29) AND (SELECT id FROM dates WHERE date = yesterday()))
         GROUP BY query
     ) AS qpf1 ON qpf2.q = qpf1.query
-    INNER JOIN
-    (
-        SELECT
-            query_id,
-            sum(if(date >= (yesterday() - 30), frequency, 0)) AS sum_30,
-            sum(if(date >= (yesterday() - 60), frequency, 0)) AS sum_60,
-            sum(frequency) AS sum_90
-        FROM request_frequency
-        WHERE query_id IN (
-            SELECT DISTINCT query 
-            FROM query_product_flat 
-            WHERE date = (SELECT max(id) FROM dates) 
-            AND query BETWEEN %(v1)s AND %(v2)s
-        ) AND (date >= yesterday() - 90)
-        GROUP BY query_id
-    ) AS rf ON rf.query_id = qpf2.q
-    INNER JOIN
-    (
-        SELECT
-            query_id,
-            g30,
-            g60,
-            g90
-        FROM request_growth
-        WHERE query_id IN (
-            SELECT DISTINCT query 
-            FROM query_product_flat 
-            WHERE date = (SELECT max(id) FROM dates) 
-            AND query BETWEEN %(v1)s AND %(v2)s
-        ) AND (date = yesterday() - 1)
-        LIMIT 1 BY query_id
-    ) AS rg ON rg.query_id = qpf2.q
-    INNER JOIN
-    (
-        SELECT
-            id,
-            query,
-        FROM request
-        WHERE id IN (
-            SELECT DISTINCT query 
-            FROM query_product_flat 
-            WHERE date = (SELECT max(id) FROM dates) 
-            AND query BETWEEN %(v1)s AND %(v2)s
-        )
-        LIMIT 1 BY id
-    ) AS r ON r.id = qpf2.q
-    INNER JOIN
-    (
-        SELECT
-            query,
-            total_products
-        FROM query_history
-        WHERE query IN (
-            SELECT DISTINCT query 
-            FROM query_product_flat 
-            WHERE date = (SELECT max(id) FROM dates) 
-            AND query BETWEEN %(v1)s AND %(v2)s
-        ) AND (date = yesterday())
-        LIMIT 1 BY query
-    ) AS qh ON qh.query = qpf2.q
+INNER JOIN
+(
+    SELECT
+        query_id,
+        g30,
+        g60,
+        g90,
+        sum30 as sum_30,
+        sum60 as sum_60,
+        sum90 as sum_90
+    FROM request_growth
+    WHERE query_id IN (
+        SELECT DISTINCT query 
+        FROM query_product_flat 
+        WHERE date = (SELECT max(id) FROM dates) 
+        AND query BETWEEN %(v1)s AND %(v2)s
+    ) AND (date = yesterday() - 1)
+    LIMIT 1 BY query_id
+) AS rg ON rg.query_id = qpf2.q
+INNER JOIN
+(
+    SELECT
+        id,
+        query,
+    FROM request
+    WHERE id IN (
+        SELECT DISTINCT query 
+        FROM query_product_flat 
+        WHERE date = (SELECT max(id) FROM dates) 
+        AND query BETWEEN %(v1)s AND %(v2)s
+    )
+    LIMIT 1 BY id
+) AS r ON r.id = qpf2.q
+INNER JOIN
+(
+    SELECT
+        query,
+        total_products
+    FROM query_history
+    WHERE query IN (
+        SELECT DISTINCT query 
+        FROM query_product_flat 
+        WHERE date = (SELECT max(id) FROM dates) 
+        AND query BETWEEN %(v1)s AND %(v2)s
+    ) AND (date = yesterday())
+    LIMIT 1 BY query
+) AS qh ON qh.query = qpf2.q
 LEFT OUTER JOIN (SELECT * FROM request_month_marks WHERE query_id BETWEEN %(v1)s AND %(v2)s LIMIT 1 BY query_id) rmm ON rmm.query_id = qpf2.q
 WHERE qpf2.ratio > 0
 """

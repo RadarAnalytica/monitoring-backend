@@ -978,4 +978,5 @@ async def recount_suppliers():
 
 
 if __name__ == '__main__':
-    asyncio.run(recount_suppliers())
+    asyncio.run(new_horrible_shit())
+    asyncio.run(recount_oracle())
