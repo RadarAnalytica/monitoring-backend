@@ -212,7 +212,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         batch_no=request_batch_no
                     )
                 )
-                for _ in range(2)
+                for _ in range(5)
             ]
             counter = 0
             while requests_list:

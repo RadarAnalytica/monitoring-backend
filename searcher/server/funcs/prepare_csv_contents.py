@@ -258,21 +258,36 @@ async def prepare_request_frequency_excel(rows, client):
                 freq_old_30,
                 freq_new_30
             ) = queries_frequency.get(query_id, (0, 0, 0, 0, 0, 0, 0))
-            if not prev_query_sum:
+
+            if not freq_new_30:
                 sum_30 = new_freq
                 g30 = 100 if sum_30 > 0 else 0
-                g60 = 100 if sum_30 > 0 else 0
-                g90 = 100 if sum_30 > 0 else 0
             else:
                 freq_new_30 += new_freq
-                freq_new_60 += new_freq
-                freq_new_90 += new_freq
                 sum_30 = freq_new_30
-                g30 = (int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100) if sum_30 > 0 else 0
-                g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_30 > 0 else 0
-                g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_30 > 0 else 0
+                g30 = (
+                    int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100) if sum_30 > 0 else 0
+
+            if not freq_new_60:
+                sum_60 = new_freq
+                g60 = 100 if sum_60 > 0 else 0
+            else:
+                freq_new_60 += new_freq
+                sum_60 = freq_new_60
+                g60 = (
+                    int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_60 > 0 else 0
+
+            if not freq_new_90:
+                sum_90 = new_freq
+                g90 = 100 if sum_90 > 0 else 0
+            else:
+                freq_new_90 += new_freq
+                sum_90 = freq_new_90
+                g90 = (
+                    int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_90 > 0 else 0
+
             frequency_rows.append((query_id, new_freq, new_date))
-            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, subject_id))
+            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return frequency_rows, growth_rows

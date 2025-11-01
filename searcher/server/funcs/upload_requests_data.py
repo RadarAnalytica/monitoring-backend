@@ -32,7 +32,7 @@ async def upload_request_growth_worker(
     await client.insert(
         "request_growth",
         requests_slice,
-        column_names=["query_id", "date", "g30", "g60", "g90", "sum30", "subject_id"],
+        column_names=["query_id", "date", "g30", "g60", "g90", "sum30", "sum60", "sum90", "subject_id"],
     )
     logger.info("Start of part DB renewal - request_growth")
 
