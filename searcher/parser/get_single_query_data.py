@@ -1,10 +1,11 @@
 import asyncio
 import traceback
 from json import JSONDecodeError
+from urllib.request import proxy_bypass
 
-from aiohttp import ClientSession, ContentTypeError, client_exceptions
+from aiohttp import ClientSession, ContentTypeError, client_exceptions, BasicAuth
 
-from settings import SEARCH_URL, logger, WB_AUTH_TOKENS
+from settings import SEARCH_URL, logger, WB_AUTH_TOKENS, PROXY_AUTH, PROXIES
 
 
 async def get_query_data(
@@ -31,10 +32,14 @@ async def get_query_data(
                 },
                 headers=headers,
                 timeout=timeout,
+                proxy=PROXIES[(batch_no - 1) * 10 + page],
+                proxy_auth=BasicAuth(PROXY_AUTH["username"], PROXY_AUTH["password"]),
             ) as response:
+                print(response.status, response.reason)
                 if response.status == 200:
                     try:
                         _data = await response.json(content_type="text/plain")
+                        print(_data)
                     except (ContentTypeError, JSONDecodeError):
                         logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
                         return _data
@@ -57,7 +62,11 @@ async def get_query_data(
 
 async def test():
     async with ClientSession() as session:
-        res = await get_query_data(session, "джинсы женские", -1257786, 20, 1, batch_no=1)
+        res = await get_query_data(session, "джинсы женские", -1257786, 300, 4, batch_no=1)
+        p = res.get("products", [])
+        print(len(p))
+        if len(p) == 0:
+            print(res)
         for product in res.get("products"):
             print(f"{product.get("id")}: {bool(product.get("logs"))},")
 
