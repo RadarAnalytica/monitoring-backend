@@ -39,7 +39,6 @@ async def get_query_data(
                 if response.status == 200:
                     try:
                         _data = await response.json(content_type="text/plain")
-                        print(_data)
                     except (ContentTypeError, JSONDecodeError):
                         logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
                         return _data
