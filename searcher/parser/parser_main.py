@@ -18,6 +18,7 @@ async def get_r_data_q(
     preset_queue=None,
     query_history_queue=None,
     today_date=None,
+    batch_no=None,
 ):
     while True:
         r = await http_queue.get()
@@ -36,10 +37,11 @@ async def get_r_data_q(
             preset_queue=preset_queue,
             query_history_queue=query_history_queue,
             today_date=today_date,
+            batch_no=batch_no
         )
 
 
-async def try_except_query_data(query_string, dest, limit, page, http_session, rqa=5):
+async def try_except_query_data(query_string, dest, limit, page, http_session, rqa=5, batch_no=None):
     try:
         x = await get_query_data(
             http_session=http_session,
@@ -49,9 +51,10 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
             page=page,
             rqa=rqa,
             timeout=5,
+            batch_no=batch_no
         )
     except ValueError:
-        x = {"data": {"products": []}}
+        x = {"products": []}
     return x
 
 
@@ -65,7 +68,8 @@ async def get_r_data(
     preset_queue=None,
     query_history_queue=None,
     today_date=None,
-    limit=300
+    limit=300,
+    batch_no=None
 ):
     count = 0
     while count <= 3:
@@ -77,8 +81,9 @@ async def get_r_data(
                         page=page,
                         rqa=3,
                         http_session=http_session,
+                        batch_no=batch_no
                     )
-            full_res = result.get("data", dict()).get("products", [])
+            full_res = result.get("products", [])
             request_products = []
             page_increment = (page - 1) * limit
             for i, p in enumerate(full_res, 1):
@@ -123,7 +128,7 @@ async def get_r_data(
                 if preset and norm_query:
                     await preset_queue.put([(preset, norm_query, r[0])])
             if page == 1 and query_history_queue and full_res:
-                total = result.get("data", dict()).get("total", 0)
+                total = result.get("total", 0)
                 top_product = full_res[0]
                 priority = top_product.get("subjectId", 0)
                 if total:
@@ -204,9 +209,10 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         preset_queue=preset_queue,
                         query_history_queue=query_history_queue,
                         today_date=today_date,
+                        batch_no=request_batch_no
                     )
                 )
-                for _ in range(5)
+                for _ in range(2)
             ]
             counter = 0
             while requests_list:

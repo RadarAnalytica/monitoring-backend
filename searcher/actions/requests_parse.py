@@ -63,7 +63,7 @@ def fire_requests(city_no, test):
     cities = asyncio.run(get_cities_data(city_no))
     requests = asyncio.run(get_requests_data())
     request_batches = []
-    batch_size = 50000
+    batch_size = 70000
     for r_id in range(0, len(requests) + batch_size, batch_size):
         request_batches.append(requests[r_id : r_id + batch_size])
     city = cities[0]
