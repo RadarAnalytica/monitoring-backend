@@ -9,7 +9,16 @@ from settings import SEARCH_URL, logger, WB_AUTH_TOKENS, PROXY_AUTH, PROXIES
 
 
 async def get_query_data(
-    http_session: ClientSession, query_string, dest, limit, page, rqa=5, timeout=5, upload=False, batch_no=None
+    http_session: ClientSession,
+    query_string,
+    dest,
+    limit,
+    page,
+    rqa=5,
+    timeout=5,
+    upload=False,
+    batch_no=None,
+    worker_no=1
 ):
     _data = {"products": []}
     counter = 0
@@ -32,7 +41,7 @@ async def get_query_data(
                 },
                 headers=headers,
                 timeout=timeout,
-                proxy=PROXIES[(batch_no - 1) * 10 + page],
+                proxy=PROXIES[(batch_no - 1) * 20 + page + (4 * worker_no)],
                 proxy_auth=BasicAuth(PROXY_AUTH["username"], PROXY_AUTH["password"]),
             ) as response:
                 print(response.status, response.reason)

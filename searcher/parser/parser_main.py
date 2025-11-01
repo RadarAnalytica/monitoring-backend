@@ -19,6 +19,7 @@ async def get_r_data_q(
     query_history_queue=None,
     today_date=None,
     batch_no=None,
+    worker_no=1,
 ):
     while True:
         r = await http_queue.get()
@@ -37,11 +38,21 @@ async def get_r_data_q(
             preset_queue=preset_queue,
             query_history_queue=query_history_queue,
             today_date=today_date,
-            batch_no=batch_no
+            batch_no=batch_no,
+            worker_no=worker_no
         )
 
 
-async def try_except_query_data(query_string, dest, limit, page, http_session, rqa=5, batch_no=None):
+async def try_except_query_data(
+    query_string,
+    dest,
+    limit,
+    page,
+    http_session,
+    rqa=5,
+    batch_no=None,
+    worker_no=1
+):
     try:
         x = await get_query_data(
             http_session=http_session,
@@ -51,7 +62,8 @@ async def try_except_query_data(query_string, dest, limit, page, http_session, r
             page=page,
             rqa=rqa,
             timeout=5,
-            batch_no=batch_no
+            batch_no=batch_no,
+            worker_no=worker_no
         )
     except ValueError:
         x = {"products": []}
@@ -69,20 +81,22 @@ async def get_r_data(
     query_history_queue=None,
     today_date=None,
     limit=300,
-    batch_no=None
+    batch_no=None,
+    worker_no=1
 ):
     count = 0
     while count <= 3:
         try:
             result = await try_except_query_data(
-                        query_string=r[1],
-                        dest=city[1],
-                        limit=limit,
-                        page=page,
-                        rqa=3,
-                        http_session=http_session,
-                        batch_no=batch_no
-                    )
+                query_string=r[1],
+                dest=city[1],
+                limit=limit,
+                page=page,
+                rqa=3,
+                http_session=http_session,
+                batch_no=batch_no,
+                worker_no=worker_no
+            )
             full_res = result.get("products", [])
             request_products = []
             page_increment = (page - 1) * limit
@@ -209,10 +223,11 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         preset_queue=preset_queue,
                         query_history_queue=query_history_queue,
                         today_date=today_date,
-                        batch_no=request_batch_no
+                        batch_no=request_batch_no,
+                        worker_no=i
                     )
                 )
-                for _ in range(5)
+                for i in range(4)
             ]
             counter = 0
             while requests_list:
