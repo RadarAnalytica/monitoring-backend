@@ -15,7 +15,7 @@ async def get_query_data(
     limit,
     page,
     rqa=5,
-    timeout=5,
+    timeout=10,
     upload=False,
     batch_no=None,
     worker_no=1
@@ -23,7 +23,7 @@ async def get_query_data(
     _data = {"products": []}
     counter = 0
     headers = {
-        "Authorization": f"Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NjE5MTkxNTUsInVzZXIiOiIxMTI0NjIxNjAiLCJzaGFyZF9rZXkiOiIxNyIsImNsaWVudF9pZCI6IndiIiwic2Vzc2lvbl9pZCI6IjRjZmNhN2ExMjEwNjQ3MzRhYjNiZTU2ZmQyMmNkMWViIiwidmFsaWRhdGlvbl9rZXkiOiI1OGNmNDQyNTA4MTNkM2ZmZDhkNmI0YzI4NmZmNGQyMTg5ZjlkMTY3NjBmNWZiYmJlN2Y3ZDY3YjY1MDNmNjlkIiwicGhvbmUiOiJ1NXlqZThTN29FelpONVE0dFNiVmt3PT0iLCJ1c2VyX3JlZ2lzdHJhdGlvbl9kdCI6MTY4MzgwNTc4NCwidmVyc2lvbiI6Mn0.c4cptVXS5x_pj1t62eB3vTNBRrWUYgxxVpzDIy0eWABN95lqQ81_nCNMtgy5utjG57qcoqeJR3mgAJW8uT3crdMMvmnKfHkWSUcqeYueAR9xkuuFG80Mpex019UJSww9q533noDF0PtFPgEMYtsi7f2AAC0jf_jBKNG_6PtIeq1IcrrfNFKP0yfkCD9CW_Gws1XpFpq_hozpxRXuyA9FMrWe-osl72aM1aNw8Dl66lrDr8LQAUN1pTPxnJxQRWEirqjZl-UScPZpJ1xBWgB1VQUGnvEgqU5mPFfzJ-sVQGE_hI-TqvpRtPoUI3mR3FS234e4zzshtCGPGd28k6zdhw",
+        # "Authorization": f"Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NjE5MTkxNTUsInVzZXIiOiIxMTI0NjIxNjAiLCJzaGFyZF9rZXkiOiIxNyIsImNsaWVudF9pZCI6IndiIiwic2Vzc2lvbl9pZCI6IjRjZmNhN2ExMjEwNjQ3MzRhYjNiZTU2ZmQyMmNkMWViIiwidmFsaWRhdGlvbl9rZXkiOiI1OGNmNDQyNTA4MTNkM2ZmZDhkNmI0YzI4NmZmNGQyMTg5ZjlkMTY3NjBmNWZiYmJlN2Y3ZDY3YjY1MDNmNjlkIiwicGhvbmUiOiJ1NXlqZThTN29FelpONVE0dFNiVmt3PT0iLCJ1c2VyX3JlZ2lzdHJhdGlvbl9kdCI6MTY4MzgwNTc4NCwidmVyc2lvbiI6Mn0.c4cptVXS5x_pj1t62eB3vTNBRrWUYgxxVpzDIy0eWABN95lqQ81_nCNMtgy5utjG57qcoqeJR3mgAJW8uT3crdMMvmnKfHkWSUcqeYueAR9xkuuFG80Mpex019UJSww9q533noDF0PtFPgEMYtsi7f2AAC0jf_jBKNG_6PtIeq1IcrrfNFKP0yfkCD9CW_Gws1XpFpq_hozpxRXuyA9FMrWe-osl72aM1aNw8Dl66lrDr8LQAUN1pTPxnJxQRWEirqjZl-UScPZpJ1xBWgB1VQUGnvEgqU5mPFfzJ-sVQGE_hI-TqvpRtPoUI3mR3FS234e4zzshtCGPGd28k6zdhw",
     }
     while len(_data.get("products", [])) < 2 and counter < rqa:
         counter += 1
@@ -41,8 +41,8 @@ async def get_query_data(
                 },
                 headers=headers,
                 timeout=timeout,
-                proxy=PROXIES[(batch_no - 1) * 20 + page + (4 * worker_no)],
-                proxy_auth=BasicAuth(PROXY_AUTH["username"], PROXY_AUTH["password"]),
+                # proxy=PROXIES[(batch_no - 1) * 20 + page + (4 * worker_no)],
+                # proxy_auth=BasicAuth(PROXY_AUTH["username"], PROXY_AUTH["password"]),
             ) as response:
                 print(response.status, response.reason)
                 if response.status == 200:
