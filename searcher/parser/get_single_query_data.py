@@ -53,16 +53,20 @@ async def get_query_data(
                         return _data
                 else:
                     # logger.critical("response not ok")
+                    await asyncio.sleep(1)
                     continue
         except (TypeError, asyncio.TimeoutError) as e:
             logger.critical(f"ОШИБКА, {type(e)}")
+            await asyncio.sleep(1)
             continue
         except client_exceptions.ServerDisconnectedError:
             logger.info("SERVER DISCONNECT")
             if not upload:
                 counter -= 1
+            await asyncio.sleep(1)
             continue
         except:
+            await asyncio.sleep(1)
             print(traceback.format_exc())
 
     return _data
