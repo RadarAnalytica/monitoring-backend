@@ -45,14 +45,14 @@ celery_app.conf.beat_schedule = {
             minute="0",
         ),
     },
-    "test_parse_search_moscow": {
-        "task": "fire_requests",
-        "schedule": crontab(
-            hour="15",
-            minute="14",
-        ),
-        "args": (1, True),
-    },
+    # "test_parse_search_moscow": {
+    #     "task": "fire_requests",
+    #     "schedule": crontab(
+    #         hour="15",
+    #         minute="14",
+    #     ),
+    #     "args": (1, True),
+    # },
     # "parse_search_krasnodar": {
     #     "task": "fire_requests",
     #     "schedule": crontab(hour="18", minute="0",),

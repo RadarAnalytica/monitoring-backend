@@ -4,7 +4,7 @@ import math
 from collections import defaultdict
 from datetime import date, timedelta, datetime, time
 
-from actions.requests_parse import transfer_aggregates
+from actions.requests_parse import transfer_aggregates, fire_requests
 from clickhouse_db.get_async_connection import get_async_connection
 from parser.aggregate_supplier import aggregate_supplier
 from parser.collect_subjects import write_subjects_raw
@@ -979,4 +979,5 @@ async def recount_suppliers():
 
 if __name__ == '__main__':
     # asyncio.run(new_horrible_shit())
-    asyncio.run(recount_oracle())
+    # asyncio.run(recount_oracle())
+    fire_requests.delay(1, True)
