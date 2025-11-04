@@ -25,8 +25,8 @@ celery_app.conf.beat_schedule = {
     "parse_search_moscow": {
         "task": "fire_requests",
         "schedule": crontab(
-            hour="22",
-            minute="35",
+            hour="16",
+            minute="25",
         ),
         "args": (1, False),
     },
@@ -70,7 +70,7 @@ celery_app.conf.beat_schedule = {
     # }
     "get_today_subjects_dict": {
         "task": "get_today_subjects_dict",
-        "schedule": crontab(hour="10", minute="40",),
+        "schedule": crontab(hour="5", minute="40",),
     },
 }
 
