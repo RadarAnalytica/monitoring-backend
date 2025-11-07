@@ -1,0 +1,173 @@
+<clickhouse>
+    <!-- query logs -->
+    <query_log replace="1">
+        <database>system</database>
+        <table>query_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </query_log>
+
+    <query_thread_log replace="1">
+        <database>system</database>
+        <table>query_thread_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </query_thread_log>
+
+    <query_views_log replace="1">
+        <database>system</database>
+        <table>query_views_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </query_views_log>
+
+    <!-- part + trace + metric logs -->
+    <part_log replace="1">
+        <database>system</database>
+        <table>part_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </part_log>
+
+    <trace_log replace="1">
+        <database>system</database>
+        <table>trace_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </trace_log>
+
+    <metric_log replace="1">
+        <database>system</database>
+        <table>metric_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </metric_log>
+
+    <asynchronous_metric_log replace="1">
+        <database>system</database>
+        <table>asynchronous_metric_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </asynchronous_metric_log>
+
+    <processors_profile_log replace="1">
+        <database>system</database>
+        <table>processors_profile_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </processors_profile_log>
+
+    <!-- session / opentelemetry / text / zookeeper / crash logs -->
+    <session_log replace="1">
+        <database>system</database>
+        <table>session_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </session_log>
+
+    <opentelemetry_span_log replace="1">
+        <database>system</database>
+        <table>opentelemetry_span_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY start_date
+            ORDER BY (start_time)
+            TTL start_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </opentelemetry_span_log>
+
+    <text_log replace="1">
+        <database>system</database>
+        <table>text_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </text_log>
+
+    <zookeeper_log replace="1">
+        <database>system</database>
+        <table>zookeeper_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </zookeeper_log>
+
+    <crash_log replace="1">
+        <database>system</database>
+        <table>crash_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <engine>
+            ENGINE = MergeTree
+            PARTITION BY event_date
+            ORDER BY (event_time)
+            TTL event_date + INTERVAL 2 DAY
+            SETTINGS ttl_only_drop_parts = 1
+        </engine>
+    </crash_log>
+</clickhouse>
