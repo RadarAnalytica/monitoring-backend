@@ -26,7 +26,7 @@ celery_app.conf.beat_schedule = {
         "task": "fire_requests",
         "schedule": crontab(
             hour="13",
-            minute="20",
+            minute="40",
         ),
         "args": (1, False),
     },

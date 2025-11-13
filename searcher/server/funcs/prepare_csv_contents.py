@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from datetime import datetime, date, timedelta
 
 from clickhouse_db.get_async_connection import get_async_connection
@@ -455,6 +456,10 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     except:
                         subject_id = 0
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
+
+                m = re.search(r"\b(\d{6,9})\b", query)
+                if m:
+                    query = m.group(1)
                 if not query:
                     logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
                     continue
@@ -470,6 +475,8 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     new_query_scaler += 1
                     logger.info(f"GETTING SUBJECT FOR {query}")
                     new_queries.append((query_id, query, now_date, quantity, subject_id))
+                elif query.isdigit():
+                    requests_data.append((query_id, query, quantity, subject_id, total_products, now_date))
                 elif not subject_id:
                     if old_subject_id:
                         requests_data.append((query_id, query, quantity, old_subject_id, total_products, now_date))
