@@ -5,7 +5,7 @@ from aiohttp import ClientSession
 from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
 from service.log_alert import send_log_message
-from settings import logger
+from settings import logger, WB_AUTH_TOKENS_FOR_WORKERS
 from parser.save_to_db_worker import save_to_db
 
 
@@ -20,6 +20,7 @@ async def get_r_data_q(
     today_date=None,
     batch_no=None,
     worker_no=1,
+    auth_token=None
 ):
     while True:
         r = await http_queue.get()
@@ -39,7 +40,8 @@ async def get_r_data_q(
             query_history_queue=query_history_queue,
             today_date=today_date,
             batch_no=batch_no,
-            worker_no=worker_no
+            worker_no=worker_no,
+            auth_token=auth_token
         )
 
 
@@ -51,7 +53,8 @@ async def try_except_query_data(
     http_session,
     rqa=5,
     batch_no=None,
-    worker_no=1
+    worker_no=1,
+    auth_token=None
 ):
     try:
         x = await get_query_data(
@@ -63,7 +66,8 @@ async def try_except_query_data(
             rqa=rqa,
             timeout=5,
             batch_no=batch_no,
-            worker_no=worker_no
+            worker_no=worker_no,
+            auth_token=auth_token
         )
     except ValueError:
         x = {"products": []}
@@ -82,7 +86,8 @@ async def get_r_data(
     today_date=None,
     limit=300,
     batch_no=None,
-    worker_no=1
+    worker_no=1,
+    auth_token=None
 ):
     count = 0
     while count <= 3:
@@ -95,7 +100,8 @@ async def get_r_data(
                 rqa=3,
                 http_session=http_session,
                 batch_no=batch_no,
-                worker_no=worker_no
+                worker_no=worker_no,
+                auth_token=auth_token
             )
             full_res = result.get("products", [])
             request_products = []
@@ -224,10 +230,11 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         query_history_queue=query_history_queue,
                         today_date=today_date,
                         batch_no=request_batch_no,
-                        worker_no=i
+                        worker_no=i,
+                        auth_token=auth_token
                     )
                 )
-                for i in range(1, 2)
+                for i, auth_token in enumerate(WB_AUTH_TOKENS_FOR_WORKERS[request_batch_no])
             ]
             counter = 0
             while requests_list:

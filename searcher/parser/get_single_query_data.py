@@ -1,11 +1,10 @@
 import asyncio
 import traceback
 from json import JSONDecodeError
-from urllib.request import proxy_bypass
 
 from aiohttp import ClientSession, ContentTypeError, client_exceptions, BasicAuth
 
-from settings import SEARCH_URL, logger, WB_AUTH_TOKENS, PROXY_AUTH, PROXIES
+from settings import SEARCH_URL, logger, PROXY_AUTH, PROXIES
 
 
 async def get_query_data(
@@ -18,12 +17,13 @@ async def get_query_data(
     timeout=10,
     upload=False,
     batch_no=None,
-    worker_no=None
+    worker_no=None,
+    auth_token=None
 ):
     _data = {"products": []}
     counter = 0
     headers = {
-        "Authorization": WB_AUTH_TOKENS[batch_no],
+        "Authorization": auth_token,
     }
     while len(_data.get("products", [])) < 2 and counter < rqa:
         counter += 1
@@ -39,7 +39,7 @@ async def get_query_data(
                     "ab_testing": "false",
                     "appType": 64
                 },
-                headers=headers,
+                headers=headers if auth_token else None,
                 timeout=timeout,
                 proxy=PROXIES[(batch_no - 1) * 20 + page + (4 * worker_no)] if not (worker_no is None) else None,
                 proxy_auth=BasicAuth(PROXY_AUTH["username"], PROXY_AUTH["password"]) if not (worker_no is None) else None,
