@@ -19,7 +19,7 @@ from server.funcs.transfer_to_local import transfer_aggregates_to_local
 from settings import logger
 
 
-@celery_app.task(name="process_city", time_limit=3600 * 15)
+@celery_app.task(name="process_city", time_limit=3600 * 18)
 def process_city(city, date_, requests, batch_no, test):
     start_time = datetime.now()
     logger.info(f"Вход в search: {city}")

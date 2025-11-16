@@ -421,6 +421,21 @@ async def get_request_frequency_by_date(date_, client):
     return growth_rows
 
 
+async def check_product_exists(product_id):
+    async with get_async_connection() as client:
+        check_stmt = f"""SELECT 1
+        FROM product_data
+        WHERE 
+            wb_id = %(product_id)s
+            AND date >= today() - 14
+        LIMIT 1;"""
+        exists_q = await client.query(check_stmt, parameters={"product_id": product_id})
+        exists_rows = list(exists_q.result_rows)
+        if exists_rows and exists_rows[0][0] == 1:
+            return True
+        else:
+            return False
+
 
 
 async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename: str):
@@ -457,9 +472,12 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                         subject_id = 0
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
 
-                m = re.search(r"\b(\d{6,9})\b", query)
+                m = re.search(r".*(\d{6,9}).*", query)
                 if m:
-                    query = m.group(1)
+                    query_mb_id = int(m.group(1))
+                    check_product = await check_product_exists(query_mb_id)
+                    if check_product:
+                        query = str(query_mb_id)
                 if not query:
                     logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
                     continue
