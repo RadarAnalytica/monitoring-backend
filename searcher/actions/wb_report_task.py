@@ -5,7 +5,7 @@ Celery задача для автоматического ежедневного
 
 import asyncio
 import io
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 
@@ -40,12 +40,12 @@ def download_wb_report_task():
 
 async def _download_and_process_report():
     """Асинхронная обработка отчёта."""
-    today = date.today()
-    filename = f"{today}.xlsx"
+    yesterday = date.today() - timedelta(days=1)
+    filename = f"{yesterday}.xlsx"
     
     try:
         # 1. Скачиваем отчёт
-        await send_log_message(f"📥 Начинаем скачивание WB отчёта за {today}")
+        await send_log_message(f"📥 Начинаем скачивание WB отчёта за {yesterday}")
         
         xlsx_bytes, error = await download_wb_report(wait_seconds=60)
         
@@ -89,7 +89,7 @@ async def _download_and_process_report():
         
         # 5. Уведомление об успехе
         await send_log_message(
-            f"✅ WB отчёт за {today} обработан!\n"
+            f"✅ WB отчёт за {yesterday} обработан!\n"
             f"Записей: {len(requests_data)}\n"
             f"error_rows: {len(error_rows)}"
         )
