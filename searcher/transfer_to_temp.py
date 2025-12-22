@@ -12,7 +12,7 @@ from server.funcs.transfer_to_local import recount_oracle
 from server.funcs.upload_requests_data import recount_growth_by_date
 from service.suppliers_history.harvest import get_today_suppliers_data
 from settings import logger
-
+from actions.wb_report_task import download_wb_report_task
 
 # def get_score(value, thresholds):
 #     for i, (low, high, score) in enumerate(thresholds):
@@ -981,4 +981,5 @@ if __name__ == '__main__':
     # asyncio.run(new_horrible_shit())
     # asyncio.run(recount_oracle())
     # transfer_aggregates.delay()
-    fire_requests.delay(1, False)
+    # fire_requests.delay(1, False)
+    download_wb_report_task.delay()
