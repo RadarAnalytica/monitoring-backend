@@ -471,16 +471,15 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
                     except:
                         subject_id = 0
                 query = strip_invisible(str(query_raw).strip().strip("!#").lower())
-
+                if not query:
+                    logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
+                    continue
                 m = re.search(r".*(\d{6,9}).*", query)
                 if m:
                     query_mb_id = int(m.group(1))
                     check_product = await check_product_exists(query_mb_id)
                     if check_product:
                         query = str(query_mb_id)
-                if not query:
-                    logger.info(f"RAW QUERY NOT EXISTS AFTER STRIP: {query_raw}")
-                    continue
                 query_id, total_products, old_subject_id = queries_dict.get(query, (0, 0, 0))
                 if query_id in seen_queries:
                     continue

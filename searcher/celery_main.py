@@ -8,6 +8,7 @@ celery_app = Celery(
     "searcher",
     include=[
         "actions.requests_parse",
+        "actions.wb_report_task",
     ],
 )
 
@@ -71,6 +72,10 @@ celery_app.conf.beat_schedule = {
     "get_today_subjects_dict": {
         "task": "get_today_subjects_dict",
         "schedule": crontab(hour="5", minute="40",),
+    },
+    "download_wb_report_daily": {
+        "task": "download_wb_report_task",
+        "schedule": crontab(hour="7", minute="0"),  # 07:00 UTC
     },
 }
 

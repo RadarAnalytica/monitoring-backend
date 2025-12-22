@@ -4,25 +4,25 @@ from settings import BOT_TOKEN, ADMINS, logger
 from asyncio import sleep as asleep
 
 
-if BOT_TOKEN:
-    bot = Bot(BOT_TOKEN)
-else:
-    bot = None
-
-
-
 async def send_log_message(message: str, ex: Exception | None = None):
-    if bot:
-        try:
-            for admin in ADMINS:
+    """
+    Отправляет сообщение администраторам через Telegram.
+    Бот создаётся локально для совместимости с Celery (избегаем проблем с закрытой сессией).
+    """
+    if not BOT_TOKEN:
+        return
+    
+    async with Bot(BOT_TOKEN) as bot:
+        for admin in ADMINS:
+            try:
                 if ex:
                     await bot.send_message(
                         admin, f"Мониторинг\n{message}\nОшибка: {ex}"
                     )
                 else:
                     await bot.send_message(admin, f"Мониторинг\nСообщение: {message}")
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                logger.error(f"Ошибка отправки сообщения админу {admin}: {e}")
     return
 
 
