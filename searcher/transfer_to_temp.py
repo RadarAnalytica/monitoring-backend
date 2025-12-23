@@ -981,5 +981,5 @@ if __name__ == '__main__':
     # asyncio.run(new_horrible_shit())
     # asyncio.run(recount_oracle())
     # transfer_aggregates.delay()
-    # fire_requests.delay(1, False)
-    download_wb_report_task.delay()
+    fire_requests.delay(1, True)
+    # download_wb_report_task.delay()
