@@ -88,10 +88,22 @@ async def get_query_data(
                         except (ContentTypeError, JSONDecodeError):
                             logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
                             return _data
+                    elif response.status == 407:
+                        # Proxy authentication error - не тратим retry
+                        logger.warning(f"HTTP 407 Proxy Auth Required")
+                        counter -= 1
+                        await asyncio.sleep(2)
+                        continue
                     else:
                         logger.warning(f"HTTP {response.status}: {response.reason}")
                         await asyncio.sleep(1)
                         continue
+        except client_exceptions.ClientConnectorError as e:
+            # Ошибка подключения к прокси - не тратим retry
+            logger.warning(f"ClientConnectorError: {e}")
+            counter -= 1
+            await asyncio.sleep(2)
+            continue
         except (TypeError, asyncio.TimeoutError) as e:
             logger.critical(f"ОШИБКА, {type(e)}")
             await asyncio.sleep(1)
