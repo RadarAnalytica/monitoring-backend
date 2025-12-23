@@ -1,12 +1,17 @@
 import asyncio
 from datetime import date as Date
-from aiohttp import ClientSession
+from typing import TYPE_CHECKING
+
+from aiohttp import ClientSession, BasicAuth
 
 from clickhouse_db.get_async_connection import get_async_connection
 from parser.get_single_query_data import get_query_data
 from service.log_alert import send_log_message
-from settings import logger, WB_AUTH_TOKENS_FOR_WORKERS
+from settings import logger
 from parser.save_to_db_worker import save_to_db
+
+if TYPE_CHECKING:
+    from parser.db_config_loader import ProxyConfig
 
 
 async def get_r_data_q(
@@ -18,10 +23,17 @@ async def get_r_data_q(
     preset_queue=None,
     query_history_queue=None,
     today_date=None,
-    batch_no=None,
+    task_no=None,
     worker_no=1,
-    auth_token=None
+    auth_token=None,
+    proxy: "ProxyConfig" = None
 ):
+    """
+    HTTP-воркер для обработки запросов из очереди.
+    
+    Args:
+        proxy: Конфигурация прокси для этого воркера.
+    """
     while True:
         r = await http_queue.get()
         if r is None:
@@ -39,9 +51,10 @@ async def get_r_data_q(
             preset_queue=preset_queue,
             query_history_queue=query_history_queue,
             today_date=today_date,
-            batch_no=batch_no,
+            task_no=task_no,
             worker_no=worker_no,
-            auth_token=auth_token
+            auth_token=auth_token,
+            proxy=proxy
         )
 
 
@@ -52,10 +65,17 @@ async def try_except_query_data(
     page,
     http_session,
     rqa=5,
-    batch_no=None,
+    task_no=None,
     worker_no=1,
-    auth_token=None
+    auth_token=None,
+    proxy: "ProxyConfig" = None
 ):
+    """
+    Обёртка для get_query_data с обработкой исключений.
+    
+    Args:
+        proxy: Конфигурация прокси для запроса.
+    """
     try:
         x = await get_query_data(
             http_session=http_session,
@@ -65,9 +85,10 @@ async def try_except_query_data(
             page=page,
             rqa=rqa,
             timeout=5,
-            batch_no=batch_no,
+            task_no=task_no,
             worker_no=worker_no,
-            auth_token=auth_token
+            auth_token=auth_token,
+            proxy=proxy
         )
     except ValueError:
         x = {"products": []}
@@ -85,10 +106,17 @@ async def get_r_data(
     query_history_queue=None,
     today_date=None,
     limit=300,
-    batch_no=None,
+    task_no=None,
     worker_no=1,
-    auth_token=None
+    auth_token=None,
+    proxy: "ProxyConfig" = None
 ):
+    """
+    Обработка одного запроса для одной страницы.
+    
+    Args:
+        proxy: Конфигурация прокси для запроса.
+    """
     count = 0
     while count <= 3:
         try:
@@ -99,9 +127,10 @@ async def get_r_data(
                 page=page,
                 rqa=3,
                 http_session=http_session,
-                batch_no=batch_no,
+                task_no=task_no,
                 worker_no=worker_no,
-                auth_token=auth_token
+                auth_token=auth_token,
+                proxy=proxy
             )
             full_res = result.get("products", [])
             request_products = []
@@ -160,13 +189,35 @@ async def get_r_data(
             logger.critical(f"{e}")
 
 
-async def get_city_result(city, date, requests, request_batch_no, get_preset=False, test=False):
+async def get_city_result(
+    city,
+    date,
+    requests,
+    task_no,
+    token: str = None,
+    proxies: list["ProxyConfig"] = None,
+    get_preset=False,
+    test=False
+):
+    """
+    Основная функция сбора данных по городу.
+    
+    Args:
+        city: Кортеж (id, dest, name) города.
+        date: Кортеж (id, date) даты.
+        requests: Список запросов для обработки.
+        task_no: Номер таски (1-4).
+        token: Bearer токен для авторизации.
+        proxies: Список прокси для HTTP-воркеров.
+        get_preset: Флаг сбора preset данных.
+        test: Флаг тестового режима.
+    """
     if test:
         get_preset = False
-    logger.info(f"Город {city} старт, batch: {request_batch_no}")
+    logger.info(f"Город {city} старт, task: {task_no}, воркеров: {len(proxies) if proxies else 0}")
     today_date = Date.today()
     await send_log_message(
-        f"Начался сбор данных{'(ТЕСТОВЫЙ)' if test else ''} по городу:\n{city[2]}\nbatch: {request_batch_no}"
+        f"Начался сбор данных{'(ТЕСТОВЫЙ)' if test else ''} по городу:\n{city[2]}\ntask: {task_no}\nворкеров: {len(proxies) if proxies else 0}"
     )
     requests_list = [r for r in requests if not r[1].isdigit()]
     del requests
@@ -218,6 +269,8 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         client=client,
                     )
                 )
+            # Создаём HTTP-воркеры по числу прокси (каждый воркер использует свой прокси)
+            num_workers = len(proxies) if proxies else 1
             requests_tasks = [
                 asyncio.create_task(
                     get_r_data_q(
@@ -229,12 +282,13 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         preset_queue=preset_queue,
                         query_history_queue=query_history_queue,
                         today_date=today_date,
-                        batch_no=request_batch_no,
+                        task_no=task_no,
                         worker_no=i,
-                        auth_token=auth_token
+                        auth_token=token,
+                        proxy=proxies[i] if proxies else None
                     )
                 )
-                for i, auth_token in enumerate(WB_AUTH_TOKENS_FOR_WORKERS[request_batch_no])
+                for i in range(num_workers)
             ]
             counter = 0
             while requests_list:
@@ -245,7 +299,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                         await http_queue.put((i, query))
                     if not (counter % 1000):
                         logger.info(
-                            f"Осталось запросов в батче {request_batch_no}: {len(requests_list)}"
+                            f"Осталось запросов в task {task_no}: {len(requests_list)}"
                         )
                 except Exception as e:
                     logger.error(f"{e}")
@@ -259,7 +313,7 @@ async def get_city_result(city, date, requests, request_batch_no, get_preset=Fal
                 await query_history_queue.put(None)
                 await asyncio.gather(query_history_worker)
     await send_log_message(
-        f"Завершен сбор данных по городу:\n{city[2]}\nbatch: {request_batch_no}"
+        f"Завершен сбор данных по городу:\n{city[2]}\ntask: {task_no}"
     )
     return
 

@@ -1,10 +1,14 @@
 import asyncio
 import traceback
 from json import JSONDecodeError
+from typing import TYPE_CHECKING
 
 from aiohttp import ClientSession, ContentTypeError, client_exceptions, BasicAuth
 
-from settings import SEARCH_URL, logger, PROXY_AUTH, PROXIES
+from settings import SEARCH_URL, logger
+
+if TYPE_CHECKING:
+    from parser.db_config_loader import ProxyConfig
 
 
 async def get_query_data(
@@ -16,15 +20,44 @@ async def get_query_data(
     rqa=5,
     timeout=10,
     upload=False,
-    batch_no=None,
+    task_no=None,
     worker_no=None,
-    auth_token=None
+    auth_token=None,
+    proxy: "ProxyConfig" = None
 ):
+    """
+    Выполняет запрос к API Wildberries для получения данных поисковой выдачи.
+    
+    Args:
+        http_session: aiohttp сессия.
+        query_string: Поисковый запрос.
+        dest: ID города/назначения.
+        limit: Лимит результатов на страницу.
+        page: Номер страницы.
+        rqa: Количество попыток.
+        timeout: Таймаут запроса.
+        upload: Флаг загрузки (влияет на retry логику).
+        task_no: Номер Celery-таски.
+        worker_no: Номер воркера.
+        auth_token: Bearer токен для авторизации.
+        proxy: Конфигурация прокси (ProxyConfig).
+    
+    Returns:
+        Словарь с данными ответа API.
+    """
     _data = {"products": []}
     counter = 0
     headers = {
         "Authorization": auth_token,
     }
+    
+    # Настройка прокси
+    proxy_url = None
+    proxy_auth = None
+    if proxy:
+        proxy_url = proxy.proxy_url
+        proxy_auth = BasicAuth(proxy.proxy_user, proxy.proxy_pass)
+    
     while len(_data.get("products", [])) < 2 and counter < rqa:
         counter += 1
         try:
@@ -41,10 +74,9 @@ async def get_query_data(
                 },
                 headers=headers if auth_token else None,
                 timeout=timeout,
-                proxy=PROXIES[(batch_no - 1) * 20 + page + (4 * worker_no)] if not (worker_no is None) else None,
-                proxy_auth=BasicAuth(PROXY_AUTH["username"], PROXY_AUTH["password"]) if not (worker_no is None) else None,
+                proxy=proxy_url,
+                proxy_auth=proxy_auth,
             ) as response:
-                print(response.status, response.reason)
                 if response.status == 200:
                     try:
                         _data = await response.json(content_type="text/plain")
@@ -52,7 +84,6 @@ async def get_query_data(
                         logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
                         return _data
                 else:
-                    # logger.critical("response not ok")
                     await asyncio.sleep(1)
                     continue
         except (TypeError, asyncio.TimeoutError) as e:
