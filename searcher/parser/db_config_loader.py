@@ -88,7 +88,13 @@ async def load_tokens_from_db(limit: int = 4) -> list[str]:
             LIMIT {limit}
         """
         q = await client.query(query)
-        result = [row[0] for row in q.result_rows]
+        result = []
+        for row in q.result_rows:
+            token = row[0]
+            # Добавляем Bearer если его нет
+            if not token.startswith("Bearer "):
+                token = f"Bearer {token}"
+            result.append(token)
     logger.info(f"Загружено {len(result)} токенов из БД")
     return result
 
