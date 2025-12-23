@@ -64,6 +64,8 @@ async def load_proxies_from_db(server: str = "monitoring") -> list[ProxyConfig]:
         ]
     
     logger.info(f"Загружено {len(result)} прокси из БД (server='{server}')")
+    if result:
+        logger.info(f"Первый прокси: {result[0].proxy_url}, user: {result[0].proxy_user}, pass_len: {len(result[0].proxy_pass)}")
     return result
 
 

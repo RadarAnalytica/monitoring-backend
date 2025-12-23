@@ -57,6 +57,8 @@ async def get_query_data(
     if proxy:
         proxy_url = proxy.proxy_url
         proxy_auth = BasicAuth(proxy.proxy_user, proxy.proxy_pass)
+    else:
+        logger.warning(f"Proxy is None for worker {worker_no}, task {task_no}")
     
     while len(_data.get("products", [])) < 2 and counter < rqa:
         counter += 1
