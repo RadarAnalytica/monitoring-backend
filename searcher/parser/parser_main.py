@@ -19,7 +19,6 @@ async def get_r_data_q(
     db_queue,
     city,
     date,
-    http_session,
     preset_queue=None,
     query_history_queue=None,
     today_date=None,
@@ -46,7 +45,6 @@ async def get_r_data_q(
             page=page,
             city=city,
             date=date,
-            http_session=http_session,
             db_queue=db_queue,
             preset_queue=preset_queue,
             query_history_queue=query_history_queue,
@@ -63,7 +61,6 @@ async def try_except_query_data(
     dest,
     limit,
     page,
-    http_session,
     rqa=5,
     task_no=None,
     worker_no=1,
@@ -78,7 +75,6 @@ async def try_except_query_data(
     """
     try:
         x = await get_query_data(
-            http_session=http_session,
             query_string=query_string,
             dest=dest,
             limit=limit,
@@ -100,7 +96,6 @@ async def get_r_data(
     page,
     city,
     date,
-    http_session,
     db_queue=None,
     preset_queue=None,
     query_history_queue=None,
@@ -126,7 +121,6 @@ async def get_r_data(
                 limit=limit,
                 page=page,
                 rqa=3,
-                http_session=http_session,
                 task_no=task_no,
                 worker_no=worker_no,
                 auth_token=auth_token,
@@ -276,7 +270,6 @@ async def get_city_result(
                     get_r_data_q(
                         city=city,
                         date=date,
-                        http_session=http_session,
                         db_queue=db_queue,
                         http_queue=http_queue,
                         preset_queue=preset_queue,

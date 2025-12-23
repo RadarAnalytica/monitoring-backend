@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 
 async def get_query_data(
-    http_session: ClientSession,
     query_string,
     dest,
     limit,
@@ -29,7 +28,6 @@ async def get_query_data(
     Выполняет запрос к API Wildberries для получения данных поисковой выдачи.
     
     Args:
-        http_session: aiohttp сессия.
         query_string: Поисковый запрос.
         dest: ID города/назначения.
         limit: Лимит результатов на страницу.
@@ -63,35 +61,37 @@ async def get_query_data(
     while len(_data.get("products", [])) < 2 and counter < rqa:
         counter += 1
         try:
-            async with http_session.get(
-                url=SEARCH_URL,
-                params={
-                    "resultset": "catalog",
-                    "query": query_string,
-                    "limit": limit,
-                    "dest": dest,
-                    "page": page,
-                    "ab_testing": "false",
-                    "appType": 64
-                },
-                headers=headers if auth_token else None,
-                timeout=timeout,
-                proxy=proxy_url,
-                proxy_auth=proxy_auth,
-            ) as response:
-                if response.status == 200:
-                    try:
-                        _data = await response.json(content_type="text/plain")
-                        products_count = len(_data.get("products", []))
-                        if products_count >= 2:
-                            logger.debug(f"Успешно получено {products_count} продуктов")
-                    except (ContentTypeError, JSONDecodeError):
-                        logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
-                        return _data
-                else:
-                    logger.warning(f"HTTP {response.status}: {response.reason}")
-                    await asyncio.sleep(1)
-                    continue
+            # Новая сессия на каждый запрос для избежания fingerprinting
+            async with ClientSession() as http_session:
+                async with http_session.get(
+                    url=SEARCH_URL,
+                    params={
+                        "resultset": "catalog",
+                        "query": query_string,
+                        "limit": limit,
+                        "dest": dest,
+                        "page": page,
+                        "ab_testing": "false",
+                        "appType": 64
+                    },
+                    headers=headers if auth_token else None,
+                    timeout=timeout,
+                    proxy=proxy_url,
+                    proxy_auth=proxy_auth,
+                ) as response:
+                    if response.status == 200:
+                        try:
+                            _data = await response.json(content_type="text/plain")
+                            products_count = len(_data.get("products", []))
+                            if products_count >= 2:
+                                logger.debug(f"Успешно получено {products_count} продуктов")
+                        except (ContentTypeError, JSONDecodeError):
+                            logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
+                            return _data
+                    else:
+                        logger.warning(f"HTTP {response.status}: {response.reason}")
+                        await asyncio.sleep(1)
+                        continue
         except (TypeError, asyncio.TimeoutError) as e:
             logger.critical(f"ОШИБКА, {type(e)}")
             await asyncio.sleep(1)
