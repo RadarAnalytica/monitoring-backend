@@ -82,10 +82,14 @@ async def get_query_data(
                 if response.status == 200:
                     try:
                         _data = await response.json(content_type="text/plain")
+                        products_count = len(_data.get("products", []))
+                        if products_count >= 2:
+                            logger.debug(f"Успешно получено {products_count} продуктов")
                     except (ContentTypeError, JSONDecodeError):
                         logger.critical("ОШИБКА КОНТЕНТ ТАЙП!!!")
                         return _data
                 else:
+                    logger.warning(f"HTTP {response.status}: {response.reason}")
                     await asyncio.sleep(1)
                     continue
         except (TypeError, asyncio.TimeoutError) as e:
