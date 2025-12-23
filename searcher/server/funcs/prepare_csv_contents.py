@@ -439,16 +439,16 @@ async def check_product_exists(product_id):
 
 
 async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename: str):
-    # Проверка на наличие данных за вчера
-    yesterday = date.today() - timedelta(days=1)
+    file_date = date.fromisoformat(filename.strip().replace(".xlsx", ""))
+    
+    # Проверка на наличие данных за дату файла
     async with get_async_connection() as client:
-        check_stmt = f"SELECT count() FROM request_frequency WHERE date = '{yesterday}'"
+        check_stmt = f"SELECT count() FROM request_frequency WHERE date = '{file_date}'"
         check_q = await client.query(check_stmt)
         count = check_q.result_rows[0][0] if check_q.result_rows else 0
         if count >= 100:
             raise OSError("Данные уже загружены")
     
-    file_date = date.fromisoformat(filename.strip().replace(".xlsx", ""))
     now_date = datetime(
         year=file_date.year,
         month=file_date.month,

@@ -249,7 +249,7 @@ async def get_city_result(
                         "supplier_id",
                     ],
                     client=client,
-                    batch_no=request_batch_no,
+                    batch_no=task_no,
                 )
             )
             if get_preset:
