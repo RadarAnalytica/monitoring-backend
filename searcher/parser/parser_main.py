@@ -290,7 +290,7 @@ async def get_city_result(
                     query = requests_list.pop(0)
                     for i in range(1, 5):
                         await http_queue.put((i, query))
-                    if not (counter % 1000):
+                    if not (counter % 10000):
                         logger.info(
                             f"Осталось запросов в task {task_no}: {len(requests_list)}"
                         )
