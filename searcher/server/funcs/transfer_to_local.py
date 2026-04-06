@@ -114,7 +114,7 @@ async def recount_oracle():
         qpf2.top_300_orders orders_300,
 
         qpf2.lost_orders,
-        round(if(qpf2.top_100 > 0, qpf2.lost_orders * 100 / qpf2.orders_total, 0)) as lost_orders_percent,
+        round(if(qpf2.orders_total > 0, qpf2.lost_orders * 100 / qpf2.orders_total, 0)) as lost_orders_percent,
 
 
         qpf2.avg_price_total as avg_price_total,
@@ -125,7 +125,7 @@ async def recount_oracle():
         qpf2.ex_advert as external_advert_percent,
         qh.total_products AS goods_quantity,
         qpf1.dpc as top_goods_quantity,        
-        round(if(qpf1.dpc > 0, rg.sum_30 / qh.total_products, 0), 3) AS freq_per_good,
+        round(if(qpf1.total_products > 0, rg.sum_30 / qh.total_products, 0), 3) AS freq_per_good,
 
         round(if(qpf2.all_ids > 0, qpf2.with_sales_ids * 100 / qpf2.all_ids, 0)) as goods_with_sales_percent_total,
         qpf2.with_sales_ids as goods_with_sales_quantity_total,
@@ -193,7 +193,7 @@ FROM
         round(coalesce(avg(if(pd.root_feedbacks > 0, pd.root_feedbacks, NULL)), 0)) AS reviews,
         round(coalesce(avg(if(pd.wb_id_potential_revenue > 0, pd.wb_id_potential_revenue, NULL)), 0), -2) AS potential_revenue,
         round(coalesce(avg(if(pd.wb_id_potential_orders > 0, pd.wb_id_potential_orders, NULL)), 0)) AS potential_orders,
-        round(sum(pd.wb_id_orders) / sum(pd.root_feedbacks), 1) AS opr,
+        round(if(sum(pd.root_feedbacks) > 0, sum(pd.wb_id_orders) / sum(pd.root_feedbacks), 0), 1) AS opr,
         any(pd.sub_id) as subject_id,
         groupArrayIf(pd.sub_id, qpf.place <= 300) AS subjects,
         groupUniqArray(pd.supl_id) AS suppliers,
@@ -354,6 +354,8 @@ ORDER BY group_num"""
             q = await client.query(stmt, parameters=params)
             data = []
             for row in q.result_rows:
+                if any([r is None for r in row]):
+                    continue
                 query_id = row[0]
                 query = row[1]
                 subject_id = row[2]
@@ -424,8 +426,7 @@ ORDER BY group_num"""
                 months_grow = row[52]
                 months_fall = row[53]
                 suppliers_dict = defaultdict(int)
-                if any([r is None for r in row]):
-                    continue
+    
                 for s_id_revenue in supplier_revenue:
                     s_id = s_id_revenue[0]
                     s_revenue = s_id_revenue[1]
@@ -602,6 +603,31 @@ ORDER BY group_num"""
 
 async def transfer_aggregates_to_local():
     await send_log_message(message="Начинается обработка ниш")
+#     1. │ CREATE TABLE radar.wb_id_extended_local  ↴│
+#    │↳(                                        ↴│
+#    │↳    `wb_id` UInt32,                      ↴│
+#    │↳    `wb_id_revenue` Float64,             ↴│
+#    │↳    `wb_id_orders` Float64,              ↴│
+#    │↳    `wb_id_price` Float64,               ↴│
+#    │↳    `wb_id_avg_daily_revenue` Float64,   ↴│
+#    │↳    `wb_id_avg_daily_orders` Float64,    ↴│
+#    │↳    `wb_id_lost_revenue` Float64,        ↴│
+#    │↳    `wb_id_lost_orders` Float64,         ↴│
+#    │↳    `wb_id_potential_revenue` Float64,   ↴│
+#    │↳    `wb_id_potential_orders` Float64,    ↴│
+#    │↳    `sub_id` UInt32,                     ↴│
+#    │↳    `supl_id` UInt32,                    ↴│
+#    │↳    `b_id` UInt32,                       ↴│
+#    │↳    `rating` Float32,                    ↴│
+#    │↳    `root_feedbacks` UInt64,             ↴│
+#    │↳    `ratio` Float32,                     ↴│
+#    │↳    `updated` DateTime DEFAULT now(),    ↴│
+#    │↳    `wb_id_price_spp` Float64 DEFAULT 0.,↴│
+#    │↳    `wb_id_revenue_spp` UInt64 DEFAULT 0 ↴│
+#    │↳)                                        ↴│
+#    │↳ENGINE = ReplacingMergeTree(updated)     ↴│
+#    │↳ORDER BY wb_id                           ↴│
+#    │↳SETTINGS index_granularity = 8192  
     stmt_clear = """TRUNCATE TABLE wb_id_extended_local"""
     stmt = """INSERT INTO wb_id_extended_local SELECT * FROM wb_id_extended"""
     async with get_async_connection(send_receive_timeout=3600) as client:

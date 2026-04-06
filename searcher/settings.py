@@ -43,6 +43,8 @@ SECRET_KEY = getenv(
 ALGORITHM = "HS256"
 
 BOT_TOKEN = getenv("BOT_TOKEN", None)
+LOG_CHAT_ID = getenv("LOG_CHAT_ID", None)
+SERVICE_NAME = getenv("SERVICE_NAME", "Мониторинг")
 
 admins_list = (getenv("ADMINS", "")).split(",")
 ADMINS = []
