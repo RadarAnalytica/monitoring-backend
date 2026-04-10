@@ -58,10 +58,6 @@ def check_single_proxy(proxy: ProxyConfig, test_url: str, headers: dict = None, 
                 except:
                     return True, f"{resp.status_code} (json parse error) ({resp.elapsed.total_seconds():.2f}s)"
             return True, f"{resp.status_code} ({resp.elapsed.total_seconds():.2f}s)"
-    except httpx.ConnectTimeout:
-        return False, "ConnectTimeout"
-    except httpx.ConnectError:
-        return False, "ConnectError"
     except Exception as e:
         return False, f"{type(e).__name__}: {e}"
 
@@ -89,12 +85,6 @@ async def check_single_proxy_async(
                 msg = f"{resp.status_code} ({resp.elapsed.total_seconds():.2f}s)"
             print(f"[{index}/{total}] ✅ {proxy.proxy_url} — {msg}")
             return proxy.proxy_url, True, msg
-    except httpx.ConnectTimeout:
-        print(f"[{index}/{total}] ❌ {proxy.proxy_url} — ConnectTimeout")
-        return proxy.proxy_url, False, "ConnectTimeout"
-    except httpx.ConnectError:
-        print(f"[{index}/{total}] ❌ {proxy.proxy_url} — ConnectError")
-        return proxy.proxy_url, False, "ConnectError"
     except Exception as e:
         msg = f"{type(e).__name__}: {e}"
         print(f"[{index}/{total}] ❌ {proxy.proxy_url} — {msg}")
