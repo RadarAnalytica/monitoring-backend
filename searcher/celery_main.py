@@ -23,29 +23,29 @@ celery_app.conf.broker_connection_retry_on_startup = True
 celery_app.conf.task_default_expires = 300
 
 celery_app.conf.beat_schedule = {
-    "parse_search_moscow": {
-        "task": "fire_requests",
-        "schedule": crontab(
-            hour="13",
-            minute="40",
-        ),
-        "args": (1, False),
-    },
-    "optimize_preset": {
-        "task": "optimize_table",
-        "schedule": crontab(
-            hour="7",
-            minute="35",
-        ),
-        "args": ("preset",),
-    },
-    "optimize_latest_partition": {
-        "task": "optimize_request_product",
-        "schedule": crontab(
-            hour="8",
-            minute="0",
-        ),
-    },
+    # "parse_search_moscow": {
+    #     "task": "fire_requests",
+    #     "schedule": crontab(
+    #         hour="13",
+    #         minute="40",
+    #     ),
+    #     "args": (1, False),
+    # },
+    # "optimize_preset": {
+    #     "task": "optimize_table",
+    #     "schedule": crontab(
+    #         hour="7",
+    #         minute="35",
+    #     ),
+    #     "args": ("preset",),
+    # },
+    # "optimize_latest_partition": {
+    #     "task": "optimize_request_product",
+    #     "schedule": crontab(
+    #         hour="8",
+    #         minute="0",
+    #     ),
+    # },
     # "test_parse_search_moscow": {
     #     "task": "fire_requests",
     #     "schedule": crontab(
@@ -69,10 +69,10 @@ celery_app.conf.beat_schedule = {
     #     "schedule": crontab(hour="0", minute="1",),
     #     "args": (4,)
     # }
-    "get_today_subjects_dict": {
-        "task": "get_today_subjects_dict",
-        "schedule": crontab(hour="5", minute="40",),
-    },
+    # "get_today_subjects_dict": {
+    #     "task": "get_today_subjects_dict",
+    #     "schedule": crontab(hour="5", minute="40",),
+    # },
     "download_wb_report_daily": {
         "task": "download_wb_report_task",
         "schedule": crontab(hour="7", minute="0"),  # 07:00 UTC
