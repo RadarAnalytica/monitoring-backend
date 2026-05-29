@@ -1,5 +1,7 @@
 """
-Сервис для скачивания отчёта Wildberries "Поисковые запросы на WB. Джем".
+Сервис для скачивания отчёта Wildberries «Поисковые запросы» (частотность).
+Флоу: запрос формирования → ожидание → скачивание.
+При 403 на запросе формирования: PREMIUM → SEARCH_ANALYSIS_REPORT → ошибка.
 """
 
 import asyncio
@@ -17,6 +19,10 @@ from settings import logger
 
 BASE_URL = "https://seller-content.wildberries.ru"
 
+REPORT_TYPE_PREMIUM = "SEARCH_ANALYSIS_PREMIUM_REPORT"
+REPORT_TYPE_STANDARD = "SEARCH_ANALYSIS_REPORT"
+REPORT_TYPES_FALLBACK = (REPORT_TYPE_PREMIUM, REPORT_TYPE_STANDARD)
+
 # TODO: Автоматизировать получение cookies
 WB_COOKIES = (
     "external-locale=ru; "
@@ -25,8 +31,8 @@ WB_COOKIES = (
     "_ga=GA1.1.268497829.1758526088; "
     "_ga_TXRZMJQDFE=GS2.1.s1759131204$o6$g1$t1759131726$j60$l0$h0; "
     "x-supplier-id-external=b2545aa7-761e-4d6c-9362-d2d76f07e0f3; "
-    "__zzatw-wb=MDA0dC0cTHtmcDhhDHEWTT17CT4VHThHKHIzd2UuPG0mZ01iJzVRP0FaW1Q4NmdBEXUmCQg3LGBwVxlRExpceEdXeiwfF3tyKlgLDl9FSmllbQwtUlFRS19/Dg4/aU5ZQ11wS3E6EmBWGB5CWgtMeFtLKRZHGzJhXkZpdRVVDgsURUNwLDA8ayFjThYjS10JCCtPQn1tJ089DxhDdV9vG3siXyoIJGM1Xz9EaVhTMCpYQXt1J3Z+KmUzPGwjZUtgJkxZUH0uGQ1pN2wXPHVlLwkxLGJ5MVIvE0tsP0caRFpbQDsyVghDQE1HFF9BWncyUlFRS2EQR0lrZU5TQixmG3EVTQgNND1aciIPWzklWAgSPwsmIBd9bypWEA9eQUptbxt/Nl0cOWMRCxl+OmNdRkc3FSR7dSYKCTU3YnAvTCB7SykWRxsyYV5GaXUVCQkQX0JyJnomQmseHERdU0kQSgooHxN0JyULDhEZPUgqc18+VxlRDxZhDhYYRRcje0I3Yhk4QhgvPV8/YngiD2lIYCVJWVQILh0UfWwjS3FPLH12X30beylOIA0lVBMhP05yvJVrGg==; "
-    "cfidsw-wb=LgyKJBeL1/mtzxTmCbnaeyqdU3HLfLF1IZVFu0KV5v/HC+gs8yiy/3v9OU/qUTfeJbW6nIbK4z/RjHIYg75gtSwb/RQnHisSJAlFEnUJyMfBVBfmdCZhuIwKuYZ4gtAEjc3Qn+eR5lW0hzF+0IA78o1nYC+hgugPdOKXqW4K"
+    "__zzatw-wb=MDA0dC0cTHtmcDhhDHEWTT17CT4VHThHKHIzd2UuPG0mZ01iJzVRP0FaW1Q4NmdBEXUmCQg3LGBwVxlRExpceEdXeiwhEXduK1MNE15FRGllbQwtUlFRS19/Dg4/aU5ZQ11wS3E6EmBWGB5CWgtMeFtLKRZHGzJhXkZpdRVVDgsURUNwLDA8ayFjThYjS10JCCtPQn1tJ089DxhDdV9vG3siXyoIJGM1Xz9EaVhTMCpYQXt1J3Z+KmUzPGwlX0dcJ0dbVXwtHQ1pN2wXPHVlLwkxLGJ5MVIvE0tsP0caRFpbQDsyVghDQE1HFF9BWncyUlFRS2EQR0lrZU5TQixmG3EVTQgNND1aciIPWzklWAgSPwsmIBl3ayZXCxFjQElxbxt/Nl0cOWMRCxl+OmNdRkc3FSR7dSYKCTU3YnAvTCB7SykWRxsyYV5GaXUVCQkQX0JyJnomQmseHERdU0kQSgooHxN0JyULDhEZPUgqc18+VxlRDxZhDhYYRRcje0I3Yhk4QhgvPV8/YngiD2lIYCdDVVAJKR8Ze20nS3FPLH12X30beylOIA0lVBMhP05yJanzCg==; "
+    "cfidsw-wb=Oy+V5vo0o03ube+neFany/V81zz7mI4TZQmiVs9lGBZmnxuWoGkXhTTbhxxH/MxMSqbTY6HSVV/1A2XDMwLbNGRRk2yU94c/fCpmiNTo9T7jqkhdCO81Cr94SWd8zEduWuPgrLyM7VFOUvsWxpgGECPd/4gq16qILUYZRDSw"
 )
 
 
@@ -73,7 +79,7 @@ def get_common_headers(auth_token: str) -> dict[str, str]:
 async def create_report_download(
     session: aiohttp.ClientSession,
     auth_token: str,
-    report_type: str = "SEARCH_ANALYSIS_PREMIUM_REPORT",
+    report_type: str = REPORT_TYPE_PREMIUM,
     interval: str = "yesterday",
     limit: int = 300000,
 ) -> dict[str, Any]:
@@ -119,7 +125,7 @@ async def create_report_download(
 async def get_downloads_list(
     session: aiohttp.ClientSession,
     auth_token: str,
-    report_types: str = "SEARCH_ANALYSIS_PREMIUM_REPORT",
+    report_types: str = REPORT_TYPE_PREMIUM,
 ) -> dict[str, Any]:
     """Получает список созданных отчётов."""
     url = f"{BASE_URL}/ns/analytics-api/content-analytics/api/v1/file-manager/downloads"
@@ -210,53 +216,69 @@ async def download_and_extract_xlsx(
 
 async def download_wb_report(wait_seconds: int = 60) -> tuple[bytes | None, str | None]:
     """
-    Главная функция: создаёт отчёт, ждёт и скачивает.
-    
+    Главная функция: запрос формирования отчёта → ожидание → скачивание.
+    На запросе формирования: PREMIUM, при 403 — SEARCH_ANALYSIS_REPORT, снова 403 — ошибка.
+
     Args:
         wait_seconds: время ожидания формирования отчёта
-        
+
     Returns:
         tuple: (xlsx_bytes, error_message)
     """
-    # 1. Получаем токен из БД
     auth_token = await get_seller_token()
     if not auth_token:
         return None, "Токен не найден в БД"
-    
+
     async with aiohttp.ClientSession() as session:
-        # 2. Создаём отчёт
-        result = await create_report_download(session, auth_token)
-        if result["status"] != 200:
-            return None, f"Ошибка создания отчёта: {result['status']}: {result['response'][:100]}"
-        
-        request_id = result["request_id"]
-        
-        # 3. Ждём формирования
-        logger.info(f"[WB Report] Ожидаем {wait_seconds} секунд...")
+        report_type: str | None = None
+        request_id: str | None = None
+
+        for idx, candidate_type in enumerate(REPORT_TYPES_FALLBACK):
+            logger.info(f"[WB Report] Запрос формирования отчёта: {candidate_type}")
+            result = await create_report_download(
+                session, auth_token, report_type=candidate_type
+            )
+            if result["status"] == 200:
+                report_type = candidate_type
+                request_id = result["request_id"]
+                break
+
+            create_error = (
+                f"Ошибка создания отчёта: {result['status']}: {result['response'][:100]}"
+            )
+            if result["status"] == 403 and idx < len(REPORT_TYPES_FALLBACK) - 1:
+                next_type = REPORT_TYPES_FALLBACK[idx + 1]
+                logger.warning(
+                    f"[WB Report] 403 при формировании ({candidate_type}), "
+                    f"пробуем {next_type}"
+                )
+                continue
+
+            return None, create_error
+
+        if not report_type or not request_id:
+            return None, "Не удалось запросить формирование отчёта"
+
+        logger.info(f"[WB Report] Ожидаем {wait_seconds} секунд (report_type={report_type})...")
         await asyncio.sleep(wait_seconds)
-        
-        # 4. Получаем список и ищем наш файл
-        list_result = await get_downloads_list(session, auth_token)
+
+        list_result = await get_downloads_list(session, auth_token, report_types=report_type)
         if list_result["status"] != 200:
             return None, f"Ошибка получения списка: {list_result['status']}"
-        
+
         download_info = find_download_by_id(list_result, request_id)
         if not download_info:
             return None, f"Отчёт {request_id} не найден в списке"
-        
+
         if download_info["status"] != "SUCCESS":
             return None, f"Отчёт не готов, статус: {download_info['status']}"
-        
-        # 5. Получаем токен для скачивания
+
         download_token = await generate_download_token(session, auth_token)
         if not download_token:
             return None, "Не удалось получить download token"
-        
-        # 6. Скачиваем и извлекаем XLSX
-        xlsx_bytes, error = await download_and_extract_xlsx(
+
+        return await download_and_extract_xlsx(
             session,
             download_info["downloadUrl"],
-            download_token
+            download_token,
         )
-        
-        return xlsx_bytes, error
