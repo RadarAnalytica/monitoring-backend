@@ -29,17 +29,8 @@ def unnest_subjects_list(subjects_list: list):
 
 
 async def get_today_subjects_dict():
-    url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
-    async with ClientSession() as http_session:
-        async with http_session.get(url) as resp:
-            result = await resp.json()
-    subjects_dict = unnest_subjects_list(result)
-    return subjects_dict
-
-
-async def get_today_subjects_dict_db():
     async with get_async_connection() as client:
-        stmt = """select data from json_store_string where name = 'subjects' limit 1"""
+        stmt = """select data from json_store_string where name = 'subjects' order by created_at desc limit 1"""
         q = await client.query(stmt)
         fr = q.result_rows[0]
         data = fr[0]
@@ -464,7 +455,7 @@ async def prepare_excel_contents(contents: list[tuple[str, int, str]], filename:
     )
     max_query_id = await get_requests_max_id()
     queries_dict = await get_requests_id_download_data_excel()
-    subjects_dict = await get_today_subjects_dict_db()
+    subjects_dict = await get_today_subjects_dict()
     requests_data = []
     error_rows = []
     seen_queries = set()

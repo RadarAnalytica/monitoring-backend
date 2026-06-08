@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import date, timedelta
 from io import BytesIO
 from json import JSONDecodeError
@@ -68,12 +69,16 @@ def unnest_subjects_list(subjects_list: list):
     return result
 
 
-async def get_today_subjects_dict(http_session):
-    url = "https://static-basket-01.wbcontent.net/vol0/data/subject-base.json"
-    async with http_session.get(url) as resp:
-        result = await resp.json()
-    subjects_dict = unnest_subjects_list(result)
-    return subjects_dict
+async def get_today_subjects_dict():
+    async with get_async_connection() as client:
+        q = await client.query(
+            "SELECT data FROM json_store_string WHERE name = 'subjects' "
+            "ORDER BY created_at DESC LIMIT 1"
+        )
+        if not q.result_rows:
+            return {}
+        result = json.loads(q.result_rows[0][0])
+    return unnest_subjects_list(result)
 
 
 async def get_report_data(http_session: ClientSession, query_string):
@@ -197,7 +202,7 @@ async def get_report_dataset(date_: str|date):
         #     for query in queries
         # ]
         # t_and_p = await asyncio.gather(*tasks)
-        subjects_dict = await get_today_subjects_dict(http_session=http_session)
+        subjects_dict = await get_today_subjects_dict()
         for row in result:
             query = row[0]
             frequency = row[1]
