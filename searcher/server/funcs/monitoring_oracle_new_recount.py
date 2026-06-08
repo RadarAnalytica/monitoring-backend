@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from collections import defaultdict, Counter
 from clickhouse_db.get_async_connection import get_async_connection
+from server.funcs.oracle_subjects import filter_subjects_list
 from service.log_alert import send_log_message
 from settings import logger
 
@@ -90,6 +91,7 @@ async def transfer_aggregates_to_local_v2():
     
     end_date = date.today() - timedelta(days=1)  # вчера
     start_date = end_date - timedelta(days=29)   # 30 дней назад
+    max_wb_id_start_date = end_date - timedelta(days=4)  # последние 5 дней для верхней границы батчей
     batch_size = 50_000
 
     insert_query = """
@@ -183,18 +185,25 @@ LEFT JOIN (
         # Очистить staging таблицу
         await client.command("TRUNCATE TABLE wb_id_extended_local_stage")
         
-        # Получить max wb_id
+        # Верхняя граница батчей: max wb_id за последние 5 дней (включая вчера)
         max_result = await client.query(
-            f"SELECT max(wb_id) FROM product_data_id_final_v2 WHERE date = '{end_date}'"
+            f"SELECT max(wb_id) FROM product_data_id_final_v2 "
+            f"WHERE date BETWEEN '{max_wb_id_start_date}' AND '{end_date}'"
         )
         max_wb_id = max_result.result_rows[0][0] if max_result.result_rows else 0
         
         if not max_wb_id:
-            logger.warning("Нет данных в product_data_id_final_v2 за указанный период")
+            logger.warning(
+                "Нет данных в product_data_id_final_v2 за последние 5 дней "
+                f"({max_wb_id_start_date} - {end_date})"
+            )
             await send_log_message(message="Агрегация прервана: нет данных")
             return
         
-        logger.info(f"Начинаем агрегацию: {start_date} - {end_date}, max_wb_id={max_wb_id}")
+        logger.info(
+            f"Начинаем агрегацию: {start_date} - {end_date}, "
+            f"max_wb_id={max_wb_id} (за {max_wb_id_start_date} - {end_date})"
+        )
         
         # Итерация по батчам с прямым INSERT INTO ... SELECT
         for batch_start in range(0, max_wb_id + 1, batch_size):
@@ -335,8 +344,8 @@ async def recount_oracle_v2():
             round(sum(if(qpf.place <= 300, pd.wb_id_lost_revenue, 0)), -2) AS lost_revenue_300,
             round(sum(pd.wb_id_lost_revenue), -2) AS lost_revenue_total,
             round(sum(pd.wb_id_lost_orders)) AS lost_orders,
-            sum(if(qpf.place <= 100, qpf.advert, 0)) AS advert,
-            sum(if(qpf.place <= 100, rex.ex, 0)) AS ex_advert,
+            round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND qpf.advert != '') * 100 / countIf(qpf.place <= 100), 0)) AS advert,
+            round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND rex.ex = 1) * 100 / countIf(qpf.place <= 100), 0)) AS ex_advert,
             round(coalesce(avg(if(pd.ratio > 0, pd.ratio, NULL)), 0)) AS ratio,
             round(coalesce(avg(if(pd.rating > 0, pd.rating, NULL)), 0), 1) AS rating,
             round(coalesce(avg(if(pd.root_feedbacks > 0, pd.root_feedbacks, NULL)), 0)) AS reviews,
@@ -349,7 +358,7 @@ async def recount_oracle_v2():
             groupUniqArray(pd.b_id) AS brands,
             sum(if(pd.wb_id_revenue > 0, 1, 0)) as with_sales_ids,
             count() as all_ids,
-            round(sum(if(pd.wb_id_revenue > 0 and qpf.place <= 300, 1, 0)), -2) as with_sales_ids_300,
+            sum(if(pd.wb_id_revenue > 0 and qpf.place <= 300, 1, 0)) as with_sales_ids_300,
             sum(if(qpf.place <= 300, 1, 0)) as total_ids_300,
             groupArrayIf((pd.supl_id, pd.wb_id_revenue), qpf.place <= 100) as suppler_wb_id_revenue
         FROM radar.query_product_flat AS qpf
@@ -566,19 +575,10 @@ async def recount_oracle_v2():
                 buyout_percent = row[43]
                 brands_list = row[44]
                 subjects_list = row[45]
-                
-                # Subjects filtering logic
-                total_subjects = len(subjects_list)
-                counted_subjects = Counter(subjects_list)
-                subjects_set = set(subjects_list)
-                if len(subjects_set) == 1:
-                    filtered_subjects = list(subjects_set)
-                elif not subjects_set:
+                filtered_subjects = filter_subjects_list(subjects_list)
+                if not filtered_subjects:
                     continue
-                else:
-                    filtered_subjects = [x for x in subjects_set if counted_subjects[x] / total_subjects >= 0.10]
-                    filtered_subjects.sort()
-                
+
                 # Supplier revenue logic
                 supplier_revenue_list = row[46]
                 revenue_total_spp = row[47]
@@ -725,3 +725,31 @@ async def recount_oracle_v2():
             3042, 6386, 6389, 3044, 3045
             ])""")
         await client.command("DELETE FROM monitoring_oracle_new_2 WHERE lengthUTF8(query) < 3")
+        await sync_subjects_list_to_request_growth(client=client)
+
+
+async def sync_subjects_list_to_request_growth(client):
+    """
+    Проставляет в request_growth тот же subjects_list, что и в monitoring_oracle_new_2.
+    """
+    stmt = """
+    INSERT INTO request_growth
+        (query_id, date, g30, g60, g90, sum30, sum60, sum90, subject_id, subjects_list, updated)
+    SELECT
+        rg.query_id,
+        rg.date,
+        rg.g30,
+        rg.g60,
+        rg.g90,
+        rg.sum30,
+        rg.sum60,
+        rg.sum90,
+        rg.subject_id,
+        mo.subjects_list,
+        now()
+    FROM request_growth AS rg
+    INNER JOIN monitoring_oracle_new_2 AS mo ON mo.query_id = rg.query_id
+    WHERE rg.date = yesterday() - 1
+    """
+    await client.command(stmt)
+    logger.info("subjects_list синхронизирован в request_growth")

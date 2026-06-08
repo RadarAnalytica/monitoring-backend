@@ -158,7 +158,7 @@ async def prepare_request_frequency(rows, client):
             continue
         params = {"v1": queries_part}
         query_ids_query = await client.query(query_1, parameters=params)
-        query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
+        query_ids_temp = {row[0]: row[1:] for row in query_ids_query.result_rows}
         queries_frequency.update(query_ids_temp)
     for row in rows:
         query_id = int(row[0])
@@ -182,9 +182,11 @@ async def prepare_request_frequency(rows, client):
                         (query_id, avg_freq, start_date + timedelta(days=i))
                     )
                 sum_30 = week_frequency
+                sum_60 = week_frequency
+                sum_90 = week_frequency
                 g30 = 100 if sum_30 > 0 else 0
-                g60 = 100 if sum_30 > 0 else 0
-                g90 = 100 if sum_30 > 0 else 0
+                g60 = 100 if sum_60 > 0 else 0
+                g90 = 100 if sum_90 > 0 else 0
             else:
                 new_freq = week_frequency - prev_query_sum
                 if new_freq < 0:
@@ -193,11 +195,13 @@ async def prepare_request_frequency(rows, client):
                 freq_new_60 += new_freq
                 freq_new_90 += new_freq
                 sum_30 = freq_new_30
+                sum_60 = freq_new_60
+                sum_90 = freq_new_90
                 g30 = (int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100) if sum_30 > 0 else 0
-                g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_30 > 0 else 0
-                g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_30 > 0 else 0
+                g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_60 > 0 else 0
+                g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_90 > 0 else 0
                 frequency_rows.append((query_id, new_freq, new_date))
-            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, subject_id))
+            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return frequency_rows, growth_rows
@@ -243,7 +247,7 @@ async def prepare_request_frequency_excel(rows, client):
             continue
         params = {"v1": queries_part}
         query_ids_query = await client.query(query_1, parameters=params)
-        query_ids_temp = {row[0]: row[1] for row in query_ids_query.result_rows}
+        query_ids_temp = {row[0]: row[1:] for row in query_ids_query.result_rows}
         queries_frequency.update(query_ids_temp)
     for row in rows:
         query_id = int(row[0])

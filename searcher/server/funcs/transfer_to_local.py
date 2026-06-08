@@ -1,4 +1,9 @@
 from clickhouse_db.get_async_connection import get_async_connection
+from server.funcs.monitoring_oracle_new_recount import (
+    recount_oracle_v2,
+    transfer_aggregates_to_local_v2,
+)
+from server.funcs.oracle_subjects import filter_subjects_list
 from service.log_alert import log_alert, send_log_message
 from settings import logger
 from collections import defaultdict, Counter
@@ -186,8 +191,8 @@ FROM
         round(sum(if(qpf.place <= 300, pd.wb_id_lost_revenue, 0)), -2) AS lost_revenue_300,
         round(sum(pd.wb_id_lost_revenue), -2) AS lost_revenue_total,
         round(sum(pd.wb_id_lost_orders)) AS lost_orders,
-        sum(if(qpf.place <= 100, qpf.advert, 0)) AS advert,
-        sum(if(qpf.place <= 100, rex.ex, 0)) AS ex_advert,
+        round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND qpf.advert != '') * 100 / countIf(qpf.place <= 100), 0)) AS advert,
+        round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND rex.ex = 1) * 100 / countIf(qpf.place <= 100), 0)) AS ex_advert,
         round(coalesce(avg(if(pd.ratio > 0, pd.ratio, NULL)), 0)) AS ratio,
         round(coalesce(avg(if(pd.rating > 0, pd.rating, NULL)), 0), 1) AS rating,
         round(coalesce(avg(if(pd.root_feedbacks > 0, pd.root_feedbacks, NULL)), 0)) AS reviews,
@@ -200,7 +205,7 @@ FROM
         groupUniqArray(pd.b_id) AS brands,
         sum(if(pd.wb_id_revenue > 0, 1, 0)) as with_sales_ids,
         count() as all_ids,
-        round(sum(if(pd.wb_id_revenue > 0 and qpf.place <= 300, 1, 0)), -2) as with_sales_ids_300,
+        sum(if(pd.wb_id_revenue > 0 and qpf.place <= 300, 1, 0)) as with_sales_ids_300,
         sum(if(qpf.place <= 300, 1, 0)) as total_ids_300,
         groupArrayIf((pd.supl_id, pd.wb_id_revenue), qpf.place <= 100) as suppler_wb_id_revenue
     FROM radar.query_product_flat AS qpf
@@ -406,16 +411,9 @@ ORDER BY group_num"""
                 buyout_percent = row[43]
                 brands_list = row[44]
                 subjects_list = row[45]
-                total_subjects = len(subjects_list)
-                counted_subjects = Counter(subjects_list)
-                subjects_set = set(subjects_list)
-                if len(subjects_set) == 1:
-                    filtered_subjects = list(subjects_set)
-                elif not subjects_set:
+                filtered_subjects = filter_subjects_list(subjects_list)
+                if not filtered_subjects:
                     continue
-                else:
-                    filtered_subjects = [x for x in subjects_set if counted_subjects[x] / total_subjects >= 0.10]
-                    filtered_subjects.sort()
                 supplier_revenue = row[46]
                 revenue_total_spp = row[47]
                 revenue_300_spp = row[48]
@@ -603,37 +601,8 @@ ORDER BY group_num"""
 
 async def transfer_aggregates_to_local():
     await send_log_message(message="Начинается обработка ниш")
-#     1. │ CREATE TABLE radar.wb_id_extended_local  ↴│
-#    │↳(                                        ↴│
-#    │↳    `wb_id` UInt32,                      ↴│
-#    │↳    `wb_id_revenue` Float64,             ↴│
-#    │↳    `wb_id_orders` Float64,              ↴│
-#    │↳    `wb_id_price` Float64,               ↴│
-#    │↳    `wb_id_avg_daily_revenue` Float64,   ↴│
-#    │↳    `wb_id_avg_daily_orders` Float64,    ↴│
-#    │↳    `wb_id_lost_revenue` Float64,        ↴│
-#    │↳    `wb_id_lost_orders` Float64,         ↴│
-#    │↳    `wb_id_potential_revenue` Float64,   ↴│
-#    │↳    `wb_id_potential_orders` Float64,    ↴│
-#    │↳    `sub_id` UInt32,                     ↴│
-#    │↳    `supl_id` UInt32,                    ↴│
-#    │↳    `b_id` UInt32,                       ↴│
-#    │↳    `rating` Float32,                    ↴│
-#    │↳    `root_feedbacks` UInt64,             ↴│
-#    │↳    `ratio` Float32,                     ↴│
-#    │↳    `updated` DateTime DEFAULT now(),    ↴│
-#    │↳    `wb_id_price_spp` Float64 DEFAULT 0.,↴│
-#    │↳    `wb_id_revenue_spp` UInt64 DEFAULT 0 ↴│
-#    │↳)                                        ↴│
-#    │↳ENGINE = ReplacingMergeTree(updated)     ↴│
-#    │↳ORDER BY wb_id                           ↴│
-#    │↳SETTINGS index_granularity = 8192  
-    stmt_clear = """TRUNCATE TABLE wb_id_extended_local"""
-    stmt = """INSERT INTO wb_id_extended_local SELECT * FROM wb_id_extended"""
-    async with get_async_connection(send_receive_timeout=3600) as client:
-        await client.command(stmt_clear)
-        await client.command(stmt)
-    await recount_oracle()
+    await transfer_aggregates_to_local_v2()
+    await recount_oracle_v2()
     await send_log_message(message="Обработка ниш завершена")
 
 
