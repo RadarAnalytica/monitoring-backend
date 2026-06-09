@@ -407,10 +407,12 @@ async def get_request_frequency_by_date(date_, client):
                 freq_new_30
             ) = row[2]
             sum_30 = freq_new_30
+            sum_60 = freq_new_60
+            sum_90 = freq_new_90
             g30 = (int((freq_new_30 - freq_old_30) * 100 / freq_old_30) if freq_old_30 else 100) if sum_30 > 0 else 0
-            g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_30 > 0 else 0
-            g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_30 > 0 else 0
-            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, subject_id))
+            g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_60 > 0 else 0
+            g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_90 > 0 else 0
+            growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
     return growth_rows

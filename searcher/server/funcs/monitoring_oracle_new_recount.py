@@ -297,7 +297,7 @@ async def recount_oracle_v2():
         qpf2.reviews as avg_reviews,
         qpf2.rating as avg_rating,
 
-        round(if(sum(pd.root_feedbacks) > 0, sum(pd.wb_id_orders) / sum(pd.root_feedbacks), 0), 1) AS order_per_review,
+        qpf2.opr as order_per_review,
         qpf2.ratio as buyout_percent,
 
         qpf2.brands as brands_list,
@@ -351,7 +351,7 @@ async def recount_oracle_v2():
             round(coalesce(avg(if(pd.root_feedbacks > 0, pd.root_feedbacks, NULL)), 0)) AS reviews,
             round(coalesce(avg(if(pd.wb_id_potential_revenue > 0, pd.wb_id_potential_revenue, NULL)), 0), -2) AS potential_revenue,
             round(coalesce(avg(if(pd.wb_id_potential_orders > 0, pd.wb_id_potential_orders, NULL)), 0)) AS potential_orders,
-            
+            round(if(sum(pd.root_feedbacks) > 0, sum(pd.wb_id_orders) / sum(pd.root_feedbacks), 0), 1) AS opr,
             any(pd.sub_id) as subject_id,
             groupArrayIf(pd.sub_id, qpf.place <= 300) AS subjects,
             groupUniqArray(pd.supl_id) AS suppliers,
