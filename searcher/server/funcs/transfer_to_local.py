@@ -191,7 +191,7 @@ FROM
         round(sum(if(qpf.place <= 300, pd.wb_id_lost_revenue, 0)), -2) AS lost_revenue_300,
         round(sum(pd.wb_id_lost_revenue), -2) AS lost_revenue_total,
         round(sum(pd.wb_id_lost_orders)) AS lost_orders,
-        round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND qpf.advert != '') * 100 / countIf(qpf.place <= 100), 0)) AS advert,
+        round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND toString(qpf.advert) IN ('b', 'c', 'z', 'true', '1')) * 100 / countIf(qpf.place <= 100), 0)) AS advert,
         round(if(countIf(qpf.place <= 100) > 0, countIf(qpf.place <= 100 AND rex.ex = 1) * 100 / countIf(qpf.place <= 100), 0)) AS ex_advert,
         round(coalesce(avg(if(pd.ratio > 0, pd.ratio, NULL)), 0)) AS ratio,
         round(coalesce(avg(if(pd.rating > 0, pd.rating, NULL)), 0), 1) AS rating,
