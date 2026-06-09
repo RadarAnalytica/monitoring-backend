@@ -18,27 +18,60 @@ from aiohttp import ClientSession
 import unicodedata
 
 
+def compute_growth_period_dates(new_date: date) -> dict[str, date]:
+    return {
+        "new_date": new_date,
+        "days_179": new_date - timedelta(days=179),
+        "days_119": new_date - timedelta(days=119),
+        "days_90": new_date - timedelta(days=90),
+        "days_89": new_date - timedelta(days=89),
+        "days_60": new_date - timedelta(days=60),
+        "days_59": new_date - timedelta(days=59),
+        "days_30": new_date - timedelta(days=30),
+        "days_29": new_date - timedelta(days=29),
+    }
+
+
 def build_request_frequency_history_sql(new_date: date, start_week: date, end_week: date) -> str:
-    days_179 = new_date - timedelta(days=179)
-    days_119 = new_date - timedelta(days=119)
-    days_90 = new_date - timedelta(days=90)
-    days_60 = new_date - timedelta(days=60)
-    days_59 = new_date - timedelta(days=59)
-    days_30 = new_date - timedelta(days=30)
-    days_29 = new_date - timedelta(days=29)
+    periods = compute_growth_period_dates(new_date)
     return f"""SELECT
                 query_id,
                 sum(if(date between '{start_week}' and '{end_week}', frequency, 0)) as freq_last,
-                sum(if(date between '{days_179}' and '{days_90}', frequency, 0)) as freq_old_90,
-                sum(if(date between '{days_89}' and '{new_date}', frequency, 0)) as freq_new_90,
-                sum(if(date between '{days_119}' and '{days_60}', frequency, 0)) as freq_old_60,
-                sum(if(date between '{days_59}' and '{new_date}', frequency, 0)) as freq_new_60,
-                sum(if(date between '{days_59}' and '{days_30}', frequency, 0)) as freq_old_30,
-                sum(if(date between '{days_29}' and '{new_date}', frequency, 0)) as freq_new_30
+                sum(if(date between '{periods["days_179"]}' and '{periods["days_90"]}', frequency, 0)) as freq_old_90,
+                sum(if(date between '{periods["days_89"]}' and '{periods["new_date"]}', frequency, 0)) as freq_new_90,
+                sum(if(date between '{periods["days_119"]}' and '{periods["days_60"]}', frequency, 0)) as freq_old_60,
+                sum(if(date between '{periods["days_59"]}' and '{periods["new_date"]}', frequency, 0)) as freq_new_60,
+                sum(if(date between '{periods["days_59"]}' and '{periods["days_30"]}', frequency, 0)) as freq_old_30,
+                sum(if(date between '{periods["days_29"]}' and '{periods["new_date"]}', frequency, 0)) as freq_new_30
             FROM request_frequency
             WHERE query_id IN %(v1)s
-            AND date BETWEEN '{days_179}' AND '{new_date}'
+            AND date BETWEEN '{periods["days_179"]}' AND '{periods["new_date"]}'
             GROUP BY query_id"""
+
+
+def build_request_growth_recount_sql(new_date: date) -> str:
+    periods = compute_growth_period_dates(new_date)
+    return f"""SELECT
+                rf.query_id,
+                max(r.subject_id) as subject_id,
+                sum(if(rf.date between '{periods["days_179"]}' and '{periods["days_90"]}', rf.frequency, 0)) as freq_old_90,
+                sum(if(rf.date between '{periods["days_89"]}' and '{periods["new_date"]}', rf.frequency, 0)) as freq_new_90,
+                sum(if(rf.date between '{periods["days_119"]}' and '{periods["days_60"]}', rf.frequency, 0)) as freq_old_60,
+                sum(if(rf.date between '{periods["days_59"]}' and '{periods["new_date"]}', rf.frequency, 0)) as freq_new_60,
+                sum(if(rf.date between '{periods["days_59"]}' and '{periods["days_30"]}', rf.frequency, 0)) as freq_old_30,
+                sum(if(rf.date between '{periods["days_29"]}' and '{periods["new_date"]}', rf.frequency, 0)) as freq_new_30
+            FROM (
+                SELECT *
+                FROM request_frequency
+                WHERE query_id IN (
+                    SELECT query_id
+                    FROM request_frequency
+                    WHERE date = '{periods["new_date"]}'
+                )
+                AND date BETWEEN '{periods["days_179"]}' AND '{periods["new_date"]}'
+            ) AS rf
+            JOIN request AS r ON r.id = rf.query_id
+            GROUP BY rf.query_id"""
 
 
 def parse_frequency_history_row(row) -> tuple[int, tuple]:
@@ -50,6 +83,16 @@ def parse_frequency_history_row(row) -> tuple[int, tuple]:
     if len(row) >= 8:
         return query_id, tuple(row[1:8])
     return query_id, (0, 0, 0, 0, 0, 0, 0)
+
+
+def parse_growth_recount_row(row) -> tuple[int, int, tuple]:
+    query_id = int(row[0])
+    subject_id = int(row[1])
+    if len(row) == 3 and isinstance(row[2], (list, tuple)) and len(row[2]) == 6:
+        return query_id, subject_id, tuple(row[2])
+    if len(row) >= 8:
+        return query_id, subject_id, tuple(row[2:8])
+    return query_id, subject_id, (0, 0, 0, 0, 0, 0)
 
 
 def unnest_subjects_list(subjects_list: list):
@@ -331,8 +374,8 @@ async def recount_request_frequency(rows, client):
                     frequency_rows.append(
                         (query_id, avg_new_freq, start_date + timedelta(days=i))
                     )
-        except (ValueError, TypeError, IndexError):
-            logger.error("SHIT REQUESTS OMGGGG")
+        except (ValueError, TypeError, IndexError) as exc:
+            logger.error(f"recount_request_frequency failed for query_id={row[0]}: {exc}")
     return frequency_rows
 
 
@@ -377,40 +420,19 @@ async def prepare_update_month_csv_contents(contents: list[tuple[str, int]], fil
 
 async def get_request_frequency_by_date(date_, client):
     new_date: date = date_
-    days_179 = new_date - timedelta(days=179)
-    days_119 = new_date - timedelta(days=119)
-    days_90 = new_date - timedelta(days=90)
-    days_89 = new_date - timedelta(days=89)
-    days_60 = new_date - timedelta(days=60)
-    days_59 = new_date - timedelta(days=59)
-    days_30 = new_date - timedelta(days=30)
-    days_29 = new_date - timedelta(days=29)
-    stmt = f"""SELECT 
-                rf.query_id,
-                max(r.subject_id),
-                (sum(if(rf.date between '{str(days_179)}' and '{str(days_90)}', rf.frequency, 0)) as freq_old_90,
-                sum(if(rf.date between '{str(days_89)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_90,
-                sum(if(rf.date between '{str(days_119)}' and '{str(days_60)}', rf.frequency, 0)) as freq_old_60,
-                sum(if(rf.date between '{str(days_59)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_60,
-                sum(if(rf.date between '{str(days_59)}' and '{str(days_30)}', rf.frequency, 0)) as freq_old_30,
-                sum(if(rf.date between '{str(days_29)}' and '{str(new_date)}', rf.frequency, 0)) as freq_new_30)
-            FROM (select * from request_frequency where query_id in (select query_id from request_frequency where date = '{str(new_date)}') and date BETWEEN '{str(days_179)}' AND '{str(new_date)}') as rf
-            JOIN request as r on r.id = rf.query_id 
-            GROUP BY rf.query_id"""
+    stmt = build_request_growth_recount_sql(new_date)
     q = await client.query(stmt)
     growth_rows = []
     for row in q.result_rows:
-        query_id = int(row[0])
-        subject_id = int(row[1])
         try:
-            (
+            query_id, subject_id, (
                 freq_old_90,
                 freq_new_90,
                 freq_old_60,
                 freq_new_60,
                 freq_old_30,
-                freq_new_30
-            ) = row[2]
+                freq_new_30,
+            ) = parse_growth_recount_row(row)
             sum_30 = freq_new_30
             sum_60 = freq_new_60
             sum_90 = freq_new_90
@@ -418,8 +440,8 @@ async def get_request_frequency_by_date(date_, client):
             g60 = (int((freq_new_60 - freq_old_60) * 100 / freq_old_60) if freq_old_60 else 100) if sum_60 > 0 else 0
             g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_90 > 0 else 0
             growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
-        except (ValueError, TypeError, IndexError):
-            logger.error("SHIT REQUESTS OMGGGG")
+        except (ValueError, TypeError, IndexError) as exc:
+            logger.error(f"get_request_frequency_by_date failed for row={row[:3]}: {exc}")
     growth_rows = await attach_subjects_list_to_growth_rows(growth_rows, client)
     return growth_rows
 
