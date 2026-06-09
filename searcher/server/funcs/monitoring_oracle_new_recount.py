@@ -725,31 +725,3 @@ async def recount_oracle_v2():
             3042, 6386, 6389, 3044, 3045
             ])""")
         await client.command("DELETE FROM monitoring_oracle_new_2 WHERE lengthUTF8(query) < 3")
-        await sync_subjects_list_to_request_growth(client=client)
-
-
-async def sync_subjects_list_to_request_growth(client):
-    """
-    Проставляет в request_growth тот же subjects_list, что и в monitoring_oracle_new_2.
-    """
-    stmt = """
-    INSERT INTO request_growth
-        (query_id, date, g30, g60, g90, sum30, sum60, sum90, subject_id, subjects_list, updated)
-    SELECT
-        rg.query_id,
-        rg.date,
-        rg.g30,
-        rg.g60,
-        rg.g90,
-        rg.sum30,
-        rg.sum60,
-        rg.sum90,
-        rg.subject_id,
-        mo.subjects_list,
-        now()
-    FROM request_growth AS rg
-    INNER JOIN monitoring_oracle_new_2 AS mo ON mo.query_id = rg.query_id
-    WHERE rg.date = yesterday() - 1
-    """
-    await client.command(stmt)
-    logger.info("subjects_list синхронизирован в request_growth")

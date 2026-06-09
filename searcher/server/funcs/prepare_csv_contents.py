@@ -12,9 +12,44 @@ from parser.get_init_data import (
 )
 from parser.get_query_subject import get_query_prio_subject, get_query_list_prio_subjects, get_query_list_totals, \
     get_query_list_prio_subjects_batched
+from server.funcs.request_growth_subjects import attach_subjects_list_to_growth_rows
 from settings import logger
 from aiohttp import ClientSession
 import unicodedata
+
+
+def build_request_frequency_history_sql(new_date: date, start_week: date, end_week: date) -> str:
+    days_179 = new_date - timedelta(days=179)
+    days_119 = new_date - timedelta(days=119)
+    days_90 = new_date - timedelta(days=90)
+    days_60 = new_date - timedelta(days=60)
+    days_59 = new_date - timedelta(days=59)
+    days_30 = new_date - timedelta(days=30)
+    days_29 = new_date - timedelta(days=29)
+    return f"""SELECT
+                query_id,
+                sum(if(date between '{start_week}' and '{end_week}', frequency, 0)) as freq_last,
+                sum(if(date between '{days_179}' and '{days_90}', frequency, 0)) as freq_old_90,
+                sum(if(date between '{days_89}' and '{new_date}', frequency, 0)) as freq_new_90,
+                sum(if(date between '{days_119}' and '{days_60}', frequency, 0)) as freq_old_60,
+                sum(if(date between '{days_59}' and '{new_date}', frequency, 0)) as freq_new_60,
+                sum(if(date between '{days_59}' and '{days_30}', frequency, 0)) as freq_old_30,
+                sum(if(date between '{days_29}' and '{new_date}', frequency, 0)) as freq_new_30
+            FROM request_frequency
+            WHERE query_id IN %(v1)s
+            AND date BETWEEN '{days_179}' AND '{new_date}'
+            GROUP BY query_id"""
+
+
+def parse_frequency_history_row(row) -> tuple[int, tuple]:
+    query_id = row[0]
+    if len(row) == 2 and isinstance(row[1], (list, tuple)):
+        values = row[1]
+        if len(values) == 7:
+            return query_id, tuple(values)
+    if len(row) >= 8:
+        return query_id, tuple(row[1:8])
+    return query_id, (0, 0, 0, 0, 0, 0, 0)
 
 
 def unnest_subjects_list(subjects_list: list):
@@ -119,29 +154,9 @@ async def prepare_request_frequency(rows, client):
     new_date: date = rows[0][5].date()
     start_week = new_date - timedelta(days=6)
     end_week = new_date - timedelta(days=1)
-    days_179 = new_date - timedelta(days=179)
-    days_119 = new_date - timedelta(days=119)
-    days_90 = new_date - timedelta(days=90)
-    days_89 = new_date - timedelta(days=89)
-    days_60 = new_date - timedelta(days=60)
-    days_59 = new_date - timedelta(days=59)
-    days_30 = new_date - timedelta(days=30)
-    days_29 = new_date - timedelta(days=29)
     for i in range(300):
         queries_parts.append(queries_ids[i * step : (step * i) + step])
-    query_1 = f"""SELECT 
-                query_id, 
-                (sum(if(date between '{str(start_week)}' and '{str(end_week)}', frequency, 0)) as freq_last,
-                sum(if(date between '{str(days_179)}' and '{str(days_90)}', frequency, 0)) as freq_old_90,
-                sum(if(date between '{str(days_89)}' and '{str(new_date)}', frequency, 0)) as freq_new_90,
-                sum(if(date between '{str(days_119)}' and '{str(days_60)}', frequency, 0)) as freq_old_60,
-                sum(if(date between '{str(days_59)}' and '{str(new_date)}', frequency, 0)) as freq_new_60,
-                sum(if(date between '{str(days_59)}' and '{str(days_30)}', frequency, 0)) as freq_old_30,
-                sum(if(date between '{str(days_29)}' and '{str(new_date)}', frequency, 0)) as freq_new_30)
-            FROM request_frequency
-            WHERE query_id IN %(v1)s 
-            AND date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
-            GROUP BY query_id"""
+    query_1 = build_request_frequency_history_sql(new_date, start_week, end_week)
     queries_frequency = dict()
     print("getting query ids")
     for queries_part in queries_parts:
@@ -149,7 +164,11 @@ async def prepare_request_frequency(rows, client):
             continue
         params = {"v1": queries_part}
         query_ids_query = await client.query(query_1, parameters=params)
-        query_ids_temp = {row[0]: row[1:] for row in query_ids_query.result_rows}
+        query_ids_temp = {
+            parsed[0]: parsed[1]
+            for row in query_ids_query.result_rows
+            for parsed in [parse_frequency_history_row(row)]
+        }
         queries_frequency.update(query_ids_temp)
     for row in rows:
         query_id = int(row[0])
@@ -193,8 +212,9 @@ async def prepare_request_frequency(rows, client):
                 g90 = (int((freq_new_90 - freq_old_90) * 100 / freq_old_90) if freq_old_90 else 100) if sum_90 > 0 else 0
                 frequency_rows.append((query_id, new_freq, new_date))
             growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
-        except (ValueError, TypeError, IndexError):
-            logger.error("SHIT REQUESTS OMGGGG")
+        except (ValueError, TypeError, IndexError) as exc:
+            logger.error(f"prepare_request_frequency failed for query_id={row[0]}: {exc}")
+    growth_rows = await attach_subjects_list_to_growth_rows(growth_rows, client)
     return frequency_rows, growth_rows
 
 
@@ -208,29 +228,9 @@ async def prepare_request_frequency_excel(rows, client):
     new_date: date = rows[0][5].date()
     start_week = new_date - timedelta(days=6)
     end_week = new_date - timedelta(days=1)
-    days_179 = new_date - timedelta(days=179)
-    days_119 = new_date - timedelta(days=119)
-    days_90 = new_date - timedelta(days=90)
-    days_89 = new_date - timedelta(days=89)
-    days_60 = new_date - timedelta(days=60)
-    days_59 = new_date - timedelta(days=59)
-    days_30 = new_date - timedelta(days=30)
-    days_29 = new_date - timedelta(days=29)
     for i in range(300):
         queries_parts.append(queries_ids[i * step : (step * i) + step])
-    query_1 = f"""SELECT 
-                query_id, 
-                (sum(if(date between '{str(start_week)}' and '{str(end_week)}', frequency, 0)) as freq_last,
-                sum(if(date between '{str(days_179)}' and '{str(days_90)}', frequency, 0)) as freq_old_90,
-                sum(if(date between '{str(days_89)}' and '{str(new_date)}', frequency, 0)) as freq_new_90,
-                sum(if(date between '{str(days_119)}' and '{str(days_60)}', frequency, 0)) as freq_old_60,
-                sum(if(date between '{str(days_59)}' and '{str(new_date)}', frequency, 0)) as freq_new_60,
-                sum(if(date between '{str(days_59)}' and '{str(days_30)}', frequency, 0)) as freq_old_30,
-                sum(if(date between '{str(days_29)}' and '{str(new_date)}', frequency, 0)) as freq_new_30)
-            FROM request_frequency
-            WHERE query_id IN %(v1)s 
-            AND date BETWEEN '{str(days_179)}' AND '{str(new_date)}'
-            GROUP BY query_id"""
+    query_1 = build_request_frequency_history_sql(new_date, start_week, end_week)
     queries_frequency = dict()
     print("getting query ids")
     for queries_part in queries_parts:
@@ -238,7 +238,11 @@ async def prepare_request_frequency_excel(rows, client):
             continue
         params = {"v1": queries_part}
         query_ids_query = await client.query(query_1, parameters=params)
-        query_ids_temp = {row[0]: row[1:] for row in query_ids_query.result_rows}
+        query_ids_temp = {
+            parsed[0]: parsed[1]
+            for row in query_ids_query.result_rows
+            for parsed in [parse_frequency_history_row(row)]
+        }
         queries_frequency.update(query_ids_temp)
     for row in rows:
         query_id = int(row[0])
@@ -284,8 +288,9 @@ async def prepare_request_frequency_excel(rows, client):
 
             frequency_rows.append((query_id, new_freq, new_date))
             growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
-        except (ValueError, TypeError, IndexError):
-            logger.error("SHIT REQUESTS OMGGGG")
+        except (ValueError, TypeError, IndexError) as exc:
+            logger.error(f"prepare_request_frequency_excel failed for query_id={row[0]}: {exc}")
+    growth_rows = await attach_subjects_list_to_growth_rows(growth_rows, client)
     return frequency_rows, growth_rows
 
 
@@ -415,6 +420,7 @@ async def get_request_frequency_by_date(date_, client):
             growth_rows.append((query_id, new_date, g30, g60, g90, sum_30, sum_60, sum_90, subject_id))
         except (ValueError, TypeError, IndexError):
             logger.error("SHIT REQUESTS OMGGGG")
+    growth_rows = await attach_subjects_list_to_growth_rows(growth_rows, client)
     return growth_rows
 
 

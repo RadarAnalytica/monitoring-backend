@@ -3,7 +3,7 @@ from collections import Counter
 
 def filter_subjects_list(subjects_list: list[int]) -> list[int] | None:
     """
-    Единая логика отбора предметов для ниш и request_growth.
+    Единая логика отбора предметов для ниш (monitoring_oracle).
     Оставляет предметы с долей >= 10% в топ-300, либо единственный предмет.
     Возвращает None, если список пуст после фильтрации.
     """
