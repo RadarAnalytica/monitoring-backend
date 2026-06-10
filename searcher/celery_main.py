@@ -42,8 +42,8 @@ celery_app.conf.beat_schedule = {
     # "optimize_latest_partition": {
     #     "task": "optimize_request_product",
     #     "schedule": crontab(
-    #         hour="8",
-    #         minute="0",
+    #         hour="0",
+    #         minute="30",
     #     ),
     # },
     # "test_parse_search_moscow": {
@@ -75,7 +75,7 @@ celery_app.conf.beat_schedule = {
     # },
     "download_wb_report_daily": {
         "task": "download_wb_report_task",
-        "schedule": crontab(hour="7", minute="0"),  # 07:00 UTC
+        "schedule": crontab(hour="0", minute="30"),  # 00:30 UTC
     },
 }
 
