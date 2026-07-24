@@ -26,13 +26,11 @@ REPORT_TYPES_FALLBACK = (REPORT_TYPE_PREMIUM, REPORT_TYPE_STANDARD)
 # TODO: Автоматизировать получение cookies
 WB_COOKIES = (
     "external-locale=ru; "
-    "_wbauid=4296535381753951216; "
-    "wbx-validation-key=ea0d7677-ea8e-460a-be48-5e2ab7049c88; "
-    "_ga=GA1.1.268497829.1758526088; "
-    "_ga_TXRZMJQDFE=GS2.1.s1759131204$o6$g1$t1759131726$j60$l0$h0; "
+    "_wbauid=8549818111784528314; "
+    "wbx-validation-key=70055ee3-9761-4bb5-a435-3ca2de382e7e; "
     "x-supplier-id-external=b2545aa7-761e-4d6c-9362-d2d76f07e0f3; "
-    "__zzatw-wb=MDA0dC0cTHtmcDhhDHEWTT17CT4VHThHKHIzd2UuPG0mZ01iJzVRP0FaW1Q4NmdBEXUmCQg3LGBwVxlRExpceEdXeiwhEXduK1MNE15FRGllbQwtUlFRS19/Dg4/aU5ZQ11wS3E6EmBWGB5CWgtMeFtLKRZHGzJhXkZpdRVVDgsURUNwLDA8ayFjThYjS10JCCtPQn1tJ089DxhDdV9vG3siXyoIJGM1Xz9EaVhTMCpYQXt1J3Z+KmUzPGwlX0dcJ0dbVXwtHQ1pN2wXPHVlLwkxLGJ5MVIvE0tsP0caRFpbQDsyVghDQE1HFF9BWncyUlFRS2EQR0lrZU5TQixmG3EVTQgNND1aciIPWzklWAgSPwsmIBl3ayZXCxFjQElxbxt/Nl0cOWMRCxl+OmNdRkc3FSR7dSYKCTU3YnAvTCB7SykWRxsyYV5GaXUVCQkQX0JyJnomQmseHERdU0kQSgooHxN0JyULDhEZPUgqc18+VxlRDxZhDhYYRRcje0I3Yhk4QhgvPV8/YngiD2lIYCdDVVAJKR8Ze20nS3FPLH12X30beylOIA0lVBMhP05yJanzCg==; "
-    "cfidsw-wb=Oy+V5vo0o03ube+neFany/V81zz7mI4TZQmiVs9lGBZmnxuWoGkXhTTbhxxH/MxMSqbTY6HSVV/1A2XDMwLbNGRRk2yU94c/fCpmiNTo9T7jqkhdCO81Cr94SWd8zEduWuPgrLyM7VFOUvsWxpgGECPd/4gq16qILUYZRDSw"
+    "__zzatw-wb=MDA0dC0yYBwREFsKEH49WgsbSl1pCENQGC9LXz1uLWEPJ3wjYnwgGWsvC1RDMmUIPkBNOTM5NGZwVydgTmEjS15WfCoZFnhsH0FLVCNyM3dlaXceViUTFmcPRyJ1F0hAGxI6aCU6f1JpGWUzDldjGAsmVDVfP34mIRp/cSxXcS9NfXY3PmJ+MQ9pOSRjCh9+OFoLDWk3XBQ8dWU+SHV3MURuIGRHXiBEUT9FbllGaXUVF0M8HHsNKkNtLToZUXYQQlh4cBpEN0AYfxVZUnUpbn06MBtFV1BoUBNSeVdWNlofR3snV1U4EBVBcyd2KkJqH2hQYSN3R0lrZU5TQixmG3EVTQgNND1aciIPWzklWAgSPwsmIBl7cyxYChBbQkJubxt/Nl0cOWMRCxl+OmNdRkc3FSR7dSYKCTU3YnAvTCB7SykWRxsyYV5GaXUVCQkQX0JyJnomQmseHERdU0kQSgooHxN0JyULDhEZPUgqc18+VxlRDxZhDhYYRRcje0I3Yhk4QhgvPV8/YngiD2lIYCdHXVYKKB4RfXIoS3FPLH12X30beylOIA0lVBMhP05yhDFWcQ==; "
+    "cfidsw-wb=/W2sRDfOxWV3v2U1hIj+zgn0bVMRIcoaoR8mbk1Z3GQwmGeJp+sHfNhCbmEXZcfOthy9FiifUXSOXJsfJKbSh0vsM1vgLMtEKpPpoYgJrWuxp9SonB+i4qS17NrduXOSoH9i9/T6VvyICcycHLLTEbK1Mx2mB68z/1yPKeY="
 )
 
 
@@ -59,20 +57,21 @@ def get_common_headers(auth_token: str) -> dict[str, str]:
     return {
         "accept": "*/*",
         "accept-encoding": "gzip, deflate, br, zstd",
-        "accept-language": "ru,en-US;q=0.9,en;q=0.8",
+        "accept-language": "ru,en-US;q=0.9,en;q=0.8,ka;q=0.7",
         "authorizev3": auth_token,
         "content-type": "application/json",
         "cookie": WB_COOKIES,
         "origin": "https://seller.wildberries.ru",
         "referer": "https://seller.wildberries.ru/",
-        "root-version": "v1.74.0",
-        "sec-ch-ua": '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+        "root-version": "v1.103.1",
+        "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Google Chrome";v="150"',
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": '"Linux"',
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
-        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+        "wb-seller-lk": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7IlotU2Njb2RlIjoicnUiLCJaLVNjdXJyIjoiUlVCIiwiWi1TZmlkIjoiNjA2Mzk1IiwiWi1TaWQiOiJiMjU0NWFhNy03NjFlLTRkNmMtOTM2Mi1kMmQ3NmYwN2UwZjMiLCJaLVNsZmlkIjoiMTIiLCJaLVNvaWQiOiI2MDYzOTUifSwiZXhwIjoxNzg0ODk5NjUwLCJpYXQiOjE3ODQ4OTkzNTB9.msNsZcXrEh1p8Jj095NAWSplqpNwigUB3xodoXLkXoRJpE23BBBGMzYApn9aGSw-eD7vfnV0gyCrYKeyVIZyAA",
     }
 
 
